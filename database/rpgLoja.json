@@ -1,0 +1,94 @@
+{
+  "loja": {
+    "arqueiro": {
+      "arco basico": {
+        "preco": 300,
+        "level": 1,
+        "descricao": "🏹 Um arco simples para iniciantes",
+        "tipo": "arco",
+        "dano": 8
+      },
+      "arco intermediario": {
+        "preco": 600,
+        "level": 10,
+        "descricao": "🏹 Arco com melhor precisão e dano",
+        "tipo": "arco",
+        "dano": 15
+      },
+      "arco avancado": {
+        "preco": 1500,
+        "level": 40,
+        "descricao": "🏹 Arco poderoso para caçadores experientes",
+        "tipo": "arco",
+        "dano": 25
+      },
+      "arco magico": {
+        "preco": 2300,
+        "level": 95,
+        "descricao": "✨ Arco encantado com magia ancestral",
+        "tipo": "arco",
+        "dano": 40
+      }
+    },
+    "assassino": {
+      "espada de madeira": {
+        "preco": 300,
+        "level": 1,
+        "descricao": "🗡️ Espada leve de madeira para treino",
+        "tipo": "espada",
+        "dano": 8
+      },
+      "espada de madeira refinada": {
+        "preco": 600,
+        "level": 10,
+        "descricao": "🗡️ Espada de madeira com acabamento refinado",
+        "tipo": "espada",
+        "dano": 15
+      },
+      "espada de ferro": {
+        "preco": 1500,
+        "level": 40,
+        "descricao": "🗡️ Espada forjada em ferro puro",
+        "tipo": "espada",
+        "dano": 25
+      },
+      "espada de aco": {
+        "preco": 2300,
+        "level": 90,
+        "descricao": "🗡️ Espada lendária de aço temperado",
+        "tipo": "espada",
+        "dano": 40
+      }
+    },
+    "geral": {
+      "nucleo magico": {
+        "preco": 950,
+        "level": 30,
+        "descricao": "🔮 Aumenta 33% o ataque do equipamento usado",
+        "tipo": "encantamento",
+        "bonus": 33
+      },
+      "escudo basico": {
+        "preco": 400,
+        "level": 10,
+        "descricao": "🛡️ Escudo simples de madeira",
+        "tipo": "escudo",
+        "defesa": 8
+      },
+      "escudo avancado": {
+        "preco": 600,
+        "level": 25,
+        "descricao": "🛡️ Escudo reforçado com metal",
+        "tipo": "escudo",
+        "defesa": 15
+      },
+      "escudo de braco": {
+        "preco": 700,
+        "level": 25,
+        "descricao": "🛡️ Escudo leve acoplado ao braço",
+        "tipo": "escudo",
+        "defesa": 18
+      }
+    }
+  }
+}

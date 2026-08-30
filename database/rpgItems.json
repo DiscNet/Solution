@@ -1,0 +1,24 @@
+{
+  "animais": {
+    "vaca": { "vida": 30, "dano": 5, "xp": 10, "gold": 15 },
+    "lobo": { "vida": 40, "dano": 12, "xp": 15, "gold": 20 },
+    "cervo": { "vida": 35, "dano": 8, "xp": 12, "gold": 18 },
+    "javali": { "vida": 50, "dano": 15, "xp": 18, "gold": 25 }
+  },
+  "monstros": {
+    "goblin": { "vida": 45, "dano": 10, "xp": 20, "gold": 30, "drop": "orelha de goblin" },
+    "golem menor de pedra": { "vida": 60, "dano": 18, "xp": 25, "gold": 35 },
+    "bruxa": { "vida": 55, "dano": 20, "xp": 28, "gold": 40 },
+    "zumbi": { "vida": 50, "dano": 14, "xp": 22, "gold": 28 }
+  },
+  "itens": {
+    "orelha de goblin": { "tipo": "drop", "valor": 10 }
+  },
+  "pets": {},
+  "armas": {
+    "arco curto": { "tipo": "arco", "dano": 8 },
+    "adaga": { "tipo": "arma", "dano": 10 }
+  },
+  "espadas": {},
+  "escudos": {}
+}

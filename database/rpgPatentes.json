@@ -1,0 +1,114 @@
+{
+  "patentes": {
+    "recruta": {
+      "level": 1,
+      "xpNecessario": 0,
+      "emoji": "🪖",
+      "descricao": "O início da sua jornada.",
+      "bonus": {
+        "vida": 0,
+        "dano": 0,
+        "defesa": 0
+      }
+    },
+    "soldado": {
+      "level": 5,
+      "xpNecessario": 120,
+      "emoji": "🎖️",
+      "descricao": "Primeiro passo rumo à grandeza.",
+      "bonus": {
+        "vida": 10,
+        "dano": 3,
+        "defesa": 2
+      }
+    },
+    "guerreiro": {
+      "level": 10,
+      "xpNecessario": 400,
+      "emoji": "⚔️",
+      "descricao": "A força de um verdadeiro combatente.",
+      "bonus": {
+        "vida": 20,
+        "dano": 6,
+        "defesa": 4
+      }
+    },
+    "cavaleiro": {
+      "level": 20,
+      "xpNecessario": 1000,
+      "emoji": "🐴",
+      "descricao": "Honra e lealdade acima de tudo.",
+      "bonus": {
+        "vida": 35,
+        "dano": 10,
+        "defesa": 8
+      }
+    },
+    "capitão": {
+      "level": 35,
+      "xpNecessario": 2500,
+      "emoji": "⭐",
+      "descricao": "Liderança e estratégia em batalha.",
+      "bonus": {
+        "vida": 50,
+        "dano": 15,
+        "defesa": 12
+      }
+    },
+    "comandante": {
+      "level": 50,
+      "xpNecessario": 5000,
+      "emoji": "🌟",
+      "descricao": "O comando das tropas está em suas mãos.",
+      "bonus": {
+        "vida": 70,
+        "dano": 20,
+        "defesa": 16
+      }
+    },
+    "general": {
+      "level": 70,
+      "xpNecessario": 10000,
+      "emoji": "🏅",
+      "descricao": "Uma lenda viva nos campos de batalha.",
+      "bonus": {
+        "vida": 100,
+        "dano": 28,
+        "defesa": 22
+      }
+    },
+    "heroi": {
+      "level": 90,
+      "xpNecessario": 18000,
+      "emoji": "🦸",
+      "descricao": "Herói lendário, admirado por todos.",
+      "bonus": {
+        "vida": 140,
+        "dano": 38,
+        "defesa": 30
+      }
+    },
+    "lenda": {
+      "level": 110,
+      "xpNecessario": 30000,
+      "emoji": "👑",
+      "descricao": "Uma lenda que será lembrada para sempre.",
+      "bonus": {
+        "vida": 190,
+        "dano": 50,
+        "defesa": 40
+      }
+    },
+    "imortal": {
+      "level": 150,
+      "xpNecessario": 50000,
+      "emoji": "♾️",
+      "descricao": "Além do limite humano, você é imortal.",
+      "bonus": {
+        "vida": 250,
+        "dano": 65,
+        "defesa": 55
+      }
+    }
+  }
+}

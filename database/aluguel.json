@@ -1,0 +1,46 @@
+{
+  "grupos": {
+    "120363427940803844@g.us": {
+      "plano": "semanal",
+      "dataExpiracao": 1785271757112,
+      "dataAtivacao": 1784666957119,
+      "permanente": false,
+      "expiracaoNotificada": true
+    },
+    "120363409204654341@g.us": {
+      "plano": "permanente",
+      "dataExpiracao": null,
+      "dataAtivacao": 1784677483805,
+      "permanente": true,
+      "expiracaoNotificada": false
+    },
+    "120363427632624514@g.us": {
+      "plano": "permanente",
+      "dataExpiracao": null,
+      "dataAtivacao": 1784679783532,
+      "permanente": true,
+      "expiracaoNotificada": false
+    },
+    "120363428783733638@g.us": {
+      "plano": "permanente",
+      "dataExpiracao": null,
+      "dataAtivacao": 1784693273962,
+      "permanente": true,
+      "expiracaoNotificada": false
+    },
+    "120363427680089236@g.us": {
+      "plano": "permanente",
+      "dataExpiracao": null,
+      "dataAtivacao": 1784693324138,
+      "permanente": true,
+      "expiracaoNotificada": false
+    },
+    "120363408623628560@g.us": {
+      "plano": "semanal",
+      "dataExpiracao": 1785788691270,
+      "dataAtivacao": 1785183891270,
+      "permanente": false,
+      "expiracaoNotificada": false
+    }
+  }
+}
