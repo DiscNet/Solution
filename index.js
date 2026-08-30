@@ -1,8 +1,19 @@
 // index.js
-const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason, Browsers } = require("@whiskeysockets/baileys");
+const {
+  default: makeWASocket,
+  useMultiFileAuthState,
+  makeCacheableSignalKeyStore,
+  DisconnectReason,
+  Browsers
+} = require("@whiskeysockets/baileys");
+const NodeCache = require("node-cache");
+const pino = require("pino");
 const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
+const { createStatusQuoted } = require("./functions/statusCard");
+
+// RUNTIME_OPTIMIZED_V1
 
 // 🔥 CARREGA O CONFIG COM RECARREGAMENTO AUTOMÁTICO
 const configLoader = require("./functions/configLoader");
@@ -77,128 +88,34 @@ function formatSender(senderId, isGroup = false) {
 }
 
 // ==============================================
-// SILENCIAMENTO TOTAL DE LOGS
+// LOGGER
 // ==============================================
 
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-
-let botIniciado = false;
-let comandosFalhosLog = [];
-
-// ========== LISTA DE PATTERNS PARA IGNORAR ==========
-const ignorePatterns = [
-  'baileys', 
-  'connected to WA', 
-  'myPN', 
-  'myLID', 
-  'session created', 
-  '{"level"', 
-  'helloMsg', 
-  'ephemeral', 
-  'class":"baileys', 
-  'connection.update', 
-  'creds.update', 
-  'messages.upsert',
-  '@whiskeysockets',
-  'Interactive send:',
-  'type:',
-  'native_flow',
-  'nodes:',
-  'aimode'
-];
-
-function shouldIgnore(str) {
-  if (!str) return false;
-  for (const pattern of ignorePatterns) {
-    if (str.includes(pattern)) return true;
-  }
-  return false;
-}
-
-console.log = function(...args) {
-  const str = args.join('');
-  
-  if (botIniciado) {
-    if (shouldIgnore(str)) return;
-    originalConsoleLog.apply(console, args);
-    return;
-  }
-  return;
-};
-
-console.error = function(...args) {
-  const str = args.join('');
-  
-  if (botIniciado) {
-    if (shouldIgnore(str)) return;
-    originalConsoleError.apply(console, args);
-    return;
-  }
-  if (str.includes('Erro ao carregar comando') || str.includes('❌')) {
-    comandosFalhosLog.push(str);
-    return;
-  }
-  return;
-};
-
-// ==============================================
-// FUNÇÃO DE LOGGER SILENCIOSO
-// ==============================================
-
-function createSilentLogger() {
-  return {
-    level: 'fatal',
-    trace: () => {},
-    debug: () => {},
-    info: () => {},
-    warn: () => {},
-    error: () => {},
-    fatal: () => {},
-    log: () => {},
-    child: () => createSilentLogger()
-  };
-}
+const baileysLogger = pino({ level: process.env.BAILEYS_LOG_LEVEL || "silent" });
+const msgRetryCounterCache = new NodeCache({
+  stdTTL: 600,
+  checkperiod: 120,
+  useClones: false
+});
 
 // ==============================================
 // FUNÇÃO DE LOG ORGANIZADA
 // ==============================================
 
+const LOG_MESSAGES = process.env.LOG_MESSAGES === "1";
+
 function logMensagem(tipo, dados) {
-  const agora = new Date();
-  const data = agora.toLocaleDateString('pt-BR');
-  const hora = agora.toLocaleTimeString('pt-BR');
-  
-  const separador = `${cores.amarelo}▶${cores.verde}`;
-  
-  if (tipo === 'mensagem') {
-    if (dados.isGroup) {
-      console.log(`\n${cores.verde}${separador} ${cores.amarelo}𝙼𝚎𝚗𝚜𝚊𝚐𝚎𝚖${cores.verde} ▶ ${cores.branco}${dados.texto}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙶𝚛𝚞𝚙𝚘${cores.verde} ▶ ${cores.branco}${dados.grupo}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙿𝚊𝚛𝚝𝚒𝚌𝚒𝚙𝚊𝚗𝚝${cores.verde} ▶ ${cores.branco}${dados.participant || dados.remetente}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙹𝚒𝚍${cores.verde} ▶ ${cores.branco}${dados.remoteJid || dados.chatId}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙳𝚊𝚝𝚊${cores.verde} ▶ ${cores.branco}${data}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙷𝚘𝚛𝚊${cores.verde} ▶ ${cores.branco}${hora}${cores.reset}`);
-    } else {
-      console.log(`\n${cores.verde}${separador} ${cores.amarelo}𝙼𝚎𝚗𝚜𝚊𝚐𝚎𝚖${cores.verde} ▶ ${cores.branco}${dados.texto}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙹𝚒𝚍${cores.verde} ▶ ${cores.branco}${dados.remoteJid || dados.remetente}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙳𝚊𝚝𝚊${cores.verde} ▶ ${cores.branco}${data}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙷𝚘𝚛𝚊${cores.verde} ▶ ${cores.branco}${hora}${cores.reset}`);
-    }
-  } else if (tipo === 'comando') {
-    if (dados.isGroup) {
-      console.log(`\n${cores.verde}${separador} ${cores.amarelo}𝙲𝚘𝚖𝚊𝚗𝚍𝚘${cores.verde} ▶ ${cores.branco}${dados.comando}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙶𝚛𝚞𝚙𝚘${cores.verde} ▶ ${cores.branco}${dados.grupo}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙿𝚊𝚛𝚝𝚒𝚌𝚒𝚙𝚊𝚗𝚝${cores.verde} ▶ ${cores.branco}${dados.participant || dados.remetente}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙹𝚒𝚍${cores.verde} ▶ ${cores.branco}${dados.remoteJid || dados.chatId}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙳𝚊𝚝𝚊${cores.verde} ▶ ${cores.branco}${data}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙷𝚘𝚛𝚊${cores.verde} ▶ ${cores.branco}${hora}${cores.reset}`);
-    } else {
-      console.log(`\n${cores.verde}${separador} ${cores.amarelo}𝙲𝚘𝚖𝚊𝚗𝚍𝚘${cores.verde} ▶ ${cores.branco}${dados.comando}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙹𝚒𝚍${cores.verde} ▶ ${cores.branco}${dados.remoteJid || dados.remetente}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙳𝚊𝚝𝚊${cores.verde} ▶ ${cores.branco}${data}${cores.reset}`);
-      console.log(`${cores.verde}${separador} ${cores.amarelo}𝙷𝚘𝚛𝚊${cores.verde} ▶ ${cores.branco}${hora}${cores.reset}`);
-    }
+  if (tipo === "mensagem" && !LOG_MESSAGES) return;
+  const horario = new Date().toLocaleString("pt-BR");
+  const alvo = dados.isGroup
+    ? (dados.grupo || dados.remoteJid || dados.chatId || "grupo")
+    : (dados.remoteJid || dados.remetente || "privado");
+  const remetente = dados.participant || dados.remetente || "desconhecido";
+
+  if (tipo === "comando") {
+    console.log(`[CMD] ${dados.comando} | ${alvo} | ${remetente} | ${horario}`);
+  } else {
+    console.log(`[MSG] ${dados.texto || "(mídia)"} | ${alvo} | ${remetente} | ${horario}`);
   }
 }
 
@@ -234,27 +151,13 @@ const comandosQueExigemMedia = ["s", "sticker", "sticker2", "s2", "scirculo", "s
 
 function detectCommand(text, commandsList) {
   if (!text) return null;
-  
-  // 🔥 RECARREGA O CONFIG ANTES DE CADA DETECÇÃO (se ativado)
-  if (config.recarregarConfig !== false) {
-    config = configLoader.carregarConfig();
-  }
-  
   const prefix = config.prefix || ".";
-  
-  // 🔥 SOMENTE COM PREFIXO - NUNCA PERMITE SEM PREFIXO
-  if (text.startsWith(prefix)) {
-    const cmdName = text.slice(prefix.length).trim().split(/ +/)[0].toLowerCase();
-    if (commandsList[cmdName]) {
-      return { 
-        cmdName, 
-        args: text.slice(prefix.length).trim().split(/ +/).slice(1), 
-        hasPrefix: true 
-      };
-    }
-  }
-  
-  return null;
+  if (!text.startsWith(prefix)) return null;
+
+  const parts = text.slice(prefix.length).trim().split(/ +/);
+  const cmdName = (parts.shift() || "").toLowerCase();
+  if (!cmdName || !commandsList[cmdName]) return null;
+  return { cmdName, args: parts, hasPrefix: true };
 }
 
 function commandNeedsMedia(cmdName) { return comandosQueExigemMedia.includes(cmdName); }
@@ -275,41 +178,15 @@ const afk = require("./functions/afk");
 // ANTIS
 // ==============================================
 
-const ANTILINK_CONFIG_PATH = path.join(__dirname, "config", "antilink.json");
-const ANTIDOC_CONFIG_PATH = path.join(__dirname, "config", "antidoc.json");
-const ANTIIMAGEM_CONFIG_PATH = path.join(__dirname, "config", "antiimagem.json");
-const ANTIVIDEO_CONFIG_PATH = path.join(__dirname, "config", "antivideo.json");
-const ANTIAUDIO_CONFIG_PATH = path.join(__dirname, "config", "antiaudio.json");
-const BLOCKCMD_CONFIG_PATH = path.join(__dirname, "config", "blockcmd.json");
-
-function loadConfig(caminho) {
-  try {
-    if (fs.existsSync(caminho)) {
-      return JSON.parse(fs.readFileSync(caminho, "utf8"));
-    }
-  } catch (e) {}
-  return {};
-}
+const antiManager = require("./functions/antiManager");
+const blockcmdManager = require("./functions/blockcmd");
 
 function isAntiAtivo(grupoId, tipo) {
-  const caminhos = {
-    link: ANTILINK_CONFIG_PATH,
-    documento: ANTIDOC_CONFIG_PATH,
-    imagem: ANTIIMAGEM_CONFIG_PATH,
-    video: ANTIVIDEO_CONFIG_PATH,
-    audio: ANTIAUDIO_CONFIG_PATH
-  };
-  const data = loadConfig(caminhos[tipo]);
-  return data[grupoId] === true;
+  return antiManager.isAntiAtivo(grupoId, tipo);
 }
 
 function isCommandBlocked(grupoId, cmdName) {
-  const data = loadConfig(BLOCKCMD_CONFIG_PATH);
-  if (data[grupoId]) {
-    if (data[grupoId].bloquearTodos === true) return true;
-    if (data[grupoId].bloqueados && data[grupoId].bloqueados.includes(cmdName)) return true;
-  }
-  return false;
+  return blockcmdManager.isCommandBlocked(grupoId, cmdName);
 }
 
 // ==============================================
@@ -408,7 +285,7 @@ async function sendCommandNotFoundMessage(conn, from, cmdName, senderNumber, sug
   }
   let sugestaoTexto = sugestao ? `\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝚂𝚎𝚖𝚊𝚕𝚑𝚊𝚗𝚌̧𝚊: ${prefix}${sugestao}` : "";
   const errorMessage = `\n╭ֹܻ╼֮͊͜❀ֹ݄͜┅᳞֟፝┈̤፟━⵿໋݊━⵿໋݊━⵿݊❄️ᮬ᳘ᰰ━⵿໋݊━⵿໋݊━⵿໋݊┈᳞֟፝┅ֹ݄͜❀֮͜╾ֹܻ͊╮\n┃ ┍─݊━⵿໋݊─⊣ (𔓕᳝ׅ ٜ፝⃐⃑֟۫💎 ٜ፝⃐⃑֟۫𔓕᳝ׅ) ⊢─⵿໋݊━⵿໋݊━⵿໋݊─┑\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙴𝚁𝚁𝙾: 𝐂𝐨𝐦𝐚𝐧𝐝𝐨 𝐢𝐧𝐯𝐚́𝐥𝐢𝐝𝐨\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙲𝙼𝙳: ${prefix}${cmdName}\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙳𝙰𝚃𝙰: ${dataAtual}\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙷𝙾𝚁𝙰: ${horaAtual}${sugestaoTexto}\n┃ └─݊━⵿⵿໋݊݊─⊢ (𔓕᳝ׅ ٜ፝⃐⃑֟۫💎 ٜ፝⃐⃑֟۫𔓕᳝ׅ) ⊣━⵿໋━⵿໋݊━⵿໋݊─┘\n╰ܻ╼֮͊͜❀ֹ݄͜┅᳞֟፝┈̤፟━⵿໋݊━⵿໋݊━⵿݊❄️ᮬ᳘ᰰ━⵿໋݊━⵿໋݊━⵿໋݊┈᳞֟፝┅ֹ݄͜❀֮͜╾ֹܻ͊╯`;
-  await sendButtons(conn, from, { text: errorMessage, footer: "𝖢𝗅𝗂𝗊𝗎𝖾 𝗇𝗈 𝖻𝗈𝗍𝖺̃𝗈 𝖺𝖻𝖺𝗂𝗑𝗈 𝗉𝖺𝗋𝖺 𝗂𝗋 𝖺𝗈 𝗆𝖾𝗇𝗎", buttons: [{ id: `${prefix}menu`, text: "》『🧊』《　"}], contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } } }, { quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } } });
+  await sendButtons(conn, from, { text: errorMessage, footer: "𝖢𝗅𝗂𝗊𝗎𝖾 𝗇𝗈 𝖻𝗈𝗍𝖺̃𝗈 𝖺𝖻𝖺𝗂𝗑𝗈 𝗉𝖺𝗋𝖺 𝗂𝗋 𝖺𝗈 𝗆𝖾𝗇𝗎", buttons: [{ id: `${prefix}menu`, text: "》『🧊』《　"}], contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } } }, { quoted: createStatusQuoted(msg) });
 }
 
 // ==============================================
@@ -480,12 +357,18 @@ function loadCommandsRecursive(dir) {
 
 loadCommandsRecursive(path.join(__dirname, "commands"));
 
+if (process.env.HOT_RELOAD === "1") {
+  try {
+    require("./functions/autoupgrade")({ commands });
+  } catch (error) {
+    console.error("Falha ao ativar hot reload:", error.message);
+  }
+}
+
 // ==============================================
 // FUNÇÕES EXTERNAS
 // ==============================================
 
-const autoUpgrade = require("./functions/autoupgrade");
-const { autoFiguHandler } = require("./functions/autofigu");
 const autofiguPath = path.join(__dirname, "commands", "admins", "autofigu.js");
 const autofiguModule = fs.existsSync(autofiguPath) ? require(autofiguPath) : null;
 const autoresponse = require("./functions/autoresponse");
@@ -518,10 +401,39 @@ function exibirLogsPosInicio() {
 // BOT PRINCIPAL
 // ==============================================
 
-let isReconnecting = false;
+let reconnectTimer = null;
+let reconnectAttempts = 0;
+let isStarting = false;
+
+function getDisconnectCode(error) {
+  return error?.output?.statusCode || error?.data?.statusCode || error?.statusCode || null;
+}
+
+function scheduleReconnect(reason = "conexão encerrada") {
+  if (reconnectTimer) return;
+  const delay = Math.min(30000, 5000 * (2 ** Math.min(reconnectAttempts, 3)));
+  reconnectAttempts += 1;
+  console.warn(`Reconectando em ${Math.round(delay / 1000)}s: ${reason}`);
+
+  reconnectTimer = setTimeout(async () => {
+    reconnectTimer = null;
+    try {
+      await startBot();
+    } catch (error) {
+      console.error("Falha ao reconectar:", error.message);
+      scheduleReconnect("falha ao iniciar nova conexão");
+    }
+  }, delay);
+}
 
 async function startBot() {
-  if (conn) { try { conn.ev.removeAllListeners(); } catch (_) {} conn = null; }
+  if (isStarting) return conn;
+  isStarting = true;
+  try {
+    if (conn) {
+      try { conn.ev.removeAllListeners(); } catch (_) {}
+      conn = null;
+    }
 
   const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
   
@@ -534,19 +446,23 @@ async function startBot() {
     process.exit(1);
   }
 
-  const { version } = await fetchLatestBaileysVersion();
+  const auth = {
+    creds: state.creds,
+    keys: makeCacheableSignalKeyStore(state.keys, baileysLogger)
+  };
 
-  conn = makeWASocket({ 
-    version, 
-    auth: state,
+  conn = makeWASocket({
+    auth,
     printQRInTerminal: false,
-    browser: Browsers.macOS('Desktop'),
-    defaultQueryTimeoutMs: 10000,
-    keepAlive: true,
+    browser: Browsers.macOS("Desktop"),
+    connectTimeoutMs: 60000,
+    defaultQueryTimeoutMs: 60000,
+    keepAliveIntervalMs: 30000,
+    msgRetryCounterCache,
     syncFullHistory: false,
     markOnlineOnConnect: false,
     generateHighQualityLinkPreview: false,
-    logger: createSilentLogger()
+    logger: baileysLogger
   });
 
   const NEWSLETTER_JID = config.newsletterJid || "120363xxxxxxxxxx@newsletter";
@@ -562,23 +478,25 @@ async function startBot() {
 
   conn.ev.on("creds.update", saveCreds);
 
-  conn.ev.on("connection.update", async ({ connection, qr, lastDisconnect }) => {
+  conn.ev.on("connection.update", ({ connection, lastDisconnect }) => {
     if (connection === "open") {
-      isReconnecting = false;
-      botIniciado = true;
+      reconnectAttempts = 0;
+      if (reconnectTimer) {
+        clearTimeout(reconnectTimer);
+        reconnectTimer = null;
+      }
       exibirLogsPosInicio();
+      return;
     }
+
     if (connection === "close") {
-      const code = lastDisconnect?.error?.output?.statusCode;
+      const code = getDisconnectCode(lastDisconnect?.error);
       if (code === DisconnectReason.loggedOut) {
-        console.log(`${cores.vermelho}🚫 Sessão expirada! Execute: node conect.js${cores.reset}`);
-        process.exit(1);
+        console.error("Sessão expirada. Faça o pareamento novamente.");
+        process.exitCode = 1;
+        return;
       }
-      if (!isReconnecting) {
-        isReconnecting = true;
-        console.log(`${cores.amarelo}🔄 Reconectando em 5s...${cores.reset}`);
-        setTimeout(startBot, 5000);
-      }
+      scheduleReconnect(`conexão fechada (código ${code || "desconhecido"})`);
     }
   });
 
@@ -586,9 +504,8 @@ async function startBot() {
   // EVENTO DE MENSAGENS
   // ==============================================
   
-  conn.ev.on("messages.upsert", async ({ messages }) => {
-    const msg = messages[0];
-    if (!msg.message) return;
+  async function processIncomingMessage(msg) {
+    if (!msg?.message) return;
     
     // 🔥 RECARREGA O CONFIG A CADA MENSAGEM (se ativado)
     if (config.recarregarConfig !== false) {
@@ -1037,7 +954,6 @@ async function startBot() {
         }
       }
 
-      await autoFiguHandler(conn, msg);
       if (autofiguModule) { await autofiguModule.autoHandler(conn, msg, from, sender); }
 
       // HANDLER DE INTERAÇÕES
@@ -1107,6 +1023,12 @@ async function startBot() {
       if (text && !text.startsWith(config.prefix)) { await autoresponse(conn, msg, from, text, axiosInstance); }
 
     } catch (err) { console.error("Erro no processamento:", err); }
+  }
+
+  conn.ev.on("messages.upsert", async ({ messages }) => {
+    for (const msg of messages || []) {
+      await processIncomingMessage(msg);
+    }
   });
   
   // EVENTO DE PARTICIPANTES (BEM-VINDO)
@@ -1307,11 +1229,13 @@ async function startBot() {
     }
   });
 
-  try { autoUpgrade({ commands }); } catch (err) {}
   return conn;
+  } finally {
+    isStarting = false;
+  }
 }
 
-startBot().catch(err => {
-  console.log(`${cores.vermelho}❌ Erro fatal, reiniciando...${cores.reset}`);
-  setTimeout(startBot, 5000);
+startBot().catch(error => {
+  console.error("Falha ao iniciar o bot:", error.message);
+  scheduleReconnect("falha na inicialização");
 });

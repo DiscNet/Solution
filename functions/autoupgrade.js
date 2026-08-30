@@ -1,45 +1,73 @@
 const fs = require("fs");
 const path = require("path");
 
-// Função para recarregar um módulo (limpa cache)
+let activeWatchers = [];
+let reloadTimer = null;
+
 function reloadModule(modulePath) {
   const resolved = require.resolve(modulePath);
   if (require.cache[resolved]) delete require.cache[resolved];
   return require(modulePath);
 }
 
+function closeWatchers() {
+  for (const watcher of activeWatchers) {
+    try { watcher.close(); } catch (_) {}
+  }
+  activeWatchers = [];
+  if (reloadTimer) clearTimeout(reloadTimer);
+  reloadTimer = null;
+}
+
 module.exports = function autoUpgrade(bot) {
+  closeWatchers();
+
   const commandsPath = path.join(__dirname, "..", "commands");
-  const functionsPath = path.join(__dirname);
+  const functionsPath = __dirname;
 
-  // Observa mudanças na pasta commands
-  fs.watch(commandsPath, { recursive: true }, (eventType, filename) => {
-    if (!filename.endsWith(".js")) return;
+  function debounce(callback) {
+    if (reloadTimer) clearTimeout(reloadTimer);
+    reloadTimer = setTimeout(callback, 150);
+  }
 
-    try {
-      const modulePath = path.join(commandsPath, filename);
-      const command = reloadModule(modulePath);
-
-      // Atualiza o objeto de comandos do bot
-      bot.commands[command.name.toLowerCase()] = command;
-      console.log(`✅ Comando recarregado: ${command.name}`);
-    } catch (err) {
-      console.error(`❌ Erro ao recarregar comando ${filename}:`, err);
-    }
+  const commandWatcher = fs.watch(commandsPath, { recursive: true }, (_eventType, filename) => {
+    if (!filename || !filename.endsWith(".js")) return;
+    debounce(() => {
+      try {
+        const modulePath = path.join(commandsPath, filename);
+        if (!fs.existsSync(modulePath)) return;
+        const command = reloadModule(modulePath);
+        if (!command?.name) return;
+        bot.commands[command.name.toLowerCase()] = command;
+        if (Array.isArray(command.aliases)) {
+          for (const alias of command.aliases) {
+            if (typeof alias === "string") bot.commands[alias.toLowerCase()] = command;
+          }
+        }
+        console.log(`Comando recarregado: ${command.name}`);
+      } catch (err) {
+        console.error(`Erro ao recarregar comando ${filename}:`, err.message);
+      }
+    });
   });
 
-  // Observa mudanças na pasta functions
-  fs.watch(functionsPath, { recursive: true }, (eventType, filename) => {
-    if (!filename.endsWith(".js") || filename === "autoupgrade.js") return;
-
-    try {
-      const modulePath = path.join(functionsPath, filename);
-      reloadModule(modulePath);
-      console.log(`🔄 Função recarregada: ${filename}`);
-    } catch (err) {
-      console.error(`❌ Erro ao recarregar função ${filename}:`, err);
-    }
+  const functionWatcher = fs.watch(functionsPath, { recursive: true }, (_eventType, filename) => {
+    if (!filename || !filename.endsWith(".js") || filename === "autoupgrade.js") return;
+    debounce(() => {
+      try {
+        const modulePath = path.join(functionsPath, filename);
+        if (!fs.existsSync(modulePath)) return;
+        reloadModule(modulePath);
+        console.log(`Função recarregada: ${filename}`);
+      } catch (err) {
+        console.error(`Erro ao recarregar função ${filename}:`, err.message);
+      }
+    });
   });
 
-  console.log("🟢 AutoUpgrade ativado: alterações em comandos e funções serão aplicadas automaticamente.");
+  activeWatchers = [commandWatcher, functionWatcher];
+  console.log("Hot reload ativado.");
+  return closeWatchers;
 };
+
+module.exports.close = closeWatchers;

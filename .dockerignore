@@ -1,0 +1,18 @@
+.git
+.github
+node_modules
+temp
+logs
+*.log
+.env
+.env.*
+!.env.example
+Anotações
+LukaModzz by Kxlyn666.html
+extrair_auth.js
+export-auth-env.js
+obsfucar.js
+connect-qr.js
+
+# auth_info intentionally remains in the image so railway-start.js can
+# seed an empty persistent volume on the first deploy.

@@ -1,6 +1,5 @@
-// functions/antiManager.js
-const fs = require("fs");
 const path = require("path");
+const { createJsonStore } = require("./jsonStore");
 
 const ANTI_CONFIGS = {
   link: path.join(__dirname, "..", "config", "antilink.json"),
@@ -10,19 +9,17 @@ const ANTI_CONFIGS = {
   audio: path.join(__dirname, "..", "config", "antiaudio.json")
 };
 
-function loadConfig(tipo) {
-  try {
-    const file = ANTI_CONFIGS[tipo];
-    if (fs.existsSync(file)) {
-      return JSON.parse(fs.readFileSync(file, "utf8"));
-    }
-  } catch (e) {}
-  return {};
+const stores = Object.fromEntries(
+  Object.entries(ANTI_CONFIGS).map(([tipo, file]) => [tipo, createJsonStore(file, {})])
+);
+
+function loadConfig(tipo, force = false) {
+  const store = stores[tipo];
+  return store ? store.read(force) : {};
 }
 
 function isAntiAtivo(groupId, tipo) {
-  const data = loadConfig(tipo);
-  return data[groupId] === true;
+  return loadConfig(tipo)[groupId] === true;
 }
 
 module.exports = { isAntiAtivo, loadConfig };
