@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/tag.js
 const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
@@ -20,7 +21,7 @@ module.exports = {
           text: "❌ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ sᴏ́ ᴘᴏᴅᴇ sᴇʀ ᴜsᴀᴅᴏ ᴇᴍ ɢʀᴜᴘᴏs!",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -43,7 +44,7 @@ module.exports = {
           text: "❌ ᴀᴘᴇɴᴀs ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀᴇs ᴇ ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇᴍ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -56,7 +57,7 @@ module.exports = {
           text: "❌ ɴᴇɴʜᴜᴍ ᴍᴇᴍʙʀᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ ɴᴏ ɢʀᴜᴘᴏ!",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -88,10 +89,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-              message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-            }
+            quoted: createStatusQuoted(msg)
           });
           
         } else if (quotedMessage.videoMessage) {
@@ -115,10 +113,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-              message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-            }
+            quoted: createStatusQuoted(msg)
           });
           
         } else if (quotedMessage.stickerMessage) {
@@ -141,10 +136,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-              message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-            }
+            quoted: createStatusQuoted(msg)
           });
           
         } else if (quotedMessage.audioMessage) {
@@ -168,10 +160,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-              message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-            }
+            quoted: createStatusQuoted(msg)
           });
           
         } else if (quotedMessage.documentMessage) {
@@ -196,10 +185,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-              message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-            }
+            quoted: createStatusQuoted(msg)
           });
           
         } else {
@@ -220,10 +206,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-              message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-            }
+            quoted: createStatusQuoted(msg)
           });
         }
         
@@ -242,10 +225,7 @@ module.exports = {
             }
           }
         }, {
-          quoted: {
-            key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" },
-            message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } }
-          }
+          quoted: createStatusQuoted(msg)
         });
       }
 

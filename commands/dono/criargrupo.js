@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/criargrupo.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -29,7 +30,7 @@ module.exports = {
           text: `❌ *Apenas o dono do bot pode usar este comando!*`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -89,7 +90,7 @@ module.exports = {
         text: `✅ *Grupo "${groupName}" criado!*\n\n🔗 *Link:* ${inviteLink}\n🆔 *ID:* \`${groupId}\`\n🖼️ *Foto:* ${fs.existsSync(imgPath) ? '✅ Definida' : '❌ Não encontrada'}`,
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, {
-        quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+        quoted: createStatusQuoted(msg)
       });
 
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });

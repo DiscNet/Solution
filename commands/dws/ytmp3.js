@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/ytmp3.js
 const config = require("../../config/config");
 const axios = require("axios");
@@ -19,7 +20,7 @@ module.exports = {
           text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ʟɪɴᴋ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ytmp3 https://youtu.be/xxxxx`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -35,7 +36,7 @@ module.exports = {
         fileName: "audio.mp3",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, {
-        quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+        quoted: createStatusQuoted(msg)
       });
 
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });

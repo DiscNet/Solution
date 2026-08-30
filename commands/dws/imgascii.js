@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/asciiimg.js
 const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
@@ -32,7 +33,7 @@ module.exports = {
           text: "❌ Envie ou responda a uma imagem com .asciiimg",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -94,7 +95,7 @@ module.exports = {
           caption: `🎨 *ASCII Art*\n📏 Largura: ${width} caracteres`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
-          quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } }
+          quoted: createStatusQuoted(msg)
         });
       } else {
         throw new Error("Falha ao criar imagem ASCII");

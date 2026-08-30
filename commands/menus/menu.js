@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/menu.js
 const config = require("../../config/config");
 const readmore = String.fromCharCode(8206).repeat(4001);
@@ -210,25 +211,7 @@ module.exports = {
         // ==============================================
         // INTEGRAÇÃO DE CONTATO COM PUSH NAME
         // ==============================================
-        quoted: {
-          key: {
-            remoteJid: "status@broadcast",
-            fromMe: false,
-            participant: `0@s.whatsapp.net`
-          },
-          message: {
-            contactMessage: {
-              displayName: pushName, // 🔥 PUSH NAME DA PESSOA
-              vcard: 
-                "BEGIN:VCARD\n" +
-                "VERSION:3.0\n" +
-                `FN:${pushName}\n` + // 🔥 PUSH NAME NO VCARD
-                `ORG:${owner};\n` +
-                `TEL;type=CELL;type=VOICE;waid=${numeroUsuario}:${numeroUsuario}\n` + // 🔥 WAID = NÚMERO DO USUÁRIO
-                "END:VCARD"
-            }
-          }
-        }
+        quoted: createStatusQuoted(msg)
       });
 
       // ✅ reação

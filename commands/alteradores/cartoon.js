@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 const fs = require("fs");
@@ -26,7 +27,7 @@ module.exports = {
       fs.writeFileSync(i, imageBuffer);
       await execPromise(`ffmpeg -y -i "${i}" -vf "edgedetect=mode=colormix:high=0.1,scale=512:512:force_original_aspect_ratio=decrease" "${o}"`);
       const b = fs.readFileSync(o);
-      await conn.sendMessage(from, { image: b, caption: "🎨 *Desenho*", contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } } }, { quoted: { key: { remoteJid: "status@broadcast", fromMe: false, participant: "13135550002@s.whatsapp.net" }, message: { contactMessage: { displayName: pushName, vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" } } } });
+      await conn.sendMessage(from, { image: b, caption: "🎨 *Desenho*", contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } } }, { quoted: createStatusQuoted(msg) });
       try { fs.unlinkSync(i); fs.unlinkSync(o); } catch (e) {}
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
     } catch (e) { console.error(e); }

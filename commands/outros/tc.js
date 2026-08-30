@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/tc.js
 const config = require("../config/config");
 module.exports = {
@@ -46,19 +47,7 @@ module.exports = {
         },
       }, {
         // Objeto decorativo mantendo o design do status no topo
-        quoted: {
-          key: {
-            remoteJid: "status@broadcast",
-            fromMe: false,
-            // ID fixo do sistema para o cabeçalho decorativo
-            participant: "0@s.whatsapp.net"
-          },
-          message: {
-            extendedTextMessage: {
-              text: "𝐀𝐪𝐮𝐢 𝐦𝐞𝐮 𝐝𝐨𝐧𝐨 シ︎"
-            }
-          }
-        }
+        quoted: createStatusQuoted(msg)
       });
 
     } catch (err) {

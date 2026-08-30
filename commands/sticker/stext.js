@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/stext.js
 const fs = require("fs");
 const path = require("path");
@@ -35,25 +36,7 @@ module.exports = {
             }
           }
         }, {
-          quoted: {
-            key: {
-              remoteJid: "status@broadcast",
-              fromMe: false,
-              participant: "13135550002@s.whatsapp.net"
-            },
-            message: {
-              contactMessage: {
-                displayName: pushName,
-                vcard: 
-                  "BEGIN:VCARD\n" +
-                  "VERSION:3.0\n" +
-                  `FN:${pushName}\n` +
-                  `ORG:${owner};\n` +
-                  "TEL;type=CELL;type=VOICE;waid=13135550002:556384673123\n" +
-                  "END:VCARD"
-              }
-            }
-          }
+          quoted: createStatusQuoted(msg)
         });
       }
 
@@ -118,25 +101,7 @@ module.exports = {
               }
             }
           }, {
-            quoted: {
-              key: {
-                remoteJid: "status@broadcast",
-                fromMe: false,
-                participant: "13135550002@s.whatsapp.net"
-              },
-              message: {
-                contactMessage: {
-                  displayName: pushName,
-                  vcard: 
-                    "BEGIN:VCARD\n" +
-                    "VERSION:3.0\n" +
-                    `FN:${pushName}\n` +
-                    `ORG:${owner};\n` +
-                    "TEL;type=CELL;type=VOICE;waid=13135550002:556384673123\n" +
-                    "END:VCARD"
-                }
-              }
-            }
+            quoted: createStatusQuoted(msg)
           });
           
           await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
@@ -170,25 +135,7 @@ module.exports = {
                 }
               }
             }, {
-              quoted: {
-                key: {
-                  remoteJid: "status@broadcast",
-                  fromMe: false,
-                  participant: "13135550002@s.whatsapp.net"
-                },
-                message: {
-                  contactMessage: {
-                    displayName: pushName,
-                    vcard: 
-                      "BEGIN:VCARD\n" +
-                      "VERSION:3.0\n" +
-                      `FN:${pushName}\n` +
-                      `ORG:${owner};\n` +
-                      "TEL;type=CELL;type=VOICE;waid=13135550002:556384673123\n" +
-                      "END:VCARD"
-                  }
-                }
-              }
+              quoted: createStatusQuoted(msg)
             });
             
             await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
@@ -222,25 +169,7 @@ module.exports = {
           }
         }
       }, {
-        quoted: {
-          key: {
-            remoteJid: "status@broadcast",
-            fromMe: false,
-            participant: "13135550002@s.whatsapp.net"
-          },
-          message: {
-            contactMessage: {
-              displayName: pushName || "LukaModzz",
-              vcard: 
-                "BEGIN:VCARD\n" +
-                "VERSION:3.0\n" +
-                `FN:${pushName || "LukaModzz"}\n` +
-                `ORG:${owner};\n` +
-                "TEL;type=CELL;type=VOICE;waid=13135550002:556384673123\n" +
-                "END:VCARD"
-            }
-          }
-        }
+        quoted: createStatusQuoted(msg)
       });
     }
   }

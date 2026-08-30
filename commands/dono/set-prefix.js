@@ -1,3 +1,4 @@
+const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/set-prefix.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -40,19 +41,7 @@ module.exports = {
             } 
           }
         }, {
-          quoted: { 
-            key: { 
-              remoteJid: "status@broadcast", 
-              fromMe: false, 
-              participant: "13135550002@s.whatsapp.net" 
-            }, 
-            message: { 
-              contactMessage: { 
-                displayName: pushName, 
-                vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD" 
-              } 
-            } 
-          }
+          quoted: createStatusQuoted(msg)
         });
       }
 
