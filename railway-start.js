@@ -99,14 +99,65 @@ function prepareAuthDirectory() {
   }
 }
 
-prepareAuthDirectory();
+async function refreshWhatsAppWebVersion() {
+  try {
+    const baileys = require('@whiskeysockets/baileys');
+    const { DEFAULT_CONNECTION_CONFIG, fetchLatestWaWebVersion, fetchLatestBaileysVersion } = baileys;
 
-const credsPath = path.join(repoAuthDir, 'creds.json');
-if (!fs.existsSync(credsPath)) {
-  console.error('❌ Nenhuma sessão do WhatsApp foi encontrada.');
-  console.error('Envie a pasta auth_info para o GitHub ou defina AUTH_INFO_B64 no Railway.');
-  console.error(`Diretório de autenticação usado: ${configuredAuthDir}`);
-  process.exit(1);
+    let result = null;
+
+    if (typeof fetchLatestWaWebVersion === 'function') {
+      try {
+        result = await fetchLatestWaWebVersion();
+      } catch (_) {}
+    }
+
+    if ((!result || !Array.isArray(result.version) || result.version.length !== 3) &&
+        typeof fetchLatestBaileysVersion === 'function') {
+      try {
+        result = await fetchLatestBaileysVersion();
+      } catch (_) {}
+    }
+
+    if (result && Array.isArray(result.version) && result.version.length === 3 && DEFAULT_CONNECTION_CONFIG) {
+      DEFAULT_CONNECTION_CONFIG.version = result.version;
+      console.log(`✅ WhatsApp Web version: ${result.version.join('.')}${result.isLatest === false ? ' (fallback)' : ''}`);
+      return true;
+    }
+
+    console.warn('⚠️ Não foi possível atualizar a versão do WhatsApp Web; usando a versão do Baileys.');
+    return false;
+  } catch (err) {
+    console.warn(`⚠️ Falha ao resolver versão do WhatsApp Web: ${err.message}`);
+    return false;
+  }
 }
 
-require('./index.js');
+async function boot() {
+  prepareAuthDirectory();
+
+  const credsPath = path.join(repoAuthDir, 'creds.json');
+  if (!fs.existsSync(credsPath)) {
+    console.error('❌ Nenhuma sessão do WhatsApp foi encontrada.');
+    console.error('Envie a pasta auth_info para o GitHub ou defina AUTH_INFO_B64 no Railway.');
+    console.error(`Diretório de autenticação usado: ${configuredAuthDir}`);
+    process.exit(1);
+  }
+
+  // Evita 405/client_too_old causado por revisão Web embutida desatualizada.
+  // A atualização é feita uma vez no boot e depois periodicamente; makeWASocket
+  // usa DEFAULT_CONNECTION_CONFIG no momento em que cria cada novo socket.
+  await refreshWhatsAppWebVersion();
+
+  const versionRefreshTimer = setInterval(() => {
+    refreshWhatsAppWebVersion().catch(() => {});
+  }, 6 * 60 * 60 * 1000);
+  versionRefreshTimer.unref?.();
+
+  require('./index.js');
+}
+
+boot().catch(err => {
+  console.error('❌ Falha ao iniciar o Railway runtime:', err);
+  process.exit(1);
+});
