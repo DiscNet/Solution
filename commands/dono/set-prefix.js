@@ -1,155 +1,115 @@
-const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/set-prefix.js
 const config = require("../../config/config");
-const fs = require("fs");
-const path = require("path");
 const configLoader = require("../../functions/configLoader");
+const { createStatusQuoted } = require("../../functions/statusCard");
+
+function newsletterContext(botName) {
+  return {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid: "120363426698503859@newsletter",
+      newsletterName: botName,
+      serverMessageId: 116
+    }
+  };
+}
+
+function digits(value) {
+  return String(value || "").replace(/\D/g, "");
+}
+
+function isOwnerMessage(msg, from) {
+  const sender = msg?.key?.participant || msg?.key?.remoteJid || from || "";
+  const senderDigits = digits(sender);
+  const ownerLid = String(config.ownerLid || "");
+  const ownerNumber = String(config.ownerNumber || "");
+
+  if (ownerLid && sender === ownerLid) return true;
+  if (ownerLid && senderDigits && senderDigits === digits(ownerLid)) return true;
+  if (ownerNumber && senderDigits && senderDigits === digits(ownerNumber)) return true;
+  return false;
+}
+
+async function reply(conn, from, msg, text, bot) {
+  return conn.sendMessage(from, {
+    text,
+    contextInfo: newsletterContext(bot)
+  }, { quoted: createStatusQuoted(msg) });
+}
 
 module.exports = {
   name: "setprefix",
   aliases: ["set-prefix", "prefixo", "changeprefix"],
   description: "ᴀʟᴛᴇʀᴀ ᴏ ᴘʀᴇғɪxᴏ ᴅᴏ ʙᴏᴛ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
-  async execute(conn, msg, args, from) {
+
+  async execute(conn, msg, args, from, _axiosInstance, cmdUsado) {
+    const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
+    const prefixAtual = config.prefix || ".";
+    const comandoUsado = String(cmdUsado || "setprefix").trim() || "setprefix";
+
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const ownerLid = config.ownerLid || "";
-      const prefixAtual = config.prefix || ".";
-      
-      // 🔥 PEGA O NOME DO COMANDO USADO
-      const texto = msg.message?.extendedTextMessage?.text || msg.message?.conversation || "";
-      // 🔥 PEGA O QUE O USUÁRIO DIGITOU (COM ALIASES)
-      const cmd = texto.split(" ")[0].replace(prefixAtual, "").trim();
-      
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      // 🔥 VERIFICA SE É O DONO
-      const sender = msg.key.participant || msg.key.remoteJid || from;
-      const isOwner = sender === ownerLid || sender.replace(/[^0-9]/g, "") === ownerLid.replace(/[^0-9]/g, "");
-
-      if (!isOwner) {
-        return await conn.sendMessage(from, { 
-          text: "❌ ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!",
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
-          }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
+      if (!isOwnerMessage(msg, from)) {
+        return reply(conn, from, msg, "❌ ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!", bot);
       }
 
-      // 🔥 VERIFICA SE FOI FORNECIDO UM PREFIXO
-      if (!args[0]) {
-        return await conn.sendMessage(from, { 
-          text: `❌ ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴠᴏ ᴘʀᴇғɪxᴏ!\n\n📌 ᴘʀᴇғɪxᴏ ᴀᴛᴜᴀʟ: \`${prefixAtual}\`\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefixAtual}${cmd} !\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefixAtual}${cmd} /`,
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
-          }
-        }, { quoted: msg });
-      }
-
-      const novoPrefixo = args[0];
-
-      // 🔥 VALIDA O PREFIXO
-      if (novoPrefixo.length > 5) {
-        return await conn.sendMessage(from, { 
-          text: "❌ ᴏ ᴘʀᴇғɪxᴏ ᴅᴇᴠᴇ ᴛᴇʀ ɴᴏ ᴍᴀ́xɪᴍᴏ 5 ᴄᴀʀᴀᴄᴛᴇʀᴇs!",
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
-          }
-        }, { quoted: msg });
-      }
-
-      if (novoPrefixo.includes(' ') || novoPrefixo.includes('\n')) {
-        return await conn.sendMessage(from, { 
-          text: "❌ ᴏ ᴘʀᴇғɪxᴏ ɴᴀ̃ᴏ ᴘᴏᴅᴇ ᴄᴏɴᴛᴇʀ ᴇsᴘᴀᴄ̧ᴏs ᴏᴜ ǫᴜᴇʙʀᴀs ᴅᴇ ʟɪɴʜᴀ!",
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
-          }
-        }, { quoted: msg });
-      }
-
-      // 🔥 CAMINHO DO ARQUIVO CONFIG
-      const configPath = path.join(__dirname, '..', '..', 'config', 'config.js');
-      
-      // 🔥 LÊ O CONFIG ATUAL
-      let configContent = fs.readFileSync(configPath, 'utf8');
-      
-      // 🔥 PROCURA A LINHA DO PREFIXO E SUBSTITUI
-      const prefixRegex = /prefix:\s*["']([^"']*)["']/;
-      const match = configContent.match(prefixRegex);
-      
-      if (!match) {
-        // Se não encontrar a linha, adiciona
-        configContent = configContent.replace(
-          /module\.exports\s*=\s*\{/,
-          `module.exports = {\n  prefix: "${novoPrefixo}",`
+      if (!args?.[0]) {
+        return reply(
+          conn,
+          from,
+          msg,
+          `❌ ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴠᴏ ᴘʀᴇғɪxᴏ!\n\n` +
+            `📌 ᴘʀᴇғɪxᴏ ᴀᴛᴜᴀʟ: \`${prefixAtual}\`\n` +
+            `📌 ᴇxᴇᴍᴘʟᴏ: ${prefixAtual}${comandoUsado} !\n` +
+            `📌 ᴇxᴇᴍᴘʟᴏ: ${prefixAtual}${comandoUsado} /`,
+          bot
         );
-      } else {
-        configContent = configContent.replace(prefixRegex, `prefix: "${novoPrefixo}"`);
       }
-      
-      // 🔥 SALVA O ARQUIVO
-      fs.writeFileSync(configPath, configContent, 'utf8');
-      
-      // 🔥 RECARREGA O CONFIG
-      configLoader.recarregarConfig();
-      
-      console.log(`✅ Prefixo alterado de "${match ? match[1] : 'não definido'}" para "${novoPrefixo}"`);
 
-      // 🔥 ENVIA MENSAGEM DE SUCESSO
-      await conn.sendMessage(from, { 
-        text: `✅ *ᴘʀᴇғɪxᴏ ᴀʟᴛᴇʀᴀᴅᴏ ᴄᴏᴍ sᴜᴄᴇssᴏ!*\n\n📌 ᴀɴᴛɪɢᴏ: \`${match ? match[1] : 'não definido'}\`\n📌 ɴᴏᴠᴏ: \`${novoPrefixo}\`\n\n🔄 ᴀʟᴛᴇʀᴀᴄ̧ᴀ̃ᴏ ᴀᴘʟɪᴄᴀᴅᴀ ɪᴍᴇᴅɪᴀᴛᴀᴍᴇɴᴛᴇ!`,
-        contextInfo: { 
-          forwardingScore: 1, 
-          isForwarded: true, 
-          forwardedNewsletterMessageInfo: { 
-            newsletterJid: "120363426698503859@newsletter", 
-            newsletterName: `${bot}`, 
-            serverMessageId: 116 
-          } 
-        }
-      }, { quoted: msg });
+      const novoPrefixo = String(args[0]);
+      const tamanho = [...novoPrefixo].length;
 
+      if (tamanho < 1 || tamanho > 5) {
+        return reply(conn, from, msg, "❌ ᴏ ᴘʀᴇғɪxᴏ ᴅᴇᴠᴇ ᴛᴇʀ ᴇɴᴛʀᴇ 1 ᴇ 5 ᴄᴀʀᴀᴄᴛᴇʀᴇs!", bot);
+      }
+
+      if (/[\s\u0000-\u001f\u007f]/u.test(novoPrefixo)) {
+        return reply(conn, from, msg, "❌ ᴏ ᴘʀᴇғɪxᴏ ɴᴀ̃ᴏ ᴘᴏᴅᴇ ᴄᴏɴᴛᴇʀ ᴇsᴘᴀᴄ̧ᴏs, ǫᴜᴇʙʀᴀs ᴅᴇ ʟɪɴʜᴀ ᴏᴜ ᴄᴀʀᴀᴄᴛᴇʀᴇs ᴅᴇ ᴄᴏɴᴛʀᴏʟᴇ!", bot);
+      }
+
+      if (novoPrefixo === prefixAtual) {
+        return reply(conn, from, msg, `ℹ️ ᴏ ᴘʀᴇғɪxᴏ ᴊᴀ́ ᴇ́ \`${novoPrefixo}\`.`, bot);
+      }
+
+      const atualizado = configLoader.salvarConfig({ prefix: novoPrefixo });
+      if (atualizado.prefix !== novoPrefixo || config.prefix !== novoPrefixo) {
+        throw new Error("o novo prefixo não foi aplicado em memória");
+      }
+
+      console.log(
+        `✅ Prefixo alterado de "${prefixAtual}" para "${novoPrefixo}" ` +
+        `(persistência: ${configLoader.getRuntimeConfigPath()})`
+      );
+
+      return reply(
+        conn,
+        from,
+        msg,
+        `✅ *ᴘʀᴇғɪxᴏ ᴀʟᴛᴇʀᴀᴅᴏ ᴄᴏᴍ sᴜᴄᴇssᴏ!*\n\n` +
+          `📌 ᴀɴᴛɪɢᴏ: \`${prefixAtual}\`\n` +
+          `📌 ɴᴏᴠᴏ: \`${novoPrefixo}\`\n\n` +
+          `💾 ᴀʟᴛᴇʀᴀᴄ̧ᴀ̃ᴏ ᴘᴇʀsɪsᴛɪᴅᴀ ᴇ ᴀᴘʟɪᴄᴀᴅᴀ ɪᴍᴇᴅɪᴀᴛᴀᴍᴇɴᴛᴇ.`,
+        bot
+      );
     } catch (error) {
       console.error("❌ Erro set-prefix:", error);
-      await conn.sendMessage(from, { 
-        text: `❌ *ᴇʀʀᴏ ᴀᴏ ᴀʟᴛᴇʀᴀʀ ᴏ ᴘʀᴇғɪxᴏ!*\n\n📌 ${error.message}`,
-        contextInfo: { 
-          forwardingScore: 1, 
-          isForwarded: true, 
-          forwardedNewsletterMessageInfo: { 
-            newsletterJid: "120363426698503859@newsletter", 
-            newsletterName: `${bot}`, 
-            serverMessageId: 116 
-          } 
-        }
-      }, { quoted: msg });
+      return reply(
+        conn,
+        from,
+        msg,
+        `❌ *ᴇʀʀᴏ ᴀᴏ ᴀʟᴛᴇʀᴀʀ ᴏ ᴘʀᴇғɪxᴏ!*\n\n📌 ${error.message}`,
+        bot
+      ).catch(() => {});
     }
   }
 };

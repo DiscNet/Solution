@@ -1,5 +1,11 @@
 const fs = require("fs");
 const path = require("path");
+const {
+  loadCommandModules,
+  buildCommandRegistry,
+  replaceRegistry,
+  formatRegistryIssue
+} = require("./commandRegistry");
 
 let activeWatchers = [];
 let reloadTimer = null;
@@ -30,23 +36,28 @@ module.exports = function autoUpgrade(bot) {
     reloadTimer = setTimeout(callback, 150);
   }
 
+  function rebuildCommands(changedFile) {
+    const { records, errors } = loadCommandModules(commandsPath, { clearCache: true });
+    const { registry, collisions } = buildCommandRegistry(records);
+    replaceRegistry(bot.commands, registry);
+
+    for (const item of errors) {
+      console.error(`Erro ao carregar ${path.relative(process.cwd(), item.file)}:`, item.error.message);
+    }
+    for (const collision of collisions) {
+      console.warn(`Alias/comando em conflito: ${formatRegistryIssue(collision)}`);
+    }
+
+    console.log(`Comandos recarregados (${records.length}) após alteração em ${changedFile}.`);
+  }
+
   const commandWatcher = fs.watch(commandsPath, { recursive: true }, (_eventType, filename) => {
     if (!filename || !filename.endsWith(".js")) return;
     debounce(() => {
       try {
-        const modulePath = path.join(commandsPath, filename);
-        if (!fs.existsSync(modulePath)) return;
-        const command = reloadModule(modulePath);
-        if (!command?.name) return;
-        bot.commands[command.name.toLowerCase()] = command;
-        if (Array.isArray(command.aliases)) {
-          for (const alias of command.aliases) {
-            if (typeof alias === "string") bot.commands[alias.toLowerCase()] = command;
-          }
-        }
-        console.log(`Comando recarregado: ${command.name}`);
+        rebuildCommands(filename);
       } catch (err) {
-        console.error(`Erro ao recarregar comando ${filename}:`, err.message);
+        console.error(`Erro ao recarregar comandos após ${filename}:`, err.message);
       }
     });
   });

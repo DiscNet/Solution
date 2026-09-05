@@ -72,4 +72,4 @@ for (const item of aliasCollisions) console.log(`ALIAS_COLLISION ${item.alias}: 
 console.log(`Load errors: ${loadErrors.length}`);
 for (const item of loadErrors) console.log(`LOAD_ERROR ${item.file}: ${item.error}`);
 
-if (duplicateNames.length || loadErrors.length) process.exitCode = 1;
+if (duplicateNames.length || aliasCollisions.length || loadErrors.length) process.exitCode = 1;

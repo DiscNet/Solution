@@ -1,62 +1,65 @@
-// commands/info.js
-const config = require("../config/config");
-const fs = require("fs");
+// commands/outros/info.js
 const path = require("path");
+const config = require("../../config/config");
+const { createStatusQuoted } = require("../../functions/statusCard");
+const {
+  normalizeCommandName,
+  getCommandAliases,
+  loadCommandModules,
+  buildCommandRegistry
+} = require("../../functions/commandRegistry");
+
+function getRegistry() {
+  const commandsPath = path.join(__dirname, "..");
+  const { records } = loadCommandModules(commandsPath, { clearCache: false });
+  return buildCommandRegistry(records).registry;
+}
 
 module.exports = {
   name: "info",
-  description: "𝑴𝒐𝒔𝒕𝒓𝒂 𝒂 𝒅𝒆𝒔𝒄𝒓𝒊𝒄̧𝒂̃𝒐 𝒅𝒆 𝒖𝒎 𝒄𝒐𝒎𝒂𝒏𝒅𝒐 𝒆𝒔𝒑𝒆𝒄𝒊́𝒇𝒊𝒄𝒐",
-  async execute(conn, msg, args, from, axiosInstance) {
+  aliases: ["cmdinfo", "infocmd"],
+  description: "Mostra informações de um comando específico",
+
+  async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
+
     try {
-      const prefix = config.prefix || ".";
-      
-      if (!args[0]) {
-        await conn.sendMessage(from, { 
-          text: `❌ *Por favor, informe um comando!*\n\n📌 *Exemplo:* ${prefix}info menu` 
-        }, { quoted: msg });
-        return;
+      if (!args?.[0]) {
+        return conn.sendMessage(from, {
+          text: `❌ *Informe um comando!*\n\n📌 *Exemplo:* ${prefix}info menu`
+        }, { quoted: createStatusQuoted(msg) });
       }
-      
-      const cmdNome = args[0].toLowerCase();
-      
-      // Carregar o comando específico
-      let cmd = null;
-      try {
-        const cmdPath = path.join(__dirname, `${cmdNome}.js`);
-        if (fs.existsSync(cmdPath)) {
-          cmd = require(cmdPath);
-        }
-      } catch (err) {}
-      
-      if (!cmd || !cmd.name) {
-        await conn.sendMessage(from, { 
-          text: `❌ *Comando "${cmdNome}" não encontrado!*` 
-        }, { quoted: msg });
-        return;
+
+      const requested = normalizeCommandName(args[0]);
+      const registry = getRegistry();
+      const command = requested ? registry[requested] : null;
+
+      if (!command?.name) {
+        return conn.sendMessage(from, {
+          text: `❌ *Comando "${args[0]}" não encontrado!*`
+        }, { quoted: createStatusQuoted(msg) });
       }
-      
-      const texto = `
-╭══════════════════════════════╮
-     📖 *𝑰𝑵𝑭𝑶𝑹𝑴𝑨𝑪̧𝑶̃𝑬𝑺 𝑫𝑶 𝑪𝑶𝑴𝑨𝑵𝑫𝑶* 📖
-╰══════════════════════════════╯
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📌 *Comando:* ${prefix}${cmd.name}
-📝 *Descrição:* ${cmd.description || "Sem descrição"}
+      const canonical = normalizeCommandName(command.name) || command.name;
+      const aliases = getCommandAliases(command);
+      const aliasText = aliases.length
+        ? `\n🔗 *Aliases:* ${aliases.map(alias => `${prefix}${alias}`).join(", ")}`
+        : "";
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-💡 *Digite ${prefix}${cmd.name} para executar*
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-      `;
-      
-      await conn.sendMessage(from, { text: texto }, { quoted: msg });
-      await conn.sendMessage(from, { react: { text: "📖", key: msg.key } });
+      const text =
+        `╭━━━〔 📖 ɪɴғᴏ 〕━━━╮\n` +
+        `┃ 📌 ᴄᴏᴍᴀɴᴅᴏ: *${prefix}${canonical}*\n` +
+        `┃ 📝 ${command.description || "Sem descrição"}` +
+        `${aliasText}\n` +
+        `╰━━━━━━━━━━━━━━━━━━╯`;
 
+      await conn.sendMessage(from, { text }, { quoted: createStatusQuoted(msg) });
+      await conn.sendMessage(from, { react: { text: "📖", key: msg.key } }).catch(() => {});
     } catch (error) {
-      console.error("Erro no info:", error);
-      await conn.sendMessage(from, { 
-        text: "❌ *Erro ao buscar informações do comando!*" 
-      }, { quoted: msg });
+      console.error("info:", error);
+      await conn.sendMessage(from, {
+        text: "❌ *Erro ao buscar informações do comando!*"
+      }, { quoted: createStatusQuoted(msg) }).catch(() => {});
     }
   }
 };

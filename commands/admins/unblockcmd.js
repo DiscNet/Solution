@@ -1,224 +1,132 @@
 // commands/admins/unblockcmd.js
-const config = require("../../config/config");
-const fs = require("fs");
 const path = require("path");
+const config = require("../../config/config");
+const blockcmdStore = require("../../functions/blockcmd");
+const { createStatusQuoted } = require("../../functions/statusCard");
+const {
+  normalizeCommandName,
+  loadCommandModules,
+  buildCommandRegistry
+} = require("../../functions/commandRegistry");
 
-const BLOCKCMD_CONFIG_PATH = path.join(__dirname, "..", "..", "config", "blockcmd.json");
-
-// ==============================================
-// FUNÇÃO PARA PEGAR NOME DO GRUPO
-// ==============================================
-async function getGroupName(conn, groupId) {
-  try {
-    const groupMetadata = await conn.groupMetadata(groupId);
-    return groupMetadata.subject || groupId;
-  } catch (error) {
-    return groupId;
-  }
-}
-
-function loadConfig() {
-  try {
-    if (fs.existsSync(BLOCKCMD_CONFIG_PATH)) {
-      return JSON.parse(fs.readFileSync(BLOCKCMD_CONFIG_PATH, "utf8"));
+function newsletterContext(bot) {
+  return {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid: "120363426698503859@newsletter",
+      newsletterName: bot,
+      serverMessageId: 116
     }
-  } catch (e) {}
-  return {};
+  };
 }
 
-function saveConfig(data) {
-  const dir = path.join(__dirname, "..", "..", "config");
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(BLOCKCMD_CONFIG_PATH, JSON.stringify(data, null, 2));
+function digits(value) {
+  return String(value || "").replace(/\D/g, "");
 }
 
-function isCommandBlocked(groupId, cmdName) {
-  const data = loadConfig();
-  if (data[groupId] && data[groupId].bloqueados) {
-    return data[groupId].bloqueados.includes(cmdName);
-  }
-  return false;
+async function canManage(conn, msg, from) {
+  const sender = msg.key.participant || msg.key.remoteJid || from;
+  const senderDigits = digits(sender);
+  const ownerLid = String(config.ownerLid || "");
+  const ownerNumber = String(config.ownerNumber || "");
+  const isOwner =
+    sender === ownerLid ||
+    (ownerLid && senderDigits === digits(ownerLid)) ||
+    (ownerNumber && senderDigits === digits(ownerNumber));
+
+  if (isOwner) return true;
+  const metadata = await conn.groupMetadata(from);
+  return metadata.participants.some(p => p.id === sender && p.admin);
 }
 
-function unblockCommand(groupId, cmdName) {
-  const data = loadConfig();
-  if (data[groupId] && data[groupId].bloqueados) {
-    const index = data[groupId].bloqueados.indexOf(cmdName);
-    if (index !== -1) {
-      data[groupId].bloqueados.splice(index, 1);
-      saveConfig(data);
-      return true;
-    }
-  }
-  return false;
+function getRegistry() {
+  const commandsPath = path.join(__dirname, "..");
+  const { records } = loadCommandModules(commandsPath, { clearCache: false });
+  return buildCommandRegistry(records).registry;
 }
 
-function getBlockedCommands(groupId) {
-  const data = loadConfig();
-  if (data[groupId] && data[groupId].bloqueados) {
-    return data[groupId].bloqueados;
-  }
-  return [];
+function resolveCanonicalCommand(input, registry) {
+  const key = normalizeCommandName(input);
+  if (!key) return null;
+  return normalizeCommandName(registry[key]?.name) || key;
+}
+
+async function reply(conn, from, msg, text, bot) {
+  return conn.sendMessage(from, {
+    text,
+    contextInfo: newsletterContext(bot)
+  }, { quoted: createStatusQuoted(msg) });
 }
 
 module.exports = {
   name: "unblockcmd",
   aliases: ["ublcmd", "desbloquearcmd"],
-  description: "ᴅᴇsʙʟᴏǫᴜᴇɪᴀ ᴜᴍ ᴄᴏᴍᴀɴᴅᴏ ɴᴏ ɢʀᴜᴘᴏ",
-  async execute(conn, msg, args, from, axiosInstance, cmdUsado) {
+  description: "Desbloqueia um comando no grupo, independentemente do alias usado",
+
+  async execute(conn, msg, args, from, _axiosInstance, cmdUsado) {
+    const bot = config.botName || "LukaModzz";
+    const prefix = config.prefix || ".";
+    const used = normalizeCommandName(cmdUsado) || "unblockcmd";
+
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const ownerLid = config.ownerLid || "";
-      const prefix = config.prefix || ".";
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      // VERIFICA SE É GRUPO
       if (!from.endsWith("@g.us")) {
-        return await conn.sendMessage(from, {
-          text: "❌ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ sᴏ́ ᴘᴏᴅᴇ sᴇʀ ᴜsᴀᴅᴏ ᴇᴍ ɢʀᴜᴘᴏs!",
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${bot}`,
-              serverMessageId: 116
-            }
-          }
-        }, { quoted: msg });
+        return reply(conn, from, msg, "❌ Este comando só pode ser usado em grupos!", bot);
       }
 
-      // VERIFICA PERMISSÃO
-      const sender = msg.key.participant || msg.key.remoteJid || from;
-      const numeroUsuario = sender.replace(/[^0-9]/g, "");
-      const isOwner = sender === ownerLid || numeroUsuario === ownerLid.replace(/[^0-9]/g, "");
-
-      let isAdmin = false;
-      if (!isOwner) {
-        try {
-          const groupMetadata = await conn.groupMetadata(from);
-          isAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-        } catch (e) {}
+      if (!(await canManage(conn, msg, from))) {
+        return reply(conn, from, msg, "❌ Apenas administradores ou o dono podem usar este comando!", bot);
       }
 
-      if (!isOwner && !isAdmin) {
-        return await conn.sendMessage(from, {
-          text: "❌ ᴀᴘᴇɴᴀs ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀᴇs ᴇ ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇᴍ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!",
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${bot}`,
-              serverMessageId: 116
-            }
-          }
-        }, { quoted: msg });
+      const data = blockcmdStore.loadConfig(true);
+      const blocked = Array.isArray(data[from]?.bloqueados) ? data[from].bloqueados : [];
+
+      if (!args?.[0]) {
+        const lines = blocked.length
+          ? blocked.map(name => `🚫 ${prefix}${name}`).join("\n")
+          : "📌 Nenhum comando bloqueado.";
+        return reply(
+          conn,
+          from,
+          msg,
+          `📋 *Comandos bloqueados*\n\n${lines}\n\n📌 Para desbloquear: ${prefix}${used} <comando>`,
+          bot
+        );
       }
 
-      const cmd = cmdUsado || module.exports.name;
-
-      // VERIFICA SE FOI INFORMADO O COMANDO
-      if (!args[0]) {
-        const blocked = getBlockedCommands(from);
-        let texto = `📋 *ᴄᴏᴍᴀɴᴅᴏs ʙʟᴏǫᴜᴇᴀᴅᴏs ɴᴏ ɢʀᴜᴘᴏ*\n\n`;
-
-        if (blocked.length === 0) {
-          texto += `📌 ɴᴇɴʜᴜᴍ ᴄᴏᴍᴀɴᴅᴏ ʙʟᴏǫᴜᴇᴀᴅᴏ.`;
-        } else {
-          for (const b of blocked) {
-            texto += `🚫 ${prefix}${b}\n`;
-          }
-        }
-
-        texto += `\n━━━━━━━━━━━━━━━━━━━━\n📌 ᴘᴀʀᴀ ᴅᴇsʙʟᴏǫᴜᴇᴀʀ: ${prefix}${cmd} <comando>`;
-
-        return await conn.sendMessage(from, {
-          text: texto,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${bot}`,
-              serverMessageId: 116
-            }
-          }
-        }, { quoted: msg });
+      const registry = getRegistry();
+      const typed = normalizeCommandName(args[0]);
+      const canonical = resolveCanonicalCommand(typed, registry);
+      if (!canonical) {
+        return reply(conn, from, msg, "❌ Nome de comando inválido.", bot);
       }
 
-      const cmdAlvo = args[0].toLowerCase();
-
-      // 🔥 REMOVIDA A VERIFICAÇÃO DE EXISTÊNCIA DO COMANDO
-
-      // VERIFICA SE ESTÁ BLOQUEADO
-      if (!isCommandBlocked(from, cmdAlvo)) {
-        return await conn.sendMessage(from, {
-          text: `ℹ️ ᴏ ᴄᴏᴍᴀɴᴅᴏ *${cmdAlvo}* ɴᴀ̃ᴏ ᴇsᴛᴀ́ ʙʟᴏǫᴜᴇᴀᴅᴏ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ!`,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${bot}`,
-              serverMessageId: 116
-            }
-          }
-        }, { quoted: msg });
-      }
-
-      // DESBLOQUEIA O COMANDO
-      unblockCommand(from, cmdAlvo);
-
-      const groupName = await getGroupName(conn, from);
-
-      await conn.sendMessage(from, {
-        text: `✅ *ᴄᴏᴍᴀɴᴅᴏ ᴅᴇsʙʟᴏǫᴜᴇᴀᴅᴏ!*\n\n📌 *ᴄᴏᴍᴀɴᴅᴏ:* ${prefix}${cmdAlvo}\n📌 *ɢʀᴜᴘᴏ:* ${groupName}\n\n📌 ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ ᴠᴏʟᴛᴏᴜ ᴀ ғᴜɴᴄɪᴏɴᴀʀ ɴᴏ ɢʀᴜᴘᴏ.`,
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
-            serverMessageId: 116
-          }
-        }
-      }, { quoted: msg });
-
-    } catch (error) {
-      console.error("❌ Erro unblockcmd:", error);
-      const sender = msg.key.participant || msg.key.remoteJid || from;
-      const numeroUsuario = sender.replace(/[^0-9]/g, "");
-      
-      await conn.sendMessage(from, {
-        text: `❌ *ᴇʀʀᴏ!*\n\n📌 ${error.message}`,
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
-            serverMessageId: 116
-          }
-        }
-      }, {
-        quoted: {
-          key: {
-            remoteJid: "0@s.whatsapp.net",
-            fromMe: false,
-            participant: `${numeroUsuario}@s.whatsapp.net`
-          },
-          message: {
-            contactMessage: {
-              displayName: pushName,
-              vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=" + numeroUsuario + ":" + numeroUsuario + "\nEND:VCARD"
-            }
-          }
-        }
+      const before = blocked.length;
+      const remaining = blocked.filter(name => {
+        const normalized = normalizeCommandName(name);
+        if (!normalized) return false;
+        return resolveCanonicalCommand(normalized, registry) !== canonical;
       });
+
+      if (remaining.length === before) {
+        return reply(conn, from, msg, `ℹ️ O comando *${canonical}* não está bloqueado neste grupo.`, bot);
+      }
+
+      if (!data[from]) data[from] = { bloqueados: [] };
+      data[from].bloqueados = remaining;
+      blockcmdStore.saveConfig(data);
+
+      const aliasInfo = typed !== canonical ? `\n🔗 Alias resolvido: ${prefix}${typed} → ${prefix}${canonical}` : "";
+      return reply(
+        conn,
+        from,
+        msg,
+        `✅ *Comando desbloqueado!*\n\n📌 Comando: ${prefix}${canonical}${aliasInfo}\n\nTodos os aliases voltaram a funcionar.`,
+        bot
+      );
+    } catch (error) {
+      console.error("unblockcmd:", error);
+      return reply(conn, from, msg, `❌ Erro ao desbloquear comando.\n\n📌 ${error.message}`, bot).catch(() => {});
     }
   }
 };

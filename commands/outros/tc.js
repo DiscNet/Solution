@@ -1,60 +1,41 @@
+// commands/outros/tc.js
+const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/tc.js
-const config = require("../config/config");
-module.exports = {
-  name: "dono",
-  description: "Envia um contato personalizado",
 
-  async execute(conn, msg, args, from, axiosInstance) {
+module.exports = {
+  name: "tc",
+  aliases: ["contato", "ownercontact"],
+  description: "Envia o contato do dono do bot",
+
+  async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
+
     try {
-      // ==============================================
-      // CONFIGURAÇÃO DO CONTATO
-      // ==============================================
-      // Pega os argumentos passados pelo usuário (.tc Nome Número Organização)
-      const nome = config.ownerName || "LukaModzz 🪐"; 
-      const numero = config.ownerNumber || "556384673123"; 
-      const org = config.botName || "LukaModzz BOT"; 
-      
-      // Remove qualquer caractere que não seja número
-      const numeroLimpo = numero.replace(/[^\d]/g, "");
-      
-      // MONTAGEM DO VCARD PADRÃO WHATSAPP (CORRIGIDO)
-      const vcardEstruturado = 
+      const nome = config.ownerName || "LukaModzz";
+      const numero = String(config.ownerNumber || "556384673123").replace(/\D/g, "");
+      const org = config.botName || "LukaModzz BOT";
+
+      if (!numero) throw new Error("número do dono não configurado");
+
+      const vcard =
         "BEGIN:VCARD\n" +
         "VERSION:3.0\n" +
-        `FN:${nome}\n` +
-        `ORG:${org};\n` +
-        // O segredo está aqui: injetar o waid mapeia a foto de perfil real nos servidores do WhatsApp
-        `TEL;type=CELL;type=VOICE;waid=${numeroLimpo}:+${numeroLimpo}\n` +
+        `FN:${String(nome).replace(/[\r\n]+/g, " ")}\n` +
+        `ORG:${String(org).replace(/[\r\n]+/g, " ")};\n` +
+        `TEL;type=CELL;type=VOICE;waid=${numero}:+${numero}\n` +
         "END:VCARD";
 
-      const CONTATO = {
-        displayName: nome,
-        numero: numeroLimpo,
-        vcard: vcardEstruturado
-      };
-      // ==============================================
-
-      // ENVIO DO CARTÃO DE CONTATO PRINCIPAL
       await conn.sendMessage(from, {
         contacts: {
-          displayName: CONTATO.displayName,
-          contacts: [
-            {
-              vcard: CONTATO.vcard
-            }
-          ]
-        },
-      }, {
-        // Objeto decorativo mantendo o design do status no topo
-        quoted: createStatusQuoted(msg)
-      });
-
-    } catch (err) {
-      console.error("Erro no tc:", err);
+          displayName: nome,
+          contacts: [{ vcard }]
+        }
+      }, { quoted: createStatusQuoted(msg) });
+    } catch (error) {
+      console.error("tc:", error);
       await conn.sendMessage(from, {
-        text: "❌ Erro ao enviar contato.\nUse: .tc [nome] [numero] [organização]"
-      }, { quoted: msg });
+        text: `❌ Erro ao enviar contato. Tente novamente com ${prefix}tc.`
+      }, { quoted: createStatusQuoted(msg) }).catch(() => {});
     }
   }
-}
+};

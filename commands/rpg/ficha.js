@@ -23,7 +23,7 @@ function carregarPets() {
 
 module.exports = {
   name: "ficha",
-  aliases: ["perfilrpg", "stats", "rpg"],
+  aliases: ["perfilrpg", "stats"],
   description: "ᴍᴏsᴛʀᴀ sᴜᴀ ғɪᴄʜᴀ ᴅᴇ ʀᴘɢ",
   async execute(conn, msg, args, from) {
     try {

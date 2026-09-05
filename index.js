@@ -12,6 +12,13 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const { createStatusQuoted } = require("./functions/statusCard");
+const {
+  normalizeCommandName,
+  loadCommandModules,
+  buildCommandRegistry,
+  replaceRegistry,
+  formatRegistryIssue
+} = require("./functions/commandRegistry");
 
 // RUNTIME_OPTIMIZED_V1
 
@@ -143,7 +150,6 @@ function isReplyingToMedia(msg) {
   return !!(quoted.imageMessage || quoted.videoMessage || quoted.stickerMessage);
 }
 
-const comandosQueExigemMedia = ["s", "sticker", "sticker2", "s2", "scirculo", "stickergif", "stickerwm", "stickerbg", "stcrop", "toimg"];
 
 // ==============================================
 // DETECÇÃO DE COMANDO - SOMENTE COM PREFIXO
@@ -160,7 +166,6 @@ function detectCommand(text, commandsList) {
   return { cmdName, args: parts, hasPrefix: true };
 }
 
-function commandNeedsMedia(cmdName) { return comandosQueExigemMedia.includes(cmdName); }
 
 // ==============================================
 // ALUGUEL
@@ -323,39 +328,37 @@ async function enviarMenuDownload(conn, from, plataforma, link) {
 const commands = {};
 let comandosCarregados = 0;
 let comandosFalhos = [];
+let conflitosComandos = [];
 
-function loadCommandsRecursive(dir) {
-  if (!fs.existsSync(dir)) return;
-  const items = fs.readdirSync(dir);
-  for (const item of items) {
-    const fullPath = path.join(dir, item);
-    const stat = fs.statSync(fullPath);
-    if (stat.isDirectory()) { 
-      loadCommandsRecursive(fullPath); 
-    } else if (item.endsWith(".js")) {
-      try { 
-        delete require.cache[require.resolve(fullPath)]; 
-        const command = require(fullPath); 
-        if (command.name) { 
-          // 🔥 ALIASES (suporte para múltiplos aliases)
-          if (command.aliases && Array.isArray(command.aliases)) {
-            for (const alias of command.aliases) {
-              if (typeof alias === 'string') {
-                commands[alias.toLowerCase()] = command;
-              }
-            }
-          }
-          commands[command.name.toLowerCase()] = command; 
-          comandosCarregados++;
-        } 
-      } catch (err) { 
-        comandosFalhos.push(`${item}: ${err.message}`);
-      }
-    }
-  }
+function reloadCommandsFromDisk() {
+  const commandsPath = path.join(__dirname, "commands");
+  const { records, errors } = loadCommandModules(commandsPath, { clearCache: true });
+  const { registry, collisions } = buildCommandRegistry(records);
+
+  replaceRegistry(commands, registry);
+  comandosCarregados = records.length;
+  comandosFalhos = errors.map(({ file, error }) =>
+    `${path.relative(__dirname, file)}: ${error.message}`
+  );
+  conflitosComandos = collisions.map(item => formatRegistryIssue(item, __dirname));
 }
 
-loadCommandsRecursive(path.join(__dirname, "commands"));
+function getCanonicalCommandName(cmdName) {
+  const normalized = normalizeCommandName(cmdName);
+  if (!normalized) return "";
+  const command = commands[normalized];
+  return normalizeCommandName(command?.name) || normalized;
+}
+
+function getCanonicalCommandNames() {
+  return [...new Set(
+    Object.values(commands)
+      .map(command => normalizeCommandName(command?.name))
+      .filter(Boolean)
+  )];
+}
+
+reloadCommandsFromDisk();
 
 if (process.env.HOT_RELOAD === "1") {
   try {
@@ -391,6 +394,13 @@ function exibirLogsPosInicio() {
     for (const erro of comandosFalhos) {
       console.log(`${cores.vermelho}  ⚠️ ${erro}${cores.reset}`);
     }
+
+  if (conflitosComandos.length > 0) {
+    console.log(`${cores.amarelo}⚠️ Conflitos de comandos/aliases:${cores.reset}`);
+    for (const conflito of conflitosComandos) {
+      console.log(`${cores.amarelo}  ⚠️ ${conflito}${cores.reset}`);
+    }
+  }
   }
   console.log(`\n${cores.verde}╔════════════════════════════════════════════════════════════╗${cores.reset}`);
   console.log(`${cores.verde}║${cores.reset}           ${cores.amarelo}${cores.brilho}LOGS DE MENSAGENS E COMANDOS${cores.reset}           ${cores.verde}║${cores.reset}`);
@@ -613,7 +623,11 @@ async function startBot() {
       // ========== 🔥 VERIFICAÇÃO DE COMANDOS BLOQUEADOS ==========
       if (grupo && text && text.startsWith(config.prefix)) {
         const cmdName = text.slice(config.prefix.length).trim().split(/ +/)[0].toLowerCase();
-        if (isCommandBlocked(from, cmdName)) {
+        const canonicalCmdName = getCanonicalCommandName(cmdName);
+        if (
+          isCommandBlocked(from, cmdName) ||
+          (canonicalCmdName && canonicalCmdName !== cmdName && isCommandBlocked(from, canonicalCmdName))
+        ) {
           await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
           await conn.sendMessage(from, {
             text: `🚫 *ᴄᴏᴍᴀɴᴅᴏ ʙʟᴏǫᴜᴇᴀᴅᴏ!*\n\n📌 ᴏ ᴄᴏᴍᴀɴᴅᴏ *${cmdName}* ғᴏɪ ʙʟᴏǫᴜᴇᴀᴅᴏ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ.`,
@@ -806,7 +820,7 @@ async function startBot() {
             });
           }
           
-          const emManutencao = await verificarManutencao(conn, from, cmdName, sender, msg);
+          const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) { 
             await commands[cmdName].execute(conn, msg, args, from, axiosInstance, cmdName); 
@@ -842,7 +856,7 @@ async function startBot() {
             });
           }
           
-          const emManutencao = await verificarManutencao(conn, from, cmdName, sender, msg);
+          const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) { 
             await commands[cmdName].execute(conn, msg, args, from, axiosInstance, cmdName); 
@@ -891,24 +905,10 @@ async function startBot() {
               return;
             }
           }
-          
-          // 🔥 VERIFICAÇÃO DE MÍDIA
-          const precisaDeMidia = commandNeedsMedia(cmdName);
-          
-          if (precisaDeMidia) {
-            // Verifica se tem mídia na mensagem OU está respondendo a uma mídia
-            const temMidia = hasMediaInMessage || isReplyingMedia;
-            
-            if (!temMidia) {
-              await conn.sendMessage(from, { 
-                text: `❌ *O comando "${cmdName}" precisa ser usado respondendo a uma imagem ou vídeo!*\n\n📌 *Exemplos:*\n• Envie uma imagem com a legenda ${config.prefix}${cmdName}\n• Responda a uma imagem com ${config.prefix}${cmdName}` 
-              }, { quoted: msg });
-              return;
-            }
-          }
+
           
           // Executa o comando
-          const emManutencao = await verificarManutencao(conn, from, cmdName, sender, msg);
+          const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) { 
             await commands[cmdName].execute(conn, msg, args, from, axiosInstance, cmdName); 
@@ -920,7 +920,7 @@ async function startBot() {
           const afterPrefix = text.slice(config.prefix.length).trim();
           const cmdName = afterPrefix.split(/ +/)[0].toLowerCase();
           if (!commands[cmdName]) {
-            const listaComandos = Object.keys(commands);
+            const listaComandos = getCanonicalCommandNames();
             const comandoSugerido = encontrarComandoSemelhante(cmdName, listaComandos);
             const senderNumber = sender.split('@')[0];
             await sendCommandNotFoundMessage(conn, from, cmdName, senderNumber, comandoSugerido, msg);
@@ -995,10 +995,10 @@ async function startBot() {
             });
           }
           
-          const emManutencao = await verificarManutencao(conn, from, cmdName, sender, msg);
+          const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) { await commands[cmdName].execute(conn, msg, args, from, axiosInstance, cmdName); }
-          else { const listaComandos = Object.keys(commands); const comandoSugerido = encontrarComandoSemelhante(cmdName, listaComandos); const senderNumber = sender.split('@')[0]; await sendCommandNotFoundMessage(conn, from, cmdName, senderNumber, comandoSugerido, msg); }
+          else { const listaComandos = getCanonicalCommandNames(); const comandoSugerido = encontrarComandoSemelhante(cmdName, listaComandos); const senderNumber = sender.split('@')[0]; await sendCommandNotFoundMessage(conn, from, cmdName, senderNumber, comandoSugerido, msg); }
         } else if (buttonText) { await conn.sendMessage(from, { text: `✅ Você clicou em: ${buttonText}` }); }
         return;
       }
