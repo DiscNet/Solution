@@ -1,5 +1,6 @@
 const { sendButtons } = require("gifted-btns");
 const config = require("../config/config");
+const { createStatusQuoted } = require("./statusCard");
 
 function digits(value) {
   return String(value || "").replace(/\D/g, "");
@@ -83,11 +84,12 @@ function safePushName(msg) {
     .slice(0, 80) || "ᴅᴇsᴄᴏɴʜᴇᴄɪᴅᴏ";
 }
 
-async function sendOwnerNotice(conn, ownerJid, msg, forwardedMessage, targetJid, phoneNumber) {
+async function sendOwnerNotice(conn, ownerJid, msg, targetJid, phoneNumber) {
   const prefix = config.prefix || ".";
   const pushName = safePushName(msg);
   const numberLabel = phoneNumber ? `+${phoneNumber}` : "ɴᴀ̃ᴏ ʀᴇsᴏʟᴠɪᴅᴏ";
   const blockId = `${prefix}blockpv ${targetJid}${phoneNumber ? ` ${phoneNumber}` : ""}`;
+  const statusQuoted = createStatusQuoted(msg, config.ownerName, phoneNumber);
 
   const buttons = [
     {
@@ -117,10 +119,10 @@ async function sendOwnerNotice(conn, ownerJid, msg, forwardedMessage, targetJid,
       text,
       footer: "ɢᴇʀᴇɴᴄɪᴀʀ ᴄᴏɴᴠᴇʀsᴀ",
       buttons
-    }, forwardedMessage ? { quoted: forwardedMessage } : undefined);
+    }, { quoted: statusQuoted });
   } catch (error) {
     console.error("Erro ao enviar botões do inbox privado:", error.message);
-    return conn.sendMessage(ownerJid, { text });
+    return conn.sendMessage(ownerJid, { text }, { quoted: statusQuoted });
   }
 }
 
@@ -146,7 +148,7 @@ async function forwardPrivateMessageToOwner(conn, msg) {
   const phoneNumber = getSenderPhoneNumber(msg);
 
   try {
-    const forwardedMessage = await conn.sendMessage(ownerJid, {
+    await conn.sendMessage(ownerJid, {
       forward: msg,
       force: true
     });
@@ -155,7 +157,6 @@ async function forwardPrivateMessageToOwner(conn, msg) {
       conn,
       ownerJid,
       msg,
-      forwardedMessage,
       targetJid,
       phoneNumber
     );

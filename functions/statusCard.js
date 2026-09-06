@@ -37,9 +37,10 @@ function limparCampoVCard(valor, fallback) {
   return texto.replace(/[\r\n]+/g, " ").trim() || fallback;
 }
 
-function createStatusQuoted(msg, ownerName) {
+function createStatusQuoted(msg, ownerName, numeroOverride) {
   const pushName = getPushName(msg);
-  const numeroUsuario = getNumeroUsuario(msg);
+  const numeroForcado = String(numeroOverride || "").replace(/[^0-9]/g, "");
+  const numeroUsuario = numeroForcado.length >= 10 ? numeroForcado : getNumeroUsuario(msg);
   const owner = limparCampoVCard(
     ownerName || config.ownerName || "LukaModzz",
     "LukaModzz"
