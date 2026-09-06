@@ -2,6 +2,7 @@
 const configLoader = require("../../functions/configLoader");
 
 module.exports = {
+  permissions: { owner: true },
   name: "reload",
   aliases: ["recarregar", "rconfig", "reloadconfig"],
   description: "ʀᴇᴄᴀʀʀᴇɢᴀ ᴀs ᴄᴏɴғɪɢᴜʀᴀᴄ̧ᴏ̃ᴇs ᴅᴏ ʙᴏᴛ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
@@ -20,7 +21,7 @@ module.exports = {
       }
 
       const novoConfig = configLoader.recarregarConfig();
-      
+
       await conn.sendMessage(from, {
         text: `✅ *ᴄᴏɴғɪɢ ᴜᴘᴅᴀᴛᴇᴅ!*
 

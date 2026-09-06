@@ -4,6 +4,7 @@ const config = require("../../config/config");
 const { sendInteractiveMessage } = require("gifted-btns");
 
 module.exports = {
+  permissions: { owner: true },
   name: "listg",
   description: "𝑳𝒊𝒔𝒕𝒂 𝒕𝒐𝒅𝒐𝒔 𝒐𝒔 𝒈𝒓𝒖𝒑𝒐𝒔 𝒒𝒖𝒆 𝒐 𝒃𝒐𝒕 𝒆𝒔𝒕𝒂́",
   async execute(conn, msg, args, from, axiosInstance) {
@@ -13,7 +14,7 @@ module.exports = {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const ownerNumber = config.ownerNumber;
       const ownerLid = config.ownerLid;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
@@ -21,9 +22,9 @@ module.exports = {
       const senderClean = senderJid.replace(/[^0-9]/g, "");
       const ownerClean = ownerNumber ? ownerNumber.replace(/[^0-9]/g, "") : "";
       const isOwner = senderClean === ownerClean || (ownerLid && senderJid === ownerLid);
-      
+
       if (!isOwner) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ.",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
@@ -35,9 +36,9 @@ module.exports = {
 
       const groups = await conn.groupFetchAllParticipating();
       const groupList = Object.values(groups);
-      
+
       if (groupList.length === 0) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ ɴᴇɴʜᴜᴍ ɢʀᴜᴘᴏ.",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
@@ -45,7 +46,7 @@ module.exports = {
 
       const botJid = conn.user.id.split(":")[0] + "@s.whatsapp.net";
       const GRUPO_OFICIAL_ID = "120363428783733638@g.us";
-      
+
       const grupoOficial = groupList.find(g => g.id === GRUPO_OFICIAL_ID);
       const outrosGrupos = groupList.filter(g => g.id !== GRUPO_OFICIAL_ID);
 
@@ -56,7 +57,7 @@ module.exports = {
         const adminStatus = isBotAdmin ? "👮 ᴀᴅᴍ" : "👤 ᴍᴇᴍʙʀᴏ";
         const desc = `👥 ${members} · ${adminStatus}`;
         const lid = group.id.split("@")[0]; // 🔥 Pega só o número
-        
+
         return {
           id: `${prefix}gerenciar ${lid}@g.us`, // 🔥 Formato: .gerenciar-120363XXXXX
           title: `   ${isOficial ? "⭐ " : "• "}${name}`,
@@ -65,7 +66,7 @@ module.exports = {
       };
 
       const sections = [];
-      
+
       if (grupoOficial) {
         sections.push({
           title: "⭐ ɢʀᴜᴘᴏ ᴏғɪᴄɪᴀʟ",
@@ -110,7 +111,7 @@ module.exports = {
 
     } catch (error) {
       console.error("ʟɪsᴛɢ:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ ᴇʀʀᴏ.",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });

@@ -30,7 +30,7 @@ module.exports = {
 
       if (!imageBuffer) {
         return conn.sendMessage(from, {
-          text: "❌ Envie ou responda a uma imagem com .asciiimg",
+          text: "❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ .asciiimg",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -49,7 +49,7 @@ module.exports = {
       fs.writeFileSync(tempInput, imageBuffer);
 
       const width = args[0] ? parseInt(args[0]) : 80;
-      
+
       // Passo 1: Gera o texto ASCII com jp2a
       await execPromise(`jp2a --width=${width} "${tempInput}" > "${tempTxt}"`);
 
@@ -64,7 +64,7 @@ module.exports = {
       // Passo 2: Converte o texto ASCII em imagem usando ImageMagick
       // Cria uma imagem preta com texto verde (estilo terminal)
       const escapedText = asciiArt.replace(/"/g, '\\"').replace(/`/g, '\\`').replace(/\$/g, '\\$');
-      
+
       // Salva o texto em um arquivo temporário para o ImageMagick ler
       fs.writeFileSync(tempTxt, asciiArt);
 
@@ -79,9 +79,9 @@ module.exports = {
           // Segundo fallback: usa ffmpeg para criar imagem a partir do texto
           const tempTxtClean = path.join(tempDir, `ascii_clean_${uniqueId}.txt`);
           fs.writeFileSync(tempTxtClean, asciiArt.replace(/'/g, "'\\''"));
-          
+
           await execPromise(`ffmpeg -f lavfi -i color=c=black:s=1280x720:d=1 -vf "drawtext=textfile='${tempTxtClean}':fontcolor=#00FF00:fontsize=10:fontfile=/data/data/com.termux/files/usr/share/fonts/truetype/liberation/LiberationMono-Regular.ttf:x=10:y=10" -frames:v 1 "${tempOutput}"`);
-          
+
           try { fs.unlinkSync(tempTxtClean); } catch (e) {}
         }
       }
@@ -110,8 +110,8 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro asciiimg:", error);
-      await conn.sendMessage(from, { 
-        text: "❌ Erro ao criar ASCII art!\n\n⚠️ Instale o jp2a e ImageMagick:\n`pkg install jp2a imagemagick`",
+      await conn.sendMessage(from, {
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ᴀsᴄɪɪ ᴀʀᴛ!\n\n⚠️ ɪɴsᴛᴀʟᴇ ᴏ ᴊᴘ2ᴀ ᴇ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ:\n`ᴘᴋɢ ɪɴsᴛᴀʟʟ ᴊᴘ2ᴀ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ`",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, { quoted: msg });
     }

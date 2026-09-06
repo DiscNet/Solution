@@ -4,6 +4,7 @@ const config = require("../../config/config");
 const { sendInteractiveMessage } = require("gifted-btns");
 
 module.exports = {
+  permissions: { owner: true },
   name: "gerenciar",
   aliases: ["gerenciar-grupo"],
   description: "ɢᴇʀᴇɴᴄɪᴀ ᴜᴍ ɢʀᴜᴘᴏ ᴇsᴘᴇᴄɪ́ғɪᴄᴏ",
@@ -14,7 +15,7 @@ module.exports = {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const ownerNumber = config.ownerNumber;
       const ownerLid = config.ownerLid;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
@@ -22,9 +23,9 @@ module.exports = {
       const senderClean = senderJid.replace(/[^0-9]/g, "");
       const ownerClean = ownerNumber ? ownerNumber.replace(/[^0-9]/g, "") : "";
       const isOwner = senderClean === ownerClean || (ownerLid && senderJid === ownerLid);
-      
+
       if (!isOwner) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ.",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
@@ -40,7 +41,7 @@ module.exports = {
       }
 
       if (!targetGid || !targetGid.endsWith("@g.us")) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: `❌ ɪɴғᴏʀᴍᴇ ᴏ ʟɪᴅ ᴅᴏ ɢʀᴜᴘᴏ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}gerenciar 120363426693848705@g.us`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
@@ -76,11 +77,11 @@ module.exports = {
                 "556384673123",
                 "5563984673123"
               ];
-              
+
               let adicionados = 0;
               let erros = 0;
               let relatorio = "";
-              
+
               for (const numero of numerosParaAdicionar) {
                 const jid = numero + "@s.whatsapp.net";
                 try {
@@ -90,7 +91,7 @@ module.exports = {
                 } catch (error) {
                   erros++;
                   let motivo = "";
-                  
+
                   // 🔥 Tratamento de erro igual ao comando add
                   if (error.message.includes("not-a-contact")) {
                     motivo = "ɴᴀ̃ᴏ ᴇsᴛᴀ́ ɴᴀ ʟɪsᴛᴀ ᴅᴇ ᴄᴏɴᴛᴀᴛᴏs";
@@ -103,23 +104,23 @@ module.exports = {
                   } else {
                     motivo = error.message.substring(0, 30);
                   }
-                  
+
                   relatorio += `❌ @${numero} - ${motivo}\n`;
                 }
                 // Pequeno delay entre adições para evitar bloqueios
                 await new Promise(resolve => setTimeout(resolve, 1500));
               }
-              
+
               // 🔥 Envia o relatório com menções
               const mencionados = numerosParaAdicionar.map(n => n + "@s.whatsapp.net");
-              
-              await conn.sendMessage(from, { 
+
+              await conn.sendMessage(from, {
                 text: `➕ *ʀᴇsᴜʟᴛᴀᴅᴏ ᴅᴀ ᴀᴅɪᴄ̧ᴀ̃ᴏ*\n\n📌 ɢʀᴜᴘᴏ: \`${targetGid}\`\n✅ ᴀᴅɪᴄɪᴏɴᴀᴅᴏs: ${adicionados}\n❌ ᴇʀʀᴏs: ${erros}\n\n${relatorio}`,
                 mentions: mencionados,
                 contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
               }, { quoted: msg });
-            } catch (e) { 
-              await conn.sendMessage(from, { text: `❌ ᴇʀʀᴏ ᴀᴏ ᴀᴅɪᴄɪᴏɴᴀʀ: ${e.message}` }, { quoted: msg }); 
+            } catch (e) {
+              await conn.sendMessage(from, { text: `❌ ᴇʀʀᴏ ᴀᴏ ᴀᴅɪᴄɪᴏɴᴀʀ: ${e.message}` }, { quoted: msg });
             }
             return;
           case "nome":
@@ -161,7 +162,7 @@ module.exports = {
       const adms = gm.participants?.filter(p => p.admin).length || 0;
       const fechado = gm.announce || false;
       const data = new Date(gm.creation * 1000).toLocaleDateString("pt-BR");
-      
+
       // Verifica se os números estão no grupo
       const numerosVerificar = ["556384673123", "5563984673123"];
       let statusNumeros = "";
@@ -170,7 +171,7 @@ module.exports = {
         const estaNoGrupo = gm.participants?.some(p => p.id === jid);
         statusNumeros += `${estaNoGrupo ? "✅" : "❌"} @${num}\n`;
       }
-      
+
 
       await sendInteractiveMessage(conn, from, {
         text: `⚙️ *ɢᴇʀᴇɴᴄɪᴀʀ ɢʀᴜᴘᴏ*\n\n📛 *${gName}*\n🆔 \`${targetGid}\`\n👥 ${memb} · 👮 ${adms}\n🔒 ${fechado ? "ғᴇᴄʜᴀᴅᴏ" : "ᴀʙᴇʀᴛᴏ"}\n📅 ${data}\n\n📌 *sᴛᴀᴛᴜs ᴅᴏs ɴᴜ́ᴍᴇʀᴏs:*\n${statusNumeros}\n\n📌 sᴇʟᴇᴄɪᴏɴᴇ ᴜᴍᴀ ᴀᴄ̧ᴀ̃ᴏ:`,

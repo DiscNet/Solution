@@ -13,7 +13,7 @@ module.exports = {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const tokitoApi = config.tokitoApi;
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -116,13 +116,13 @@ module.exports = {
         try {
           const groupMetadata = await conn.groupMetadata(from);
           grupoNome = groupMetadata.subject || "Grupo";
-          
+
           // Verifica se é admin
           isAdmin = groupMetadata.participants.some(p => p.id === userJid && p.admin);
-          
+
           // Verifica se é VIP (dono ou superadmin)
           isVip = groupMetadata.participants.some(p => p.id === userJid && p.admin === 'superadmin');
-          
+
         } catch (e) {
           console.log("⚠️ Erro ao obter metadados do grupo:", e.message);
         }
@@ -157,14 +157,14 @@ module.exports = {
       const bioEncoded = encodeURIComponent(bio || "privado, ou sem recado!!");
 
       const canvasUrl = `https://tokito-apis.com.br/canvas/perfil?fundo=${encodeURIComponent(avatarUrl)}&avatar=${encodeURIComponent(avatarUrl)}&text=${nome}&subtext=${grupo}&logo=${encodeURIComponent(avatarUrl)}&cargo=${cargo}&vip=${vip}&bio=${bioEncoded}&apikey=${tokitoApi}`;
-      
+
       console.log("🖼️ Canvas URL:", canvasUrl);
 
       // =====================
       // BAIXA A IMAGEM DO CANVAS
       // =====================
       let imageBuffer = null;
-      
+
       try {
         const response = await axios.get(canvasUrl, {
           responseType: "arraybuffer",
@@ -208,30 +208,30 @@ module.exports = {
         await conn.sendMessage(from, {
           image: imageBuffer,
           caption: textProfile,
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
+          contextInfo: {
+            forwardingScore: 1,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: "120363426698503859@newsletter",
+              newsletterName: `${bot}`,
+              serverMessageId: 116
+            }
           }
         }, {
           quoted: createStatusQuoted(msg)
         });
       } else {
         // Fallback: envia só o texto
-        await conn.sendMessage(from, { 
+        await conn.sendMessage(from, {
           text: textProfile,
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
+          contextInfo: {
+            forwardingScore: 1,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: "120363426698503859@newsletter",
+              newsletterName: `${bot}`,
+              serverMessageId: 116
+            }
           }
         }, { quoted: msg });
       }
@@ -240,16 +240,16 @@ module.exports = {
 
     } catch (error) {
       console.error("❌ Erro perfil:", error);
-      await conn.sendMessage(from, { 
-        text: `❌ *Erro ao gerar perfil!*\n\n📌 ${error.message}`,
-        contextInfo: { 
-          forwardingScore: 1, 
-          isForwarded: true, 
-          forwardedNewsletterMessageInfo: { 
-            newsletterJid: "120363426698503859@newsletter", 
-            newsletterName: `${bot}`, 
-            serverMessageId: 116 
-          } 
+      await conn.sendMessage(from, {
+        text: `❌ *ᴇʀʀᴏ ᴀᴏ ɢᴇʀᴀʀ ᴘᴇʀғɪʟ!*\n\n📌 ${error.message}`,
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: `${bot}`,
+            serverMessageId: 116
+          }
         }
       }, { quoted: msg });
     }

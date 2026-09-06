@@ -31,7 +31,7 @@ module.exports = {
 
       if (!imageBuffer) {
         return conn.sendMessage(from, {
-          text: "❌ Envie ou responda a uma imagem com .ascii",
+          text: "❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ .ascii",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -48,7 +48,7 @@ module.exports = {
       fs.writeFileSync(tempInput, imageBuffer);
 
       const width = args[0] ? parseInt(args[0]) : 80;
-      
+
       // 🔥 CORREÇÃO: Remove --html para gerar texto puro
       await execPromise(`jp2a --width=${width} "${tempInput}" > "${tempOutput}"`);
 
@@ -72,7 +72,7 @@ module.exports = {
         for (let i = 0; i < asciiArt.length; i += maxLength) {
           parts.push(asciiArt.substring(i, i + maxLength));
         }
-        
+
         for (let i = 0; i < parts.length; i++) {
           await conn.sendMessage(from, {
             text: i === 0 ? `🎨 *ASCII Art*\n\`\`\`\n${parts[i]}\n\`\`\`` : `\`\`\`\n${parts[i]}\n\`\`\``,
@@ -80,7 +80,7 @@ module.exports = {
           }, {
             quoted: createStatusQuoted(msg)
           });
-          
+
           if (i < parts.length - 1) await delay(500);
         }
       } else {
@@ -96,8 +96,8 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro ascii:", error);
-      await conn.sendMessage(from, { 
-        text: "❌ Erro ao criar ASCII art!\n\n⚠️ Instale o jp2a:\n`pkg install jp2a`",
+      await conn.sendMessage(from, {
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ᴀsᴄɪɪ ᴀʀᴛ!\n\n⚠️ ɪɴsᴛᴀʟᴇ ᴏ ᴊᴘ2ᴀ:\n`ᴘᴋɢ ɪɴsᴛᴀʟʟ ᴊᴘ2ᴀ`",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });
     }

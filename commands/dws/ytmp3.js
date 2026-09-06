@@ -11,13 +11,13 @@ module.exports = {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
       if (!args[0]) {
-        return await conn.sendMessage(from, { 
-          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ʟɪɴᴋ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ytmp3 https://youtu.be/xxxxx`,
+        return await conn.sendMessage(from, {
+          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ʟɪɴᴋ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ʏᴛᴍᴘ3 https://youtu.be/xxxxx`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -43,7 +43,7 @@ module.exports = {
 
     } catch (error) {
       console.error("ʏᴛᴍᴘ3:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴀɪxᴀʀ ᴏ ᴀ́ᴜᴅɪᴏ!*",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });

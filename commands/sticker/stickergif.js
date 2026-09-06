@@ -7,17 +7,17 @@ module.exports = {
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const prefix = config.prefix || ".";
-      
+
       const quotedMsg = msg.message?.extendedTextMessage?.contextInfo?.quotedMessage;
-      
+
       if (!quotedMsg || !quotedMsg.videoMessage) {
-        await conn.sendMessage(from, { 
-          text: `❌ *Por favor, responda a um GIF ou vídeo curto!*\n\n📌 *Exemplo:* Responda um vídeo com ${prefix}stickergif` 
+        await conn.sendMessage(from, {
+          text: `❌ *ᴘᴏʀ ғᴀᴠᴏʀ, ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍ ɢɪғ ᴏᴜ ᴠíᴅᴇᴏ ᴄᴜʀᴛᴏ!*\n\n📌 *ᴇxᴇᴍᴘʟᴏ:* ʀᴇsᴘᴏɴᴅᴀ ᴜᴍ ᴠíᴅᴇᴏ ᴄᴏᴍ ${prefix}stickergif`
         }, { quoted: msg });
         return;
       }
 
-      await conn.sendMessage(from, { text: "⏳ *Convertendo para sticker animado...*" }, { quoted: msg });
+      await conn.sendMessage(from, { text: "⏳ *ᴄᴏɴᴠᴇʀᴛᴇɴᴅᴏ ᴘᴀʀᴀ sᴛɪᴄᴋᴇʀ ᴀɴɪᴍᴀᴅᴏ...*" }, { quoted: msg });
 
       const videoUrl = quotedMsg.videoMessage.url;
       const response = await axiosInstance.get(videoUrl, { responseType: 'arraybuffer' });
@@ -32,7 +32,7 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro:", error);
-      await conn.sendMessage(from, { text: "❌ *Erro ao converter!*" }, { quoted: msg });
+      await conn.sendMessage(from, { text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴏɴᴠᴇʀᴛᴇʀ!*" }, { quoted: msg });
     }
   }
 };

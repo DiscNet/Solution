@@ -21,9 +21,9 @@ async function addStickerMetadata(mediaBuffer, packname, author) {
   const tempOutput = join(__dirname, "..", "..", "temp", `meta_out_${Date.now()}.webp`);
   const tempDir = join(__dirname, "..", "..", "temp");
   if (!existsSync(tempDir)) mkdirSync(tempDir, { recursive: true });
-  
+
   writeFileSync(tempInput, mediaBuffer);
-  
+
   try {
     const img = new webp.Image();
     const json = {
@@ -57,7 +57,7 @@ function processText(text) {
   if (totalChars <= 6) charsPerLine = totalChars;
   else if (totalChars <= 10) charsPerLine = Math.ceil(totalChars / 2);
   else charsPerLine = 9;
-  
+
   let lines = [], currentLine = '';
   for (const w of words) {
     const t = currentLine + (currentLine ? ' ' : '') + w;
@@ -82,7 +82,7 @@ function processText(text) {
 
 module.exports = {
   name: "gsbrat2",
-  description: "🎨 Figurinha animada Brat com dois textos |",
+  description: "🎨 ғɪɢᴜʀɪɴʜᴀ ᴀɴɪᴍᴀᴅᴀ ʙʀᴀᴛ ᴄᴏᴍ ᴅᴏɪs ᴛᴇxᴛᴏs |",
 
   async execute(conn, msg, args, from) {
     try {
@@ -178,7 +178,7 @@ module.exports = {
 
     } catch (e) {
       console.error("Erro gsbrat2:", e);
-      await conn.sendMessage(from, { text: "❌ Erro ao criar figurinha!" }, { quoted: msg });
+      await conn.sendMessage(from, { text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ғɪɢᴜʀɪɴʜᴀ!" }, { quoted: msg });
     }
   }
 };

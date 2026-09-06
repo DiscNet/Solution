@@ -18,15 +18,16 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { owner: true },
   name: "set-gold",
   aliases: ["setgold", "goldset", "definirgold"],
-  description: "ᴅᴇғɪɴᴇ ᴀ Qᴜᴀɴᴛɪᴅᴀᴅᴇ ᴅᴇ ɢᴏʟᴅ ᴅᴇ ᴜᴍ ᴜsᴜᴀ́ʀɪᴏ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
+  description: "ᴅᴇғɪɴᴇ ᴀ ǫᴜᴀɴᴛɪᴅᴀᴅᴇ ᴅᴇ ɢᴏʟᴅ ᴅᴇ ᴜᴍ ᴜsᴜᴀ́ʀɪᴏ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
   async execute(conn, msg, args, from) {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const ownerLid = config.ownerLid || "";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -53,10 +54,10 @@ module.exports = {
 
       // 🔥 VERIFICA SE MARCOU ALGUÉM
       const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-      
+
       if (!mentionedJid || mentionedJid.length === 0) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴍᴀʀǫᴜᴇ ᴏ ᴜsᴜᴀ́ʀɪᴏ ᴇ ɪɴғᴏʀᴍᴇ ᴀ Qᴜᴀɴᴛɪᴅᴀᴅᴇ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: .set-gold @usuario 1000`,
+          text: `❌ ᴍᴀʀǫᴜᴇ ᴏ ᴜsᴜᴀ́ʀɪᴏ ᴇ ɪɴғᴏʀᴍᴇ ᴀ ǫᴜᴀɴᴛɪᴅᴀᴅᴇ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: .set-gold @ᴜsᴜᴀʀɪᴏ 1000`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -70,11 +71,11 @@ module.exports = {
       }
 
       const alvoJid = mentionedJid[0];
-      
+
       // 🔥 VERIFICA SE FOI INFORMADA A QUANTIDADE
       if (!args[1]) {
         return await conn.sendMessage(from, {
-          text: `❌ ɪɴғᴏʀᴍᴇ ᴀ Qᴜᴀɴᴛɪᴅᴀᴅᴇ ᴅᴇ ɢᴏʟᴅ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: .set-gold @usuario 1000`,
+          text: `❌ ɪɴғᴏʀᴍᴇ ᴀ ǫᴜᴀɴᴛɪᴅᴀᴅᴇ ᴅᴇ ɢᴏʟᴅ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: .set-gold @ᴜsᴜᴀʀɪᴏ 1000`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -88,7 +89,7 @@ module.exports = {
       }
 
       const quantidade = parseInt(args[1]);
-      
+
       // 🔥 VERIFICA SE A QUANTIDADE É VÁLIDA
       if (isNaN(quantidade) || quantidade < 0) {
         return await conn.sendMessage(from, {
@@ -126,10 +127,10 @@ module.exports = {
 
       const alvo = db.usuarios[alvoJid];
       const goldAntigo = alvo.gold;
-      
+
       // 🔥 DEFINE O NOVO GOLD
       alvo.gold = quantidade;
-      
+
       // Salva no banco de dados
       salvarDb(db);
 

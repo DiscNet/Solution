@@ -7,7 +7,7 @@ const DEV_NUMBER = "5563984673123";
 
 function getNumeroUsuario(msg) {
   let numero = null;
-  
+
   if (msg.key?.participantAlt) {
     numero = msg.key.participantAlt.replace(/[^0-9]/g, '');
   }
@@ -49,7 +49,7 @@ module.exports = {
 
       let targetJid = null;
       const ctx = msg.message?.extendedTextMessage?.contextInfo;
-      
+
       if (ctx?.mentionedJid && ctx.mentionedJid.length > 0) {
         targetJid = ctx.mentionedJid[0];
       }
@@ -153,7 +153,7 @@ module.exports = {
     } catch (error) {
       console.error("❌ Erro comer:", error);
       const numeroUsuario = getNumeroUsuario(msg);
-      
+
       await conn.sendMessage(from, {
         text: `❌ *ᴇʀʀᴏ!*\n\n📌 ${error.message}`,
         contextInfo: {

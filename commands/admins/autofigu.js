@@ -152,6 +152,7 @@ async function videoToWebp(buffer) {
 }
 
 module.exports = {
+  permissions: { group: true, admin: true },
   name: "autofigu",
   description: "𝑨𝒕𝒊𝒗𝒂/𝒅𝒆𝒔𝒂𝒕𝒊𝒗𝒂 𝒂 𝒄𝒓𝒊𝒂𝒄̧𝒂̃𝒐 𝒂𝒖𝒕𝒐𝒎𝒂́𝒕𝒊𝒄𝒂 𝒅𝒆 𝒇𝒊𝒈𝒖𝒓𝒊𝒏𝒉𝒂𝒔",
 
@@ -221,7 +222,7 @@ module.exports = {
       }
 
       return conn.sendMessage(from, {
-        text: `❌ Opção inválida. Use ${prefix}autofigu 1 ou ${prefix}autofigu 0.`,
+        text: `❌ ᴏᴘçãᴏ ɪɴᴠáʟɪᴅᴀ. ᴜsᴇ ${prefix}autofigu 1 ou ${prefix}autofigu 0.`,
         contextInfo: newsletterContext(bot)
       }, { quoted: createStatusQuoted(msg) });
     } catch (error) {

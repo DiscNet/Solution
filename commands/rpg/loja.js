@@ -26,6 +26,7 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "loja",
   aliases: ["shop", "store"],
   description: "ᴠᴇʀ ᴏᴜ ᴄᴏᴍᴘʀᴀʀ ɪᴛᴇɴs ɴᴀ ʟᴏᴊᴀ",
@@ -33,14 +34,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // Verifica se o RPG está ativo
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -55,7 +56,7 @@ module.exports = {
 
       if (!db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -69,7 +70,7 @@ module.exports = {
         let itemNome = args.slice(1).join(" ").trim();
         // Remove aspas simples e duplas do início e fim
         itemNome = itemNome.replace(/^["']|["']$/g, "").trim();
-        
+
         if (!itemNome) {
           return await conn.sendMessage(from, {
             text: `❌ ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴍᴇ ᴅᴏ ɪᴛᴇᴍ!\n📌 ${prefix}loja comprar arco basico\n📌 ${prefix}loja comprar "arco basico"`,
@@ -152,14 +153,14 @@ module.exports = {
           text: `✅ *ᴄᴏᴍᴘʀᴀ ʀᴇᴀʟɪᴢᴀᴅᴀ ᴄᴏᴍ sᴜᴄᴇssᴏ!*\n\n🛒 *ɪᴛᴇᴍ:* ${itemNomeOriginal}\n💰 *ɢᴏʟᴅ ɢᴀsᴛᴏ:* ${itemEncontrado.preco}\n💰 *ɢᴏʟᴅ ʀᴇsᴛᴀɴᴛᴇ:* ${ficha.gold}\n📦 *ᴄᴀᴛᴇɢᴏʀɪᴀ:* ${tipo}`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
-        
+
         return; // 🔥 SAI DA FUNÇÃO PARA NÃO MOSTRAR A LOJA NOVAMENTE
       }
 
       // =====================
       // MENU INTERATIVO DA LOJA (SÓ MOSTRA SE NÃO FOR COMPRA)
       // =====================
-      
+
       // Cria as seções de itens
       const sections = [];
 
@@ -172,7 +173,7 @@ module.exports = {
           classRows.push({
             id: `${prefix}loja comprar "${nome}"`,
             title: `${status} ${nome}`,
-            description: `💰 ${item.preco} golds | Lv.${item.level} | ${item.descricao || ""}`
+            description: `💰 ${item.preco} ɢᴏʟᴅs | ʟᴠ.${item.level} | ${item.descricao || ""}`
           });
         }
       }
@@ -192,7 +193,7 @@ module.exports = {
         geralRows.push({
           id: `${prefix}loja comprar "${nome}"`,
           title: `${status} ${nome}`,
-          description: `💰 ${item.preco} golds | Lv.${item.level} | ${item.descricao || ""}`
+          description: `💰 ${item.preco} ɢᴏʟᴅs | ʟᴠ.${item.level} | ${item.descricao || ""}`
         });
       }
 
@@ -210,7 +211,7 @@ module.exports = {
           {
             id: `${prefix}ficha`,
             title: `📊 ${ficha.pushName}`,
-            description: `Level ${ficha.level} | ${ficha.classe} | 💰 ${ficha.gold} golds`
+            description: `ʟᴇᴠᴇʟ ${ficha.level} | ${ficha.classe} | 💰 ${ficha.gold} ɢᴏʟᴅs`
           }
         ]
       });

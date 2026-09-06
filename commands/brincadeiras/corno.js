@@ -23,7 +23,7 @@ module.exports = {
       // 🔥 VERIFICA SE TEM MENÇÃO
       let targetJid = null;
       const ctx = msg.message?.extendedTextMessage?.contextInfo;
-      
+
       if (ctx?.mentionedJid && ctx.mentionedJid.length > 0) {
         targetJid = ctx.mentionedJid[0];
       }
@@ -102,7 +102,7 @@ module.exports = {
       console.error("❌ Erro corno:", error);
       const sender = msg.key.participant || msg.key.remoteJid || from;
       const numeroUsuario = sender.replace(/[^0-9]/g, "");
-      
+
       await conn.sendMessage(from, {
         text: `❌ *ᴇʀʀᴏ!*\n\n📌 ${error.message}`,
         contextInfo: {

@@ -11,7 +11,7 @@ const owner = config.ownerName || "LukaModzz";
 module.exports = {
   name: "upscale",
   aliases: ["hd", "hdr"],
-  description: "ᴍᴇʟʜᴏʀᴀ ᴀ Qᴜᴀʟɪᴅᴀᴅᴇ ᴅᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ",
+  description: "ᴍᴇʟʜᴏʀᴀ ᴀ ǫᴜᴀʟɪᴅᴀᴅᴇ ᴅᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ",
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const prefix = config.prefix
@@ -20,7 +20,7 @@ module.exports = {
       const texto = msg.message?.extendedTextMessage?.text || msg.message?.conversation || "";
       // 🔥 PEGA O QUE O USUÁRIO DIGITOU (COM ALIASES)
       const cmd = texto.split(" ")[0].replace(prefixAtual, "").trim();
-        
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -36,16 +36,16 @@ module.exports = {
       }
 
       if (!imageBuffer) {
-        return await conn.sendMessage(from, { 
-          text: `❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}${cmd} (ᴄᴏᴍ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ)`,
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: bot, 
-              serverMessageId: 116 
-            } 
+        return await conn.sendMessage(from, {
+          text: `❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}${cmd} (com uma imagem)`,
+          contextInfo: {
+            forwardingScore: 1,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: "120363426698503859@newsletter",
+              newsletterName: bot,
+              serverMessageId: 116
+            }
           }
         }, {
           quoted: createStatusQuoted(msg)
@@ -65,17 +65,17 @@ module.exports = {
 
       const pageUrl = uploadRes.data?.data?.url;
       if (!pageUrl) throw new Error("Falha no upload");
-      
+
       console.log('📄 Página da imagem:', pageUrl);
 
       // 🔥 Extrai o link direto da imagem do HTML com timeout aumentado
       const pageRes = await axios.get(pageUrl, {
         timeout: 30000 // Aumentado para 30 segundos
       });
-      
+
       const html = pageRes.data;
       let directImageUrl = null;
-      
+
       // Procura pela imagem no HTML
       const imgMatch = html.match(/<img[^>]+src=["']([^"']+)["']/i);
       if (imgMatch && imgMatch[1]) {
@@ -84,26 +84,26 @@ module.exports = {
           directImageUrl = 'https://tmpfiles.org' + directImageUrl;
         }
       }
-      
+
       if (!directImageUrl) {
         const altMatch = html.match(/src=["'](https?:\/\/[^"']+\.(jpg|jpeg|png|gif|webp))["']/i);
         if (altMatch && altMatch[1]) {
           directImageUrl = altMatch[1];
         }
       }
-      
+
       if (!directImageUrl) {
         console.error('HTML da página:', html.substring(0, 500));
         throw new Error("Não foi possível extrair o link direto da imagem");
       }
-      
+
       console.log('🖼️ Link direto da imagem:', directImageUrl);
 
       // 🔥 API de upscale da Tokito com timeout aumentado
       const apiUrl = `https://tokito-apis.com.br/api/upscale?url=${encodeURIComponent(directImageUrl)}&resolusi=6&apikey=${API_KEY}`;
       console.log('📡 Chamando API:', apiUrl);
-      
-      const response = await axios.get(apiUrl, { 
+
+      const response = await axios.get(apiUrl, {
         responseType: "arraybuffer",
         timeout: 80000 // Aumentado para 60 segundos
       });
@@ -113,7 +113,7 @@ module.exports = {
       // Verifica se a resposta é uma imagem válida
       const isJpeg = upscaledBuffer[0] === 0xFF && upscaledBuffer[1] === 0xD8;
       const isPng = upscaledBuffer[0] === 0x89 && upscaledBuffer[1] === 0x50;
-      
+
       if (!isJpeg && !isPng) {
         console.error('Resposta não é imagem, tentando interpretar como JSON');
         try {
@@ -128,14 +128,14 @@ module.exports = {
       await conn.sendMessage(from, {
         image: upscaledBuffer,
         caption: `📥 │ ɪᴍᴀɢᴇᴍ ᴍᴇʟʜᴏʀᴀᴅᴀ ᴄᴏᴍ sᴜᴄᴇssᴏ!\n⚓ │ ʀᴇsᴏʟᴜçãᴏ: 6x\n> 👤 ᴘᴏʀ: ${pushName}`,
-        contextInfo: { 
-          forwardingScore: 1, 
-          isForwarded: true, 
-          forwardedNewsletterMessageInfo: { 
-            newsletterJid: "120363426698503859@newsletter", 
-            newsletterName: bot, 
-            serverMessageId: 116 
-          } 
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: bot,
+            serverMessageId: 116
+          }
         }
       }, {
         quoted: createStatusQuoted(msg)
@@ -145,9 +145,9 @@ module.exports = {
 
     } catch (error) {
       console.error("❌ Erro upscale:", error);
-      
+
       let errorMessage = "❌ ᴇʀʀᴏ ᴀᴏ ᴍᴇʟʜᴏʀᴀʀ ᴀ ɪᴍᴀɢᴇᴍ!\n\n";
-      
+
       if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         errorMessage += "⏰ ᴛᴇᴍᴘᴏ ʟɪᴍɪᴛᴇ ᴇxᴄᴇᴅɪᴅᴏ.\n";
         errorMessage += "🔄 ᴛᴇɴᴛᴇ ɴᴏᴠᴀᴍᴇɴᴛᴇ ᴄᴏᴍ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴍᴇɴᴏʀ.";
@@ -174,17 +174,17 @@ module.exports = {
       } else {
         errorMessage += `📌 ᴇʀʀᴏ: ${error.message}`;
       }
-      
-      await conn.sendMessage(from, { 
+
+      await conn.sendMessage(from, {
         text: errorMessage,
-        contextInfo: { 
-          forwardingScore: 1, 
-          isForwarded: true, 
-          forwardedNewsletterMessageInfo: { 
-            newsletterJid: "120363426698503859@newsletter", 
-            newsletterName: bot, 
-            serverMessageId: 116 
-          } 
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: bot,
+            serverMessageId: 116
+          }
         }
       }, {
         quoted: createStatusQuoted(msg)

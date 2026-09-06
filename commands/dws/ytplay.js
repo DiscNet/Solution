@@ -14,12 +14,12 @@ module.exports = {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-      
+
       if (!args[0]) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ʟɪɴᴋ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}ytplay https://youtu.be/xxxxx`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
@@ -35,7 +35,7 @@ module.exports = {
       const { data: json } = await axios.get(searchUrl, { timeout: 15000 });
 
       if (!json.status || !json.resultado || !json.resultado.length) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ *ᴠɪ́ᴅᴇᴏ ɴᴀ̃ᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ!*",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
@@ -69,7 +69,7 @@ module.exports = {
 
     } catch (error) {
       console.error("ʏᴛᴘʟᴀʏ:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ *ʟɪɴᴋ ɪɴᴠᴀ́ʟɪᴅᴏ ᴏᴜ ᴠɪ́ᴅᴇᴏ ɪɴᴅɪsᴘᴏɴɪ́ᴠᴇʟ.*",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });

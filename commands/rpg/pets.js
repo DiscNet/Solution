@@ -26,6 +26,7 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "pets",
   aliases: ["pet", "meuspets", "equipar"],
   description: "ᴠᴇʀ sᴇᴜs ᴘᴇᴛs ᴇ ᴇǫᴜɪᴘᴀʀ ᴜᴍ",
@@ -33,14 +34,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // Verifica se o RPG está ativo
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -55,7 +56,7 @@ module.exports = {
 
       if (!db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -66,7 +67,7 @@ module.exports = {
       if (args[0] && args[0].toLowerCase() === "equipar") {
         let petNome = args.slice(1).join(" ").trim();
         petNome = petNome.replace(/^["']|["']$/g, "").trim();
-        
+
         if (!petNome) {
           return await conn.sendMessage(from, {
             text: `❌ ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴍᴇ ᴅᴏ ᴘᴇᴛ ᴘᴀʀᴀ ᴇǫᴜɪᴘᴀʀ!\n📌 ${prefix}pets equipar filhote de lobo`,
@@ -87,7 +88,7 @@ module.exports = {
         salvarDb(db);
 
         const petData = petsData.pets[petNome];
-        
+
         await conn.sendMessage(from, {
           text: `✅ *ᴘᴇᴛ ᴇǫᴜɪᴘᴀᴅᴏ ᴄᴏᴍ sᴜᴄᴇssᴏ!*
 
@@ -101,7 +102,7 @@ ${petData.emoji} *ᴘᴇᴛ:* ${petNome}
 🎯 *ʜᴀʙɪʟɪᴅᴀᴅᴇs:* ${petData.habilidades.join(", ")}`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
-        
+
         return;
       }
 
@@ -122,14 +123,14 @@ ${petData.emoji} *ᴘᴇᴛ:* ${petNome}
           text: `❌ *ᴘᴇᴛ ᴅᴇsᴇǫᴜɪᴘᴀᴅᴏ!*\n\n${petNome} ғᴏɪ ᴅᴇsᴇǫᴜɪᴘᴀᴅᴏ ᴄᴏᴍ sᴜᴄᴇssᴏ.`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
-        
+
         return;
       }
 
       // =====================
       // MENU INTERATIVO DOS PETS
       // =====================
-      
+
       const sections = [];
 
       // Verifica se tem pet equipado
@@ -155,11 +156,11 @@ ${petData.emoji} *ᴘᴇᴛ:* ${petNome}
       if (ficha.pet.length > 0) {
         const rows = [];
         const petAtual = ficha.petEquipado;
-        
+
         for (const nomePet of ficha.pet) {
           const petData = petsData.pets[nomePet];
           if (!petData) continue;
-          
+
           const equipado = petAtual === nomePet ? "✅" : "⬜";
           rows.push({
             id: `${prefix}pets equipar "${nomePet}"`,
@@ -183,7 +184,7 @@ ${petData.emoji} *ᴘᴇᴛ:* ${petNome}
           {
             id: `${prefix}ficha`,
             title: `📊 ${ficha.pushName}`,
-            description: `Level ${ficha.level} | ${ficha.classe} | 💰 ${ficha.gold} golds`
+            description: `ʟᴇᴠᴇʟ ${ficha.level} | ${ficha.classe} | 💰 ${ficha.gold} ɢᴏʟᴅs`
           },
           {
             id: `${prefix}lojapets`,

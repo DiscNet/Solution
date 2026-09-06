@@ -1,18 +1,19 @@
 // commands/testecanal.js
 
 module.exports = {
+  permissions: { owner: true },
   name: "testecanal",
-  description: "Teste de diferentes tipos de encaminhamento de canal",
+  description: "ᴛᴇsᴛᴇ ᴅᴇ ᴅɪғᴇʀᴇɴᴛᴇs ᴛɪᴘᴏs ᴅᴇ ᴇɴᴄᴀᴍɪɴʜᴀᴍᴇɴᴛᴏ ᴅᴇ ᴄᴀɴᴀʟ",
 
   async execute(conn, msg, args, from) {
     try {
       const testType = args[0] || "1"; // Permite escolher o tipo de teste
-      
+
       switch(testType) {
         case "1":
           // Teste básico
           await conn.sendMessage(from, {
-            text: "📢 *Teste de Canal - Tipo 1*\nEncaminhamento básico",
+            text: "📢 *ᴛᴇsᴛᴇ ᴅᴇ ᴄᴀɴᴀʟ - ᴛɪᴘᴏ 1*\nᴇɴᴄᴀᴍɪɴʜᴀᴍᴇɴᴛᴏ ʙásɪᴄᴏ",
             contextInfo: {
               forwardingScore: 1,
               isForwarded: true,
@@ -28,7 +29,7 @@ module.exports = {
         case "2":
           // Teste com score alto (muitos encaminhamentos)
           await conn.sendMessage(from, {
-            text: "📢 *Teste de Canal - Tipo 2*\nEncaminhado muitas vezes",
+            text: "📢 *ᴛᴇsᴛᴇ ᴅᴇ ᴄᴀɴᴀʟ - ᴛɪᴘᴏ 2*\nᴇɴᴄᴀᴍɪɴʜᴀᴅᴏ ᴍᴜɪᴛᴀs ᴠᴇᴢᴇs",
             contextInfo: {
               forwardingScore: 999,
               isForwarded: true,
@@ -76,11 +77,11 @@ module.exports = {
 
         default:
           await conn.sendMessage(from, {
-            text: `📋 *Comandos disponíveis:*
-.testecanal 1 - Encaminhamento básico
-.testecanal 2 - Muitos encaminhamentos
-.testecanal 3 - Imagem encaminhada
-.testecanal 4 - Figurinha encaminhada`
+            text: `📋 *ᴄᴏᴍᴀɴᴅᴏs ᴅɪsᴘᴏɴíᴠᴇɪs:*
+.testecanal 1 - ᴇɴᴄᴀᴍɪɴʜᴀᴍᴇɴᴛᴏ ʙásɪᴄᴏ
+.testecanal 2 - ᴍᴜɪᴛᴏs ᴇɴᴄᴀᴍɪɴʜᴀᴍᴇɴᴛᴏs
+.testecanal 3 - ɪᴍᴀɢᴇᴍ ᴇɴᴄᴀᴍɪɴʜᴀᴅᴀ
+.testecanal 4 - ғɪɢᴜʀɪɴʜᴀ ᴇɴᴄᴀᴍɪɴʜᴀᴅᴀ`
           }, { quoted: msg });
       }
 
@@ -88,7 +89,7 @@ module.exports = {
       console.error("Erro no testecanal:", err);
 
       await conn.sendMessage(from, {
-        text: "❌ Erro ao enviar teste.\n" + err.message
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴇɴᴠɪᴀʀ ᴛᴇsᴛᴇ.\n" + err.message
       }, { quoted: msg });
     }
   }

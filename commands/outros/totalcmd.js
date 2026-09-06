@@ -7,12 +7,12 @@ const path = require("path");
 module.exports = {
   name: "totalcmd",
   aliases: ["totalcmds", "cmdcount", "comandos"],
-  description: "ᴍᴏsᴛʀᴀ ᴀ Qᴜᴀɴᴛɪᴅᴀᴅᴇ ᴛᴏᴛᴀʟ ᴅᴇ ᴄᴏᴍᴀɴᴅᴏs ᴅᴏ ʙᴏᴛ",
+  description: "ᴍᴏsᴛʀᴀ ᴀ ǫᴜᴀɴᴛɪᴅᴀᴅᴇ ᴛᴏᴛᴀʟ ᴅᴇ ᴄᴏᴍᴀɴᴅᴏs ᴅᴏ ʙᴏᴛ",
   async execute(conn, msg, args, from) {
     try {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -24,11 +24,11 @@ module.exports = {
       // 🔥 FUNÇÃO PARA PERCORRER TODAS AS PASTAS RECURSIVAMENTE
       function contarComandos(pasta) {
         const itens = fs.readdirSync(pasta);
-        
+
         for (const item of itens) {
           const caminho = path.join(pasta, item);
           const stats = fs.statSync(caminho);
-          
+
           if (stats.isDirectory()) {
             // Se for pasta, entra dentro dela
             contarComandos(caminho);

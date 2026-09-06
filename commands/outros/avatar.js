@@ -1,6 +1,6 @@
 module.exports = {
     name: "avatar",
-    description: "Avatar premium (anti-falha rc13 + LID)",
+    description: "ᴀᴠᴀᴛᴀʀ ᴘʀᴇᴍɪᴜᴍ (ᴀɴᴛɪ-ғᴀʟʜᴀ ʀᴄ13 + ʟɪᴅ)",
 
     async execute(conn, msg, args, from) {
         try {
@@ -16,7 +16,7 @@ module.exports = {
             if (args[0]?.toLowerCase() === "grupo") {
                 if (!isGroup) {
                     return conn.sendMessage(from, {
-                        text: "❌ Só em grupos."
+                        text: "❌ só ᴇᴍ ɢʀᴜᴘᴏs."
                     });
                 }
                 jid = from;
@@ -39,7 +39,7 @@ module.exports = {
 
             if (!jid) {
                 return conn.sendMessage(from, {
-                    text: "❌ JID inválido."
+                    text: "❌ ᴊɪᴅ ɪɴᴠáʟɪᴅᴏ."
                 });
             }
 
@@ -104,15 +104,15 @@ module.exports = {
             if (!url) {
                 return conn.sendMessage(from, {
                     text:
-`❌ Não foi possível obter a foto.
+`❌ ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴏʙᴛᴇʀ ᴀ ғᴏᴛᴏ.
 
-Possíveis motivos:
-• Privacidade (ninguém / contatos)
-• LID não resolvido
-• Sem foto de perfil
-• Restrição do WhatsApp
+ᴘᴏssíᴠᴇɪs ᴍᴏᴛɪᴠᴏs:
+• ᴘʀɪᴠᴀᴄɪᴅᴀᴅᴇ (ɴɪɴɢᴜéᴍ / ᴄᴏɴᴛᴀᴛᴏs)
+• ʟɪᴅ ɴãᴏ ʀᴇsᴏʟᴠɪᴅᴏ
+• sᴇᴍ ғᴏᴛᴏ ᴅᴇ ᴘᴇʀғɪʟ
+• ʀᴇsᴛʀɪçãᴏ ᴅᴏ ᴡʜᴀᴛsᴀᴘᴘ
 
-JID: ${jid}`
+ᴊɪᴅ: ${jid}`
                 });
             }
 
@@ -143,7 +143,7 @@ JID: ${jid}`
         } catch (err) {
             console.error(err);
             conn.sendMessage(from, {
-                text: "❌ Erro interno no avatar premium."
+                text: "❌ ᴇʀʀᴏ ɪɴᴛᴇʀɴᴏ ɴᴏ ᴀᴠᴀᴛᴀʀ ᴘʀᴇᴍɪᴜᴍ."
             });
         }
     }

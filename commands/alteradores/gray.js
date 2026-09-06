@@ -20,7 +20,7 @@ async function downloadImage(imageMessage) {
 module.exports = {
   name: "gray",
   aliases: ["cinza", "grayscale"],
-  description: "Aplica efeito cinza/preto e branco",
+  description: "ᴀᴘʟɪᴄᴀ ᴇғᴇɪᴛᴏ ᴄɪɴᴢᴀ/preto ᴇ ʙʀᴀɴᴄᴏ",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -29,7 +29,7 @@ module.exports = {
       const imageMessage = getImageMessage(msg);
       if (!imageMessage) {
         return conn.sendMessage(from, {
-          text: `❌ Envie uma imagem com ${prefix}gray na legenda ou responda a uma imagem com ${prefix}gray.`
+          text: `❌ ᴇɴᴠɪᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ ${prefix}gray na legenda ou responda a uma imagem com ${prefix}gray.`
         }, { quoted: createStatusQuoted(msg) });
       }
 
@@ -51,7 +51,7 @@ module.exports = {
     } catch (error) {
       console.error("gray:", error);
       await conn.sendMessage(from, { react: { text: "❌", key: msg.key } }).catch(() => {});
-      await conn.sendMessage(from, { text: "❌ Não foi possível aplicar o efeito cinza." }, { quoted: createStatusQuoted(msg) }).catch(() => {});
+      await conn.sendMessage(from, { text: "❌ ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴀᴘʟɪᴄᴀʀ ᴏ ᴇғᴇɪᴛᴏ ᴄɪɴᴢᴀ." }, { quoted: createStatusQuoted(msg) }).catch(() => {});
     }
   }
 };

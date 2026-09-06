@@ -5,7 +5,7 @@ const { createStatusQuoted } = require("../../functions/statusCard");
 module.exports = {
   name: "tc",
   aliases: ["contato", "ownercontact"],
-  description: "Envia o contato do dono do bot",
+  description: "ᴇɴᴠɪᴀ ᴏ ᴄᴏɴᴛᴀᴛᴏ ᴅᴏ ᴅᴏɴᴏ ᴅᴏ ʙᴏᴛ",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -34,7 +34,7 @@ module.exports = {
     } catch (error) {
       console.error("tc:", error);
       await conn.sendMessage(from, {
-        text: `❌ Erro ao enviar contato. Tente novamente com ${prefix}tc.`
+        text: `❌ ᴇʀʀᴏ ᴀᴏ ᴇɴᴠɪᴀʀ ᴄᴏɴᴛᴀᴛᴏ. ᴛᴇɴᴛᴇ ɴᴏᴠᴀᴍᴇɴᴛᴇ ᴄᴏᴍ ${prefix}tc.`
       }, { quoted: createStatusQuoted(msg) }).catch(() => {});
     }
   }

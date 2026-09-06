@@ -12,6 +12,7 @@ function carregarDb() {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "rankgold",
   aliases: ["rankg", "rg"],
   description: "ᴍᴏsᴛʀᴀ ᴏ ʀᴀɴᴋɪɴɢ ᴅᴏs ᴍᴀɪs ʀɪᴄᴏs",
@@ -22,7 +23,7 @@ module.exports = {
 
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -43,7 +44,7 @@ module.exports = {
         .slice(0, 10);
 
       const emojisRank = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"];
-      
+
       // Calcula o total de gold
       const totalGold = usuarios.reduce((acc, user) => acc + user.gold, 0);
 
@@ -57,10 +58,10 @@ module.exports = {
       ranking.forEach((user, index) => {
         const nome = user.pushName || user.lid.split('@')[0];
         const emoji = emojisRank[index] || `${index + 1}️⃣`;
-        
+
         // Calcula a porcentagem do gold total
         const porcentagem = totalGold > 0 ? ((user.gold / totalGold) * 100).toFixed(1) : 0;
-        
+
         texto += `${emoji} *${nome}*
    💰 ${user.gold} golds (${porcentagem}% do total)
    📊 Level ${user.level} • 🏷️ ${user.classe}

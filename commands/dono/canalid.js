@@ -1,4 +1,5 @@
 module.exports = {
+  permissions: { owner: true },
   name: "raw",
 
   async execute(conn, msg, args, from) {
@@ -20,15 +21,15 @@ module.exports = {
 
       await conn.sendMessage(from, {
         text:
-`📢 Canal: ${from}
+`📢 ᴄᴀɴᴀʟ: ${from}
 
-🆔 Message ID:
+🆔 ᴍᴇssᴀɢᴇ ɪᴅ:
 ${msg.key.id}
 
-📌 Server ID atual:
+📌 sᴇʀᴠᴇʀ ɪᴅ ᴀᴛᴜᴀʟ:
 ${serverIdAtual}
 
-📌 Server ID anterior:
+📌 sᴇʀᴠᴇʀ ɪᴅ ᴀɴᴛᴇʀɪᴏʀ:
 ${serverIdAtual - 1}`
       })
 

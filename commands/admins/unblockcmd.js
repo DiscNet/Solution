@@ -60,9 +60,10 @@ async function reply(conn, from, msg, text, bot) {
 }
 
 module.exports = {
+  permissions: { group: true, admin: true },
   name: "unblockcmd",
   aliases: ["ublcmd", "desbloquearcmd"],
-  description: "Desbloqueia um comando no grupo, independentemente do alias usado",
+  description: "ᴅᴇsʙʟᴏǫᴜᴇɪᴀ ᴜᴍ ᴄᴏᴍᴀɴᴅᴏ ɴᴏ ɢʀᴜᴘᴏ, ɪɴᴅᴇᴘᴇɴᴅᴇɴᴛᴇᴍᴇɴᴛᴇ ᴅᴏ ᴀʟɪᴀs ᴜsᴀᴅᴏ",
 
   async execute(conn, msg, args, from, _axiosInstance, cmdUsado) {
     const bot = config.botName || "LukaModzz";

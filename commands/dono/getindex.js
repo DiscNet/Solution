@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
+  permissions: { owner: true },
   name: "getindex",
   aliases: ["getindexjs", "index", "pegarindex"],
   description: "ᴇɴᴠɪᴀ ᴏ ᴀʀǫᴜɪᴠᴏ ɪɴᴅᴇx.ᴊs ᴘᴀʀᴀ ᴏ ᴘᴠ ᴅᴏ ᴅᴏɴᴏ",
@@ -13,7 +14,7 @@ module.exports = {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const ownerLid = config.ownerLid || "";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -44,7 +45,7 @@ module.exports = {
       // 🔥 VERIFICA SE O ARQUIVO EXISTE
       if (!fs.existsSync(indexPath)) {
         return await conn.sendMessage(from, {
-          text: "❌ ᴀʀǫᴜɪᴠᴏ index.js ɴᴀ̃ᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ!",
+          text: "❌ ᴀʀǫᴜɪᴠᴏ ɪɴᴅᴇx.js ɴᴀ̃ᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ!",
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,

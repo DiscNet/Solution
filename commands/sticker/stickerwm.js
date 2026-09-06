@@ -42,7 +42,7 @@ async function addMeta(file) {
 
 module.exports = {
   name: "stickerwm",
-  description: "Criar sticker com marca d'água",
+  description: "ᴄʀɪᴀʀ sᴛɪᴄᴋᴇʀ ᴄᴏᴍ ᴍᴀʀᴄᴀ ᴅ'áɢᴜᴀ",
 
   async execute(conn, msg, args, from) {
     try {
@@ -51,7 +51,7 @@ module.exports = {
       if (!quoted?.quotedMessage?.imageMessage) {
         return await conn.sendMessage(
           from,
-          { text: "❌ Responda uma imagem com .stickerwm texto" },
+          { text: "❌ ʀᴇsᴘᴏɴᴅᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ .stickerwm ᴛᴇxᴛᴏ" },
           { quoted: msg }
         );
       }
@@ -63,7 +63,7 @@ module.exports = {
 
       await conn.sendMessage(
         from,
-        { text: "⏳ Criando figurinha com marca d'água..." },
+        { text: "⏳ ᴄʀɪᴀɴᴅᴏ ғɪɢᴜʀɪɴʜᴀ ᴄᴏᴍ ᴍᴀʀᴄᴀ ᴅ'áɢᴜᴀ..." },
         { quoted: msg }
       );
 
@@ -115,7 +115,7 @@ module.exports = {
 
       await conn.sendMessage(
         from,
-        { text: "❌ Erro ao criar figurinha com marca d'água!" },
+        { text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ғɪɢᴜʀɪɴʜᴀ ᴄᴏᴍ ᴍᴀʀᴄᴀ ᴅ'áɢᴜᴀ!" },
         { quoted: msg }
       );
     }

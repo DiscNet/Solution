@@ -13,13 +13,13 @@ module.exports = {
       const prefix = config.prefix || ".";
       const owner = config.ownerName || "LukaModzz";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       if (!args[0]) {
-        return await conn.sendMessage(from, { 
-          text: `❌ *Digite o nome da imagem!*\n\n🧊 *Exemplo:* ${prefix}pin anime`,
+        return await conn.sendMessage(from, {
+          text: `❌ *ᴅɪɢɪᴛᴇ ᴏ ɴᴏᴍᴇ ᴅᴀ ɪᴍᴀɢᴇᴍ!*\n\n🧊 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}pin anime`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -46,15 +46,15 @@ module.exports = {
           cards.push({
             header: { hasMediaAttachment: true, imageMessage: media.imageMessage },
             body: { text: `🧊 ${i + 1}/5 - ${q}` },
-            footer: { text: "LukaModzz • Pinterest" },
+            footer: { text: "ʟᴜᴋᴀᴍᴏᴅᴢᴢ • ᴘɪɴᴛᴇʀᴇsᴛ" },
             nativeFlowMessage: {
               buttons: [
-                { 
-                  name: "cta_url", 
-                  buttonParamsJson: JSON.stringify({ 
-                    display_text: "🔗 Pinterest", 
+                {
+                  name: "cta_url",
+                  buttonParamsJson: JSON.stringify({
+                    display_text: "🔗 ᴘɪɴᴛᴇʀᴇsᴛ",
                     url: `https://www.pinterest.com/search/pins/?q=${encodeURIComponent(q)}`
-                  }) 
+                  })
                 }
               ]
             }
@@ -65,8 +65,8 @@ module.exports = {
       }
 
       if (cards.length === 0) {
-        return await conn.sendMessage(from, { 
-          text: `❌ *Erro ao carregar imagens!*`,
+        return await conn.sendMessage(from, {
+          text: `❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴀʀʀᴇɢᴀʀ ɪᴍᴀɢᴇɴs!*`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -87,8 +87,8 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro pin:", error);
-      await conn.sendMessage(from, { 
-        text: "❌ *Erro ao buscar imagens!*",
+      await conn.sendMessage(from, {
+        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴜsᴄᴀʀ ɪᴍᴀɢᴇɴs!*",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, { quoted: msg });
     }

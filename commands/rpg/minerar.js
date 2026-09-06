@@ -25,6 +25,7 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "minerar",
   aliases: ["miner", "mina"],
   description: "ᴍɪɴᴇʀᴀ ᴇ ᴄᴏɴsɪɢᴀ ɢᴏʟᴅ ᴇ xᴘ",
@@ -32,14 +33,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // 🔥 VERIFICA SE O RPG ESTÁ ATIVO NO GRUPO
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -54,7 +55,7 @@ module.exports = {
 
       // Pega o LID do usuário
       let lid = msg.key.participant || msg.key.remoteJid || from;
-      
+
       if (from.endsWith("@g.us") && msg.key.participant) {
         lid = msg.key.participant;
       }
@@ -65,7 +66,7 @@ module.exports = {
       // Verifica se está registrado
       if (!db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -79,18 +80,18 @@ module.exports = {
       }
 
       const ficha = db.usuarios[lid];
-      
+
       // 🔥 VERIFICA COOLDOWN (5 MINUTOS)
       const agora = Date.now();
       const cooldown = 5 * 60 * 1000; // 5 minutos em milissegundos
-      
+
       if (ficha.ultimaMina && (agora - ficha.ultimaMina) < cooldown) {
         const tempoRestante = Math.ceil((cooldown - (agora - ficha.ultimaMina)) / 1000);
         const minutos = Math.floor(tempoRestante / 60);
         const segundos = tempoRestante % 60;
-        
+
         return await conn.sendMessage(from, {
-          text: `⛏️ *ᴀɢᴜᴀʀᴅᴇ!*\n\nᴠᴏᴄᴇ ᴊᴀ́ ᴍɪɴᴇʀᴏᴜ ʀᴇᴄᴇɴᴛᴇᴍᴇɴᴛᴇ.\n\n⏳ ᴛᴇᴍᴘᴏ ʀᴇsᴛᴀɴᴛᴇ: ${minutos}m ${segundos}s\n\n📌 ᴠᴏʟᴛᴇ ᴇᴍ ${minutos} ᴍɪɴᴜᴛᴏs ᴇ ${segundos} sᴇɢᴜɴᴅᴏs.`,
+          text: `⛏️ *ᴀɢᴜᴀʀᴅᴇ!*\n\nᴠᴏᴄᴇ ᴊᴀ́ ᴍɪɴᴇʀᴏᴜ ʀᴇᴄᴇɴᴛᴇᴍᴇɴᴛᴇ.\n\n⏳ ᴛᴇᴍᴘᴏ ʀᴇsᴛᴀɴᴛᴇ: ${minutos}ᴍ ${segundos}s\n\n📌 ᴠᴏʟᴛᴇ ᴇᴍ ${minutos} ᴍɪɴᴜᴛᴏs ᴇ ${segundos} sᴇɢᴜɴᴅᴏs.`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -106,7 +107,7 @@ module.exports = {
       // 🔥 GERA OS RESULTADOS DA MINERAÇÃO
       // Gold: 1 a 300
       const goldGanho = Math.floor(Math.random() * 300) + 1;
-      
+
       // XP: 23% de chance de ganhar 1 a 16 de XP
       let xpGanho = 0;
       const chanceXp = Math.random() * 100;
@@ -121,7 +122,7 @@ module.exports = {
       let levelUp = false;
       if (xpGanho > 0) {
         ficha.xp += xpGanho;
-        
+
         // Verifica level up
         const xpNecessario = ficha.level * 100;
         while (ficha.xp >= xpNecessario) {
@@ -150,13 +151,13 @@ module.exports = {
 
 ━━━━━━━━━━━━━━━━━━━━
 💰 *ɢᴏʟᴅ ᴏʙᴛɪᴅᴏ:* +${goldGanho}`
-      
+
       if (xpGanho > 0) {
         mensagem += `\n📈 *xᴘ ᴏʙᴛɪᴅᴏ:* +${xpGanho}`;
       } else {
         mensagem += `\n📈 *xᴘ ᴏʙᴛɪᴅᴏ:* 0 (sᴇᴍ sᴏʀᴛᴇ)`;
       }
-      
+
       mensagem += `\n\n━━━━━━━━━━━━━━━━━━━━
 📊 *ɴᴏᴠᴏs ᴇsᴛᴀᴛᴜs:*
 💰 *ɢᴏʟᴅ ᴛᴏᴛᴀʟ:* ${ficha.gold}

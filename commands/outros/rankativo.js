@@ -22,7 +22,7 @@ module.exports = {
 
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -46,13 +46,13 @@ module.exports = {
 
       const usuariosComAtividade = usuarios.map(user => {
         let pontos = 0;
-        
+
         // Level (peso 2)
         pontos += user.level * 2;
-        
+
         // Gold (peso 1)
         pontos += Math.floor(user.gold / 10);
-        
+
         // Atividade recente (última mineração)
         if (user.ultimaMina && (agora - user.ultimaMina) < umaSemana) {
           pontos += 50;
@@ -63,7 +63,7 @@ module.exports = {
         if (user.ultimoTreino && (agora - user.ultimoTreino) < umaSemana) {
           pontos += 30;
         }
-        
+
         // Quantidade de itens (ativo nas lojas)
         pontos += user.itens.length * 5;
         pontos += user.arma.length * 10;
@@ -90,14 +90,14 @@ module.exports = {
       ranking.forEach((user, index) => {
         const nome = user.pushName || user.lid.split('@')[0];
         const emoji = emojisRank[index] || `${index + 1}️⃣`;
-        
+
         // Verifica se esteve ativo na última semana
         const ativoRecentemente = (user.ultimaMina && (agora - user.ultimaMina) < umaSemana) ||
                                    (user.ultimaCaca && (agora - user.ultimaCaca) < umaSemana) ||
                                    (user.ultimoTreino && (agora - user.ultimoTreino) < umaSemana);
-        
+
         const statusAtivo = ativoRecentemente ? "🟢 ᴀᴛɪᴠᴏ" : "🔴 ɪɴᴀᴛɪᴠᴏ";
-        
+
         texto += `${emoji} *${nome}*
    ⚡ ${user.pontos} ᴘᴏɴᴛᴏs ᴅᴇ ᴀᴛɪᴠɪᴅᴀᴅᴇ
    ${statusAtivo}

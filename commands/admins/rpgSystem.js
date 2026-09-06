@@ -3,6 +3,7 @@ const config = require("../../config/config");
 const rpgSystem = require("../../functions/rpgSystem");
 
 module.exports = {
+  permissions: { group: true, admin: true },
   name: "rpgSystem",
   aliases: ["sistemarpg", "ativarpg"],
   description: "ᴀᴛɪᴠᴀ/ᴅᴇsᴀᴛɪᴠᴀ ᴏ sɪsᴛᴇᴍᴀ ʀᴘɢ ɴᴏ ɢʀᴜᴘᴏ",
@@ -10,7 +11,7 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -57,7 +58,7 @@ module.exports = {
         const statusText = status ? "✅ ᴀᴛɪᴠᴏ" : "❌ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ";
         const prefix = config.prefix || ".";
         return await conn.sendMessage(from, {
-          text: `⚔️ *sɪsᴛᴇᴍᴀ ʀᴘɢ*\n\n📊 *sᴛᴀᴛᴜs:* ${statusText}\n\n📌 ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ/ᴅᴇsᴀᴛɪᴠᴀʀ:\n${prefix}rpgSystem on/off`,
+          text: `⚔️ *sɪsᴛᴇᴍᴀ ʀᴘɢ*\n\n📊 *sᴛᴀᴛᴜs:* ${statusText}\n\n📌 ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ/ᴅᴇsᴀᴛɪᴠᴀʀ:\n${prefix}rpgsystem on/off`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -87,7 +88,7 @@ module.exports = {
       } else {
         const prefix = config.prefix || ".";
         return await conn.sendMessage(from, {
-          text: `❌ ᴏᴘᴄᴀᴏ ɪɴᴠᴀʟɪᴅᴀ!\n\n📌 ᴜsᴇ: ${prefix}rpgSystem on ᴏᴜ ${prefix}rpgSystem off`,
+          text: `❌ ᴏᴘᴄᴀᴏ ɪɴᴠᴀʟɪᴅᴀ!\n\n📌 ᴜsᴇ: ${prefix}rpgsystem on ou ${prefix}rpgsystem off`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }

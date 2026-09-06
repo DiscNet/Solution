@@ -31,6 +31,7 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "registro",
   aliases: ["registrar", "criarconta"],
   description: "ʀᴇɢɪsᴛʀᴀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ ɴᴏ ʀᴘɢ",
@@ -38,14 +39,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // 🔥 VERIFICA SE O RPG ESTÁ ATIVO NO GRUPO
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -60,7 +61,7 @@ module.exports = {
 
       // Pega o LID do usuário
       let lid = msg.key.participant || msg.key.remoteJid || from;
-      
+
       if (from.endsWith("@g.us") && msg.key.participant) {
         lid = msg.key.participant;
       }
@@ -71,7 +72,7 @@ module.exports = {
       // Verifica se já está registrado
       if (db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴊᴀ́ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ғɪᴄʜᴀ ᴘᴀʀᴀ ᴠᴇʀ sᴇᴜs ᴅᴀᴅᴏs.`,
+          text: `❌ ᴠᴏᴄᴇ ᴊᴀ́ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ficha para ver seus dados.`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -121,14 +122,14 @@ module.exports = {
 
 ━━━━━━━━━━━━━━━━━━━━
 👤 *ɴᴏᴍᴇ:* ${pushName}
-🏹 *ᴄʟᴀssᴇ:* Aʀǫᴜᴇɪʀᴏ
+🏹 *ᴄʟᴀssᴇ:* ᴀʀǫᴜᴇɪʀᴏ
 📊 *ʟᴇᴠᴇʟ:* 1
-🪖 *ᴘᴀᴛᴇɴᴛᴇ:* Rᴇᴄʀᴜᴛᴀ
+🪖 *ᴘᴀᴛᴇɴᴛᴇ:* ʀᴇᴄʀᴜᴛᴀ
 📈 *xᴘ ᴘᴀᴛᴇɴᴛᴇ:* 0
 💰 *ɢᴏʟᴅ:* 0
 
 ━━━━━━━━━━━━━━━━━━━━
-📌 ᴜsᴇ ${prefix}ғɪᴄʜᴀ ᴘᴀʀᴀ ᴠᴇʀ sᴇᴜs ᴅᴀᴅᴏs ᴄᴏᴍᴘʟᴇᴛᴏs.`;
+📌 ᴜsᴇ ${prefix}ficha para ver seus dados completos.`;
 
       await conn.sendMessage(from, {
         text: texto,

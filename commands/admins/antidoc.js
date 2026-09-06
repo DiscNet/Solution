@@ -21,6 +21,7 @@ function saveConfig(data) {
 }
 
 module.exports = {
+  permissions: { group: true, admin: true },
   name: "antidoc",
   aliases: ["antidocumento"],
   description: "ᴀᴛɪᴠᴀ/ᴅᴇsᴀᴛɪᴠᴀ ᴀɴᴛɪᴅᴏᴄ ɴᴏ ɢʀᴜᴘᴏ",
@@ -129,7 +130,7 @@ module.exports = {
         }, { quoted: msg });
       } else {
         return await conn.sendMessage(from, {
-          text: `❌ ᴏᴘᴄ̧ᴀ̃ᴏ ɪɴᴠᴀ́ʟɪᴅᴀ!\n\n📌 ᴜsᴇ: ${prefix}${cmd} on ᴏᴜ ${prefix}${cmd} off`,
+          text: `❌ ᴏᴘᴄ̧ᴀ̃ᴏ ɪɴᴠᴀ́ʟɪᴅᴀ!\n\n📌 ᴜsᴇ: ${prefix}${cmd} on ou ${prefix}${cmd} off`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,

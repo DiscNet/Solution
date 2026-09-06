@@ -14,42 +14,42 @@ function getRandomNumber(min, max) {
 async function addStickerMetadata(mediaBuffer, packname, author) {
   const tempInput = path.join(__dirname, "..", "..", "temp", `input_${Date.now()}.webp`);
   const tempOutput = path.join(__dirname, "..", "..", "temp", `output_${Date.now()}.webp`);
-  
+
   const tempDir = path.join(__dirname, "..", "..", "temp");
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-  
+
   fs.writeFileSync(tempInput, mediaBuffer);
-  
+
   try {
     const img = new webp.Image();
-    
+
     const json = {
       "sticker-pack-id": `${getRandomNumber(10000, 99999)}`,
       "sticker-pack-name": packname,
       "sticker-pack-publisher": author,
       emojis: ["✨", "🎨"]
     };
-    
+
     const exifAttr = Buffer.from([
       0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
       0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00
     ]);
-    
+
     const jsonBuff = Buffer.from(JSON.stringify(json), "utf-8");
     const exif = Buffer.concat([exifAttr, jsonBuff]);
     exif.writeUIntLE(jsonBuff.length, 14, 4);
-    
+
     await img.load(tempInput);
     img.exif = exif;
     await img.save(tempOutput);
-    
+
     const resultBuffer = fs.readFileSync(tempOutput);
-    
+
     fs.unlinkSync(tempInput);
     fs.unlinkSync(tempOutput);
-    
+
     return resultBuffer;
-    
+
   } catch (error) {
     try {
       if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
@@ -61,7 +61,7 @@ async function addStickerMetadata(mediaBuffer, packname, author) {
 
 module.exports = {
   name: "scirculo",
-  description: "Cria figurinha circular (estilo foto de perfil) a partir de imagem ou vídeo",
+  description: "ᴄʀɪᴀ ғɪɢᴜʀɪɴʜᴀ ᴄɪʀᴄᴜʟᴀʀ (ᴇsᴛɪʟᴏ ғᴏᴛᴏ ᴅᴇ ᴘᴇʀғɪʟ) ᴀ ᴘᴀʀᴛɪʀ ᴅᴇ ɪᴍᴀɢᴇᴍ ᴏᴜ ᴠíᴅᴇᴏ",
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       // ==============================================
@@ -84,17 +84,17 @@ module.exports = {
       // ==============================================
       // EXTRAI A MÍDIA
       // ==============================================
-      
+
       if (msg.message?.imageMessage || msg.message?.videoMessage) {
         const caption = msg.message.imageMessage?.caption || msg.message.videoMessage?.caption || "";
         const hasCommand = /(^|\s)(\.scirculo\b|\.sc\b|scirculo\b|sc\b)/.test(caption);
-        
+
         if (!hasCommand) {
-          return conn.sendMessage(from, { 
-            text: "❌ Use .scirculo, .sc, scirculo ou sc na legenda da imagem/vídeo ou responda a uma mídia" 
+          return conn.sendMessage(from, {
+            text: "❌ ᴜsᴇ .scirculo, .sc, sᴄɪʀᴄᴜʟᴏ ᴏᴜ sᴄ ɴᴀ ʟᴇɢᴇɴᴅᴀ ᴅᴀ ɪᴍᴀɢᴇᴍ/víᴅᴇᴏ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ᴍíᴅɪᴀ"
           }, { quoted: msg });
         }
-        
+
         if (msg.message?.imageMessage) {
           mediaBuffer = await downloadMediaMessage(msg, "buffer", {}, {});
         } else {
@@ -106,85 +106,85 @@ module.exports = {
         const quoted = msg.message.extendedTextMessage.contextInfo.quotedMessage;
         const text = msg.message.extendedTextMessage.text || "";
         const hasCommand = /(^|\s)(\.scirculo\b|\.sc\b|scirculo\b|sc\b)/.test(text);
-        
+
         if (!hasCommand) {
-          return conn.sendMessage(from, { 
-            text: "❌ Responda a uma imagem/vídeo com .scirculo, .sc, scirculo ou sc" 
+          return conn.sendMessage(from, {
+            text: "❌ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ/víᴅᴇᴏ ᴄᴏᴍ .scirculo, .sc, sᴄɪʀᴄᴜʟᴏ ᴏᴜ sᴄ"
           }, { quoted: msg });
         }
-        
+
         if (quoted.imageMessage) {
           const quotedMsg = { message: { imageMessage: quoted.imageMessage }, key: msg.key };
           mediaBuffer = await downloadMediaMessage(quotedMsg, "buffer", {}, {});
-        } 
+        }
         else if (quoted.videoMessage) {
           const quotedMsg = { message: { videoMessage: quoted.videoMessage }, key: msg.key };
           mediaBuffer = await downloadMediaMessage(quotedMsg, "buffer", {}, {});
           isVideo = true;
         }
         else if (quoted.stickerMessage) {
-          return conn.sendMessage(from, { text: "❌ Já é uma figurinha! Use .toimg para converter." }, { quoted: msg });
+          return conn.sendMessage(from, { text: "❌ ᴊá é ᴜᴍᴀ ғɪɢᴜʀɪɴʜᴀ! ᴜsᴇ .toimg ᴘᴀʀᴀ ᴄᴏɴᴠᴇʀᴛᴇʀ." }, { quoted: msg });
         } else {
-          return conn.sendMessage(from, { text: "❌ Responda a uma imagem ou vídeo com .scirculo ou .sc" }, { quoted: msg });
+          return conn.sendMessage(from, { text: "❌ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴏᴜ ᴠíᴅᴇᴏ ᴄᴏᴍ .scirculo ᴏᴜ .sc" }, { quoted: msg });
         }
       }
 
       if (!mediaBuffer) {
-        return conn.sendMessage(from, { text: "❌ Envie ou responda a uma imagem/vídeo com .scirculo ou .sc" }, { quoted: msg });
+        return conn.sendMessage(from, { text: "❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ/víᴅᴇᴏ ᴄᴏᴍ .scirculo ᴏᴜ .sc" }, { quoted: msg });
       }
 
       // ==============================================
       // CRIAÇÃO DA FIGURINHA CIRCULAR COM IMAGEMAGICK
       // ==============================================
-      
+
       const tempDir = path.join(__dirname, "..", "..", "temp");
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-      
+
       const tempInput = path.join(tempDir, `input_${Date.now()}.png`);
       const tempCircular = path.join(tempDir, `circular_${Date.now()}.png`);
       const tempOutput = path.join(tempDir, `sticker_${Date.now()}.webp`);
-      
+
       fs.writeFileSync(tempInput, mediaBuffer);
-      
+
       if (isVideo) {
         // Para vídeo: extrair primeiro frame, aplicar círculo, depois converter
         const tempFrame = path.join(tempDir, `frame_${Date.now()}.png`);
-        
+
         // Extrair primeiro frame do vídeo
         await execPromise(`ffmpeg -i "${tempInput}" -vframes 1 -f image2 "${tempFrame}" -y`);
-        
+
         // Aplicar círculo no frame com ImageMagick
         const convertCmd = `convert "${tempFrame}" -resize 512x512^ -gravity center -extent 512x512 \\( +clone -threshold -1 -negate -fill white -draw "circle 256,256 256,0" \\) -alpha off -compose copy_opacity -composite "${tempCircular}"`;
         await execPromise(convertCmd);
-        
+
         // Converter frame circular para vídeo webp
         await execPromise(`ffmpeg -i "${tempInput}" -i "${tempCircular}" -filter_complex "[0:v]scale=512:512,setpts=PTS-STARTPTS[v];[v][1:v]alphamerge" -t 5 -r 15 -c:v libwebp -lossless 0 -q:v 80 -preset default -an "${tempOutput}" -y`);
-        
+
         try { fs.unlinkSync(tempFrame); } catch(e) {}
-        
+
       } else {
         // Para imagem: usar ImageMagick para criar círculo
         const convertCmd = `convert "${tempInput}" -resize 512x512^ -gravity center -extent 512x512 \\( +clone -threshold -1 -negate -fill white -draw "circle 256,256 256,0" \\) -alpha off -compose copy_opacity -composite "${tempCircular}"`;
         await execPromise(convertCmd);
-        
+
         // Converter para webp
         await execPromise(`ffmpeg -i "${tempCircular}" -c:v libwebp -lossless 0 -q:v 90 -preset default -an "${tempOutput}" -y`);
       }
-      
+
       if (fs.existsSync(tempOutput) && fs.statSync(tempOutput).size > 0) {
         const stickerBuffer = fs.readFileSync(tempOutput);
         const finalStickerBuffer = await addStickerMetadata(stickerBuffer, PACKNAME, AUTHOR);
-        
-        await conn.sendMessage(from, { 
+
+        await conn.sendMessage(from, {
           sticker: finalStickerBuffer,
           mimetype: "image/webp"
         }, { quoted: msg });
-        
+
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
       } else {
         throw new Error("Falha ao criar figurinha circular");
       }
-      
+
       // Limpar arquivos temporários
       try {
         if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
@@ -197,9 +197,9 @@ module.exports = {
       try {
         await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
       } catch (e) {}
-      
-      await conn.sendMessage(from, { 
-        text: "❌ Erro ao criar figurinha circular.\n\n📌 Verifique se o ImageMagick está instalado: pkg install imagemagick" 
+
+      await conn.sendMessage(from, {
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ғɪɢᴜʀɪɴʜᴀ ᴄɪʀᴄᴜʟᴀʀ.\n\n📌 ᴠᴇʀɪғɪǫᴜᴇ sᴇ ᴏ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ ᴇsᴛá ɪɴsᴛᴀʟᴀᴅᴏ: ᴘᴋɢ ɪɴsᴛᴀʟʟ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ"
       }, { quoted: msg });
     }
   }

@@ -5,22 +5,22 @@ const axios = require("axios");
 
 module.exports = {
   name: "brat",
-  description: "🎨 Gera imagem no estilo Brat Generator",
+  description: "🎨 ɢᴇʀᴀ ɪᴍᴀɢᴇᴍ ɴᴏ ᴇsᴛɪʟᴏ ʙʀᴀᴛ ɢᴇɴᴇʀᴀᴛᴏʀ",
 
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
       const text = args.join(' ') || 'brat';
-      
+
       if (!text.trim()) {
-        return await conn.sendMessage(from, { 
-          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ᴛᴇxᴛᴏ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: brat ᴏʟᴀ ᴍᴜɴᴅᴏ`,
+        return await conn.sendMessage(from, {
+          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ᴛᴇxᴛᴏ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ʙʀᴀᴛ ᴏʟᴀ ᴍᴜɴᴅᴏ`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)

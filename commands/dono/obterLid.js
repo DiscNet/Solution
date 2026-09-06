@@ -2,6 +2,7 @@
 const util = require("util");
 
 module.exports = {
+  permissions: { owner: true },
   name: "lid",
   description: "𝑶𝒃𝒕𝒆́𝒎 𝒐 𝑳𝑰𝑫 𝒅𝒆 𝒖𝒎 𝒖𝒔𝒖𝒂́𝒓𝒊𝒐",
 
@@ -43,12 +44,12 @@ module.exports = {
       }
 
       // Dump completo do objeto
-      const msgDump = util.inspect(targetMsg, { 
-        showHidden: true, 
-        depth: 10, 
-        colors: false, 
-        maxArrayLength: null, 
-        compact: false 
+      const msgDump = util.inspect(targetMsg, {
+        showHidden: true,
+        depth: 10,
+        colors: false,
+        maxArrayLength: null,
+        compact: false
       });
 
       // 🔥 Converte para o formato de código com destaque (botForwardedMessage)
@@ -65,7 +66,7 @@ module.exports = {
         }
 
         // Regex para destacar palavras-chave e strings
-        const regex = 
+        const regex =
           /(\b(?:const|let|var|function|async|await|return|new|this|try|catch|throw|if|else|for|while|switch|case|break|default|import|export|from|class|extends|super|typeof|instanceof|in|of|delete|void|yield|module|exports|require|true|false|null|undefined|NaN|Infinity|JSON|Object|Array|String|Number|Boolean|RegExp|Date|Math|console|process|Buffer|setTimeout|setInterval|clearTimeout|clearInterval)\b)|('(?:[^'\\]|\\.)*'|"(?:[^"\\]|\\.)*")|([^'"]+)/g;
 
         let match;
@@ -132,26 +133,26 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro no comando lid:", error);
-      
+
       // 🔥 FALLBACK: Envia como texto simples com bloco de código
       try {
-        const msgDump = util.inspect(msg, { 
-          showHidden: true, 
-          depth: 10, 
-          colors: false, 
-          maxArrayLength: null, 
-          compact: false 
+        const msgDump = util.inspect(msg, {
+          showHidden: true,
+          depth: 10,
+          colors: false,
+          maxArrayLength: null,
+          compact: false
         });
-        
+
         // Fallback para enviar como texto normal
-        await conn.sendMessage(from, { 
-          text: "🔑 *LID (fallback)*\n\n```json\n" + msgDump + "\n```"
+        await conn.sendMessage(from, {
+          text: "🔑 *ʟɪᴅ (ғᴀʟʟʙᴀᴄᴋ)*\n\n```ᴊsᴏɴ\n" + msgDump + "\n```"
         }, { quoted: msg });
-        
+
       } catch (e) {
         // Último recurso: mensagem simples
-        await conn.sendMessage(from, { 
-          text: "❌ Erro ao obter LID!",
+        await conn.sendMessage(from, {
+          text: "❌ ᴇʀʀᴏ ᴀᴏ ᴏʙᴛᴇʀ ʟɪᴅ!",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: " ̵ ̵̲͞𝑳𝒖𝒌𝒂𝐌𝐨𝐝𝐳𝐳 だ", serverMessageId: 116 } }
         }, { quoted: msg });
       }

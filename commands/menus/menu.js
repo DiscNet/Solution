@@ -35,37 +35,37 @@ function getFraseFilosofica() {
 function getNumeroUsuario(msg) {
   // Tenta pegar de várias fontes
   let numero = null;
-  
+
   // 1. Tentar pelo participantAlt
   if (msg.key?.participantAlt) {
     numero = msg.key.participantAlt.replace(/[^0-9]/g, '');
   }
-  
+
   // 2. Tentar pelo participant
   if (!numero && msg.key?.participant) {
     numero = msg.key.participant.replace(/[^0-9]/g, '');
   }
-  
+
   // 3. Tentar pelo remoteJidAlt
   if (!numero && msg.key?.remoteJidAlt) {
     numero = msg.key.remoteJidAlt.replace(/[^0-9]/g, '');
   }
-  
+
   // 4. Tentar pelo remoteJid
   if (!numero && msg.key?.remoteJid) {
     numero = msg.key.remoteJid.replace(/[^0-9]/g, '');
   }
-  
+
   // 5. Tentar pelo sender (fallback)
   if (!numero && msg.sender) {
     numero = msg.sender.replace(/[^0-9]/g, '');
   }
-  
+
   // Se ainda não tem, usa o número do desenvolvedor como fallback
   if (!numero || numero.length < 10) {
     numero = DEV_NUMBER;
   }
-  
+
   return numero;
 }
 
@@ -106,7 +106,7 @@ module.exports = {
       // ==============================================
       await sendInteractiveMessage(conn, from, {
         text: menuText,
-        footer: "Esᴄᴏʟʜᴀ ᴀ ᴏᴘᴄ̧ᴀ̃ᴏ ᴀʙᴀɪxᴏ",
+        footer: "ᴇsᴄᴏʟʜᴀ ᴀ ᴏᴘᴄ̧ᴀ̃ᴏ ᴀʙᴀɪxᴏ",
         image: { url: IMAGE_URL },
         aimode: true,
         contextInfo: {
@@ -134,47 +134,47 @@ module.exports = {
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗚𝗘𝗥𝗔𝗟",
                       description: "ᴍᴇɴᴜ ᴄᴏᴍᴘʟᴇᴛᴏ ᴄᴏᴍ ᴛᴏᴅᴏs ᴏs ᴄᴏᴍᴀɴᴅᴏs"
                     },
-                    
+
                     {
                       id: `${prefix}menuadm`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗔𝗗𝗠",
                       description: "ᴄᴏᴍᴀɴᴅᴏs ʀᴇsᴛʀɪᴛᴏs ᴀ ᴀᴅᴍɪɴɪsᴛʀᴀᴄ̧ᴀ̃ᴏ"
                     },
-                    
+
                     {
                       id: `${prefix}menudono`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗗𝗢𝗡𝗢",
                       description: "ᴄᴏᴍᴀɴᴅᴏs ᴅᴇsᴛɪɴᴀᴅᴏs ᴀᴏ ᴅᴏɴᴏ"
                     },
-                    
+
                     {
                       id: `${prefix}menurpg`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗥𝗣𝗚",
                       description: "ᴄᴏᴍᴀɴᴅᴏs ᴅᴏ ʀᴘɢ"
                     },
-                    
+
                     {
                       id: `${prefix}menusticker`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗦𝗧𝗜𝗖𝗞𝗘𝗥",
                       description: "ᴄᴏᴍᴀɴᴅᴏs ʀᴇʟᴀᴄɪᴏɴᴀᴅᴏs ᴀ̀ ғɪɢᴜʀɪɴʜᴀs"
                     },
-                    
+
                     {
                       id: `${prefix}menudws`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗦",
                       description: "ᴄᴏᴍᴀɴᴅᴏs ᴅᴇ ᴅᴏᴡɴʟᴏᴀᴅ ᴅᴇ ᴍɪᴅɪᴀ/ᴀʀǫᴜɪᴠᴏs"
                     },
-                    
+
                     {
                       id: `${prefix}menualterar`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗔𝗟𝗧𝗘𝗥𝗔𝗗𝗢𝗥𝗘𝗦",
                       description: "ᴄᴏᴍᴀɴᴅᴏs ᴘᴀʀᴀ ᴀʟᴛᴇʀᴀʀ ᴍɪᴅɪᴀ ᴇ ᴇɴᴛʀᴇ ᴏᴜᴛʀᴏs"
                     },
-                    
+
                     {
                       id: `${prefix}menubn`,
                       title: "   『🧊』𝗠𝗘𝗡𝗨 𝗕𝗥𝗜𝗡𝗖𝗔𝗗𝗘𝗜𝗥𝗔𝗦",
-                      description: `ᴄᴏᴍᴀɴᴅᴏs ᴅᴇ ʙʀɪɴᴄᴀᴅᴇɪʀᴀs ᴄᴏᴍᴏ${prefix}ɢᴀʏ ᴇ ᴏᴜᴛʀᴏs`
+                      description: `ᴄᴏᴍᴀɴᴅᴏs ᴅᴇ ʙʀɪɴᴄᴀᴅᴇɪʀᴀs ᴄᴏᴍᴏ${prefix}gay e outros`
                     }
                   ]
                 },
@@ -184,12 +184,12 @@ module.exports = {
                     {
                       id: `${prefix}ping`,
                       title: "   『💎』𝐏𝐈𝐍𝐆",
-                      description: "Vᴇʀɪғɪᴄᴀʀ ʟᴀᴛᴇ̂ɴᴄɪᴀ ᴅᴏ ʙᴏᴛ"
+                      description: "ᴠᴇʀɪғɪᴄᴀʀ ʟᴀᴛᴇ̂ɴᴄɪᴀ ᴅᴏ ʙᴏᴛ"
                     },
                     {
                       id: `${prefix}alugarbot`,
                       title: "   『💎』𝐀𝐋𝐔𝐆𝐀𝐑 𝐁𝐎𝐓",
-                      description: "Iɴғᴏʀᴍᴀçõᴇs ᴘᴀʀᴀ ᴀ ᴀʟᴜɢᴜᴇʟ ᴅᴏ ʙᴏᴛ"
+                      description: "ɪɴғᴏʀᴍᴀçõᴇs ᴘᴀʀᴀ ᴀ ᴀʟᴜɢᴜᴇʟ ᴅᴏ ʙᴏᴛ"
                     }
                   ]
                 }
@@ -224,7 +224,7 @@ module.exports = {
 
       await conn.sendMessage(
         from,
-        { text: "❌ Erro ao gerar menu." },
+        { text: "❌ ᴇʀʀᴏ ᴀᴏ ɢᴇʀᴀʀ ᴍᴇɴᴜ." },
         { quoted: msg }
       );
     }

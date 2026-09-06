@@ -59,7 +59,7 @@ ${getFraseFilosofica()}
       await conn.sendMessage(from, { react: { text: "👑", key: msg.key } });
 
     } catch {
-      await conn.sendMessage(from, { text: "❌ Erro Diversos" }, { quoted: msg });
+      await conn.sendMessage(from, { text: "❌ ᴇʀʀᴏ ᴅɪᴠᴇʀsᴏs" }, { quoted: msg });
     }
   }
 };

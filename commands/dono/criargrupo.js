@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
+  permissions: { owner: true },
   name: "criargrupo",
   description: "𝑪𝒓𝒊𝒂 𝒖𝒎 𝒈𝒓𝒖𝒑𝒐 𝒄𝒐𝒎 𝒏𝒐𝒎𝒆 𝒆 𝒇𝒐𝒕𝒐 𝒑𝒆𝒓𝒔𝒐𝒏𝒂𝒍𝒊𝒛𝒂𝒅𝒂",
 
@@ -13,21 +14,21 @@ module.exports = {
       const owner = config.ownerName || "LukaModzz";
       const ownerNumber = config.ownerNumber || "5563992003562";
       const ownerLid = config.ownerLid || null;
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       const sender = msg.key.participant || from;
       const senderClean = sender.replace(/[^0-9]/g, "");
       const ownerClean = ownerNumber.replace(/[^0-9]/g, "");
-      
+
       const isOwnerByNumber = senderClean === ownerClean;
       const isOwnerByLid = ownerLid && sender === ownerLid;
       const isOwner = isOwnerByNumber || isOwnerByLid;
-      
+
       if (!isOwner) {
         return conn.sendMessage(from, {
-          text: `❌ *Apenas o dono do bot pode usar este comando!*`,
+          text: `❌ *ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴅᴏ ʙᴏᴛ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!*`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -35,12 +36,12 @@ module.exports = {
       }
 
       const groupName = args.join(" ") || "Testes";
-      
+
       await conn.sendMessage(from, { react: { text: "⚙️", key: msg.key } });
 
       // 🔥 Avisa que vai demorar um pouco
       await conn.sendMessage(from, {
-        text: "⏳ *Criando grupo...* Aguarde alguns segundos.",
+        text: "⏳ *ᴄʀɪᴀɴᴅᴏ ɢʀᴜᴘᴏ...* ᴀɢᴜᴀʀᴅᴇ ᴀʟɢᴜɴs sᴇɢᴜɴᴅᴏs.",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       });
 
@@ -48,7 +49,7 @@ module.exports = {
       await delay(5000);
 
       const ownerJid = ownerClean + "@s.whatsapp.net";
-      
+
       // 🔥 Apenas UMA tentativa
       const group = await conn.groupCreate(groupName, [ownerJid]);
       const groupId = group.id;
@@ -60,7 +61,7 @@ module.exports = {
 
       // Define a foto do grupo
       const imgPath = path.join(__dirname, "..", "..", "imagens", "bot.jpg");
-      
+
       if (fs.existsSync(imgPath)) {
         try {
           await delay(2000);
@@ -82,12 +83,12 @@ module.exports = {
 
       // Mensagem no grupo
       await conn.sendMessage(groupId, {
-        text: `🎉 *Grupo criado com sucesso!*\n\n📛 *Nome:* ${groupName}\n\n🪐 *LukaModzz BOT*`
+        text: `🎉 *ɢʀᴜᴘᴏ ᴄʀɪᴀᴅᴏ ᴄᴏᴍ sᴜᴄᴇssᴏ!*\n\n📛 *ɴᴏᴍᴇ:* ${groupName}\n\n🪐 *ʟᴜᴋᴀᴍᴏᴅᴢᴢ ʙᴏᴛ*`
       });
 
       // Confirmação no chat atual
       await conn.sendMessage(from, {
-        text: `✅ *Grupo "${groupName}" criado!*\n\n🔗 *Link:* ${inviteLink}\n🆔 *ID:* \`${groupId}\`\n🖼️ *Foto:* ${fs.existsSync(imgPath) ? '✅ Definida' : '❌ Não encontrada'}`,
+        text: `✅ *ɢʀᴜᴘᴏ "${groupName}" ᴄʀɪᴀᴅᴏ!*\n\n🔗 *ʟɪɴᴋ:* ${inviteLink}\n🆔 *ɪᴅ:* \`${groupId}\`\n🖼️ *ғᴏᴛᴏ:* ${fs.existsSync(imgPath) ? '✅ Definida' : '❌ Não encontrada'}`,
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, {
         quoted: createStatusQuoted(msg)
@@ -97,13 +98,13 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro criargrupo:", error);
-      
-      let errorMsg = "❌ Erro ao criar grupo!";
+
+      let errorMsg = "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ɢʀᴜᴘᴏ!";
       if (error.data === 429) {
         errorMsg = "❌ *Limite de criação excedido!*\n\n⚠️ O WhatsApp limita a criação de grupos.\n⏳ Aguarde alguns minutos e tente novamente.";
       }
-      
-      await conn.sendMessage(from, { 
+
+      await conn.sendMessage(from, {
         text: errorMsg,
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, { quoted: msg });

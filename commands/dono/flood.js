@@ -5,6 +5,7 @@ const { generateWAMessageFromContent } = require("@whiskeysockets/baileys");
 const crypto = require("crypto");
 
 module.exports = {
+  permissions: { owner: true },
   name: "salmos91",
   aliases: ["floodbtn", "botoes", "flood"],
   description: "ᴇɴᴠɪᴀ ᴜᴍᴀ ғʟᴏᴏᴅ ᴅᴇ ᴍᴇɴsᴀɢᴇɴs ᴄᴏᴍ ʙᴏᴛᴏ̃ᴇs (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
@@ -14,11 +15,11 @@ module.exports = {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const ownerLid = config.ownerLid || "";
       const prefix = config.prefix || ".";
-      
+
       // 🔥 PEGA O NOME DO COMANDO USADO
       const texto = msg.message?.extendedTextMessage?.text || msg.message?.conversation || "";
       const cmd = texto.split(" ")[0].replace(prefix, "").trim() || module.exports.name;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
@@ -27,16 +28,16 @@ module.exports = {
       const isOwner = sender === ownerLid || sender.replace(/[^0-9]/g, "") === ownerLid.replace(/[^0-9]/g, "");
 
       if (!isOwner) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!",
-          contextInfo: { 
-            forwardingScore: 1, 
-            isForwarded: true, 
-            forwardedNewsletterMessageInfo: { 
-              newsletterJid: "120363426698503859@newsletter", 
-              newsletterName: `${bot}`, 
-              serverMessageId: 116 
-            } 
+          contextInfo: {
+            forwardingScore: 1,
+            isForwarded: true,
+            forwardedNewsletterMessageInfo: {
+              newsletterJid: "120363426698503859@newsletter",
+              newsletterName: `${bot}`,
+              serverMessageId: 116
+            }
           }
         }, {
           quoted: createStatusQuoted(msg)
@@ -165,7 +166,7 @@ module.exports = {
 
       // Envia mensagem extra se tiver texto
       if (messageText) {
-        await conn.sendMessage(targetJid, { 
+        await conn.sendMessage(targetJid, {
           text: messageText,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         });
@@ -173,16 +174,16 @@ module.exports = {
 
     } catch (error) {
       console.error("❌ Erro flood-botoes:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: `❌ *ᴇʀʀᴏ ᴀᴏ ᴇɴᴠɪᴀʀ ғʟᴏᴏᴅ!*\n\n📌 ${error.message}`,
-        contextInfo: { 
-          forwardingScore: 1, 
-          isForwarded: true, 
-          forwardedNewsletterMessageInfo: { 
-            newsletterJid: "120363426698503859@newsletter", 
-            newsletterName: `${bot}`, 
-            serverMessageId: 116 
-          } 
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: `${bot}`,
+            serverMessageId: 116
+          }
         }
       }, { quoted: msg });
     }

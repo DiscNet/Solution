@@ -4,6 +4,7 @@ const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 
 module.exports = {
+  permissions: { group: true, admin: true, botAdmin: true },
   name: "set-perfil",
   description: "ᴛʀᴏᴄᴀ ᴀ ғᴏᴛᴏ ᴅᴇ ᴘᴇʀғɪʟ ᴅᴏ ɢʀᴜᴘᴏ",
   async execute(conn, msg, args, from, axiosInstance) {

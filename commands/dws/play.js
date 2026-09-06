@@ -12,14 +12,14 @@ module.exports = {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
       const q = args.join(" ");
-      
+
       if (!q || !q.trim()) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴍᴇ ᴅᴀ ᴍᴜ́sɪᴄᴀ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}play mc poze`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
@@ -34,7 +34,7 @@ module.exports = {
       const { data: json } = await axios.get(searchUrl, { timeout: 15000 });
 
       if (!json.status || !json.resultado || !json.resultado.length) {
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ *ɴᴇɴʜᴜᴍ ʀᴇsᴜʟᴛᴀᴅᴏ!*",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
@@ -61,7 +61,7 @@ module.exports = {
 
       // 🔥 Áudio
       const audioUrl = `https://tokito-apis.com.br/api/youtube-audio?q=${encodeURIComponent(url)}&apikey=${API_KEY}`;
-      
+
       try {
         await conn.sendMessage(from, {
           audio: { url: audioUrl },
@@ -87,7 +87,7 @@ module.exports = {
 
     } catch (error) {
       console.error("ᴘʟᴀʏ:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴜsᴄᴀʀ ᴀ ᴍᴜ́sɪᴄᴀ!*",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });

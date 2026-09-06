@@ -26,10 +26,10 @@ function getFraseFilosofica() {
 function getComandosDaPasta(pastaNome) {
   const pastaPath = path.join(__dirname, '..', pastaNome);
   if (!fs.existsSync(pastaPath)) return [];
-  
+
   const comandos = [];
   const arquivos = fs.readdirSync(pastaPath).filter(f => f.endsWith('.js'));
-  
+
   for (const arquivo of arquivos) {
     try {
       const cmdPath = path.join(pastaPath, arquivo);
@@ -111,7 +111,7 @@ ${getFraseFilosofica()}`;
 
     } catch (error) {
       console.error("Erro no menusticker:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄᴀʀʀᴇɢᴀʀ ᴏ ᴍᴇɴᴜ!",
         contextInfo: {
           forwardingScore: 1,

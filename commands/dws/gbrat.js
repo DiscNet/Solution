@@ -5,14 +5,14 @@ const axios = require("axios");
 
 module.exports = {
   name: "gbrat",
-  description: "🎨 Gera GIF animado Brat",
+  description: "🎨 ɢᴇʀᴀ ɢɪғ ᴀɴɪᴍᴀᴅᴏ ʙʀᴀᴛ",
 
   async execute(conn, msg, args, from) {
     try {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
@@ -22,12 +22,12 @@ module.exports = {
 
       // 🔥 Baixa o vídeo como buffer e envia
       const apiUrl = `https://tokito-apis.com.br/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${API_KEY}`;
-      
-      const response = await axios.get(apiUrl, { 
+
+      const response = await axios.get(apiUrl, {
         responseType: "arraybuffer",
-        timeout: 30000 
+        timeout: 30000
       });
-      
+
       const videoBuffer = Buffer.from(response.data);
 
       if (videoBuffer.length < 5000) {

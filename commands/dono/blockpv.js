@@ -12,6 +12,7 @@ async function reply(conn, from, msg, text) {
 }
 
 module.exports = {
+  permissions: { owner: true },
   name: "blockpv",
   aliases: ["bloquearpv"],
   description: "ʙʟᴏǫᴜᴇɪᴀ ᴜᴍ ʀᴇᴍᴇᴛᴇɴᴛᴇ ᴅᴏ ᴘᴠ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",

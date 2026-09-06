@@ -58,9 +58,10 @@ async function reply(conn, from, msg, text, bot) {
 }
 
 module.exports = {
+  permissions: { group: true, admin: true },
   name: "blockcmd",
   aliases: ["blcmd"],
-  description: "Bloqueia um comando no grupo, incluindo todos os seus aliases",
+  description: "ʙʟᴏǫᴜᴇɪᴀ ᴜᴍ ᴄᴏᴍᴀɴᴅᴏ ɴᴏ ɢʀᴜᴘᴏ, ɪɴᴄʟᴜɪɴᴅᴏ ᴛᴏᴅᴏs ᴏs sᴇᴜs ᴀʟɪᴀsᴇs",
 
   async execute(conn, msg, args, from, _axiosInstance, cmdUsado) {
     const bot = config.botName || "LukaModzz";

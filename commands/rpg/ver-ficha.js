@@ -12,6 +12,7 @@ function carregarDb() {
 }
 
 module.exports = {
+  permissions: { owner: true },
   name: "ver-ficha",
   aliases: ["verficha", "fichauser", "userficha"],
   description: "ᴠᴇʀ ᴀ ғɪᴄʜᴀ ᴅᴇ ᴏᴜᴛʀᴏ ᴜsᴜᴀ́ʀɪᴏ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
@@ -20,7 +21,7 @@ module.exports = {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const ownerLid = config.ownerLid || "";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -47,10 +48,10 @@ module.exports = {
 
       // 🔥 VERIFICA SE MARCOU ALGUÉM
       const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-      
+
       if (!mentionedJid || mentionedJid.length === 0) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴍᴀʀǫᴜᴇ ᴏ ᴜsᴜᴀ́ʀɪᴏ ǫᴜᴇ ᴅᴇsᴇᴊᴀ ᴠᴇʀ ᴀ ғɪᴄʜᴀ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: .ver-ficha @usuario`,
+          text: `❌ ᴍᴀʀǫᴜᴇ ᴏ ᴜsᴜᴀ́ʀɪᴏ ǫᴜᴇ ᴅᴇsᴇᴊᴀ ᴠᴇʀ ᴀ ғɪᴄʜᴀ!\n\n📌 ᴇxᴇᴍᴘʟᴏ: .ver-ficha @ᴜsᴜᴀʀɪᴏ`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -85,7 +86,7 @@ module.exports = {
       }
 
       const ficha = db.usuarios[alvoJid];
-      
+
       // 🔥 PEGA O NOME DO ALVO
       let nomeAlvo = ficha.pushName || alvoJid.split('@')[0];
       if (alvoJid.endsWith("@s.whatsapp.net")) {

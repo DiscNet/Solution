@@ -15,15 +15,15 @@ module.exports = {
       const tokitoApi = config.tokitoApi;
       const texto = msg.message?.extendedTextMessage?.text || msg.message?.conversation || "";
       const cmd = texto.split(" ")[0].replace(prefix, "").trim();
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
       const q = args.join(" ");
-      
+
       if (!q) {
-        return await conn.sendMessage(from, { 
-          text: `❌ *ᴅɪɢɪᴛᴇ ᴏ ɴᴏᴍᴇ ᴅᴀ ᴍᴜ́sɪᴄᴀ!*\n\n🎧 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}${cmd} ᴇᴘᴏᴄʜ`,
+        return await conn.sendMessage(from, {
+          text: `❌ *ᴅɪɢɪᴛᴇ ᴏ ɴᴏᴍᴇ ᴅᴀ ᴍᴜ́sɪᴄᴀ!*\n\n🎧 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}${cmd} epoch`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -38,7 +38,7 @@ module.exports = {
 
       if (!data || !data.status || !data.resultado) {
         await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
-        return await conn.sendMessage(from, { 
+        return await conn.sendMessage(from, {
           text: "❌ *ᴍᴜ́sɪᴄᴀ ɴᴀ̃ᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴀ!*",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
@@ -92,7 +92,7 @@ module.exports = {
     } catch (error) {
       console.error("sᴘᴏᴛɪғʏ:", error);
       await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴜsᴄᴀʀ ᴀ ᴍᴜ́sɪᴄᴀ!*",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });

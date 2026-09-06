@@ -12,6 +12,7 @@ function carregarDb() {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "ranklevel",
   aliases: ["ranklv", "rl"],
   description: "ᴍᴏsᴛʀᴀ ᴏ ʀᴀɴᴋɪɴɢ ᴅᴏs ᴍᴇʟʜᴏʀᴇs ʟᴇᴠᴇʟs",
@@ -23,7 +24,7 @@ module.exports = {
       // Verifica se o RPG está ativo
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -58,7 +59,7 @@ module.exports = {
         const xpNecessario = user.level * 100;
         const progresso = Math.floor((user.xp / xpNecessario) * 10);
         const barra = "▰".repeat(progresso) + "▱".repeat(10 - progresso);
-        
+
         texto += `${emoji} *${nome}*
    📊 Level ${user.level} • XP ${user.xp}/${xpNecessario}
    ${barra}

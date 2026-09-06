@@ -175,7 +175,7 @@ async function stickerToPng(stickerBuffer) {
 module.exports = {
   name: "toimg",
   aliases: ["stickerimg", "stickerimage"],
-  description: "Converte figurinha em imagem PNG",
+  description: "ᴄᴏɴᴠᴇʀᴛᴇ ғɪɢᴜʀɪɴʜᴀ ᴇᴍ ɪᴍᴀɢᴇᴍ ᴘɴɢ",
 
   async execute(conn, msg, args, from) {
     const bot = config.botName || "LukaModzz";

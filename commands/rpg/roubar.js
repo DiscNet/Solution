@@ -18,6 +18,7 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "roubar",
   aliases: ["steal", "rob"],
   description: "ᴛᴇɴᴛᴀ ʀᴏᴜʙᴀʀ ᴏ ɢᴏʟᴅ ᴅᴇ ᴜᴍ ᴜsᴜᴀ́ʀɪᴏ",
@@ -25,14 +26,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // Verifica se o RPG está ativo
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -53,7 +54,7 @@ module.exports = {
 
       // 🔥 VERIFICA SE MARCOU ALGUÉM
       const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-      
+
       if (!mentionedJid || mentionedJid.length === 0) {
         return await conn.sendMessage(from, {
           text: `❌ ᴍᴀʀǫᴜᴇ ᴀʟɢᴜᴇ́ᴍ ᴘᴀʀᴀ ʀᴏᴜʙᴀʀ!\n\n📌 ${prefix}roubar @usuario`,
@@ -77,7 +78,7 @@ module.exports = {
       // Verifica se o ladrão está registrado
       if (!db.usuarios[ladraoJid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -96,14 +97,14 @@ module.exports = {
       // 🔥 VERIFICA COOLDOWN (15 MINUTOS)
       const agora = Date.now();
       const cooldown = 15 * 60 * 1000; // 15 minutos
-      
+
       if (ladrao.ultimoRoubo && (agora - ladrao.ultimoRoubo) < cooldown) {
         const tempoRestante = Math.ceil((cooldown - (agora - ladrao.ultimoRoubo)) / 1000);
         const minutos = Math.floor(tempoRestante / 60);
         const segundos = tempoRestante % 60;
-        
+
         return await conn.sendMessage(from, {
-          text: `🥷 *ᴀɢᴜᴀʀᴅᴇ!*\n\nᴠᴏᴄᴇ ᴊᴀ́ ᴛᴇɴᴛᴏᴜ ʀᴏᴜʙᴀʀ ʀᴇᴄᴇɴᴛᴇᴍᴇɴᴛᴇ.\n\n⏳ ᴛᴇᴍᴘᴏ ʀᴇsᴛᴀɴᴛᴇ: ${minutos}m ${segundos}s`,
+          text: `🥷 *ᴀɢᴜᴀʀᴅᴇ!*\n\nᴠᴏᴄᴇ ᴊᴀ́ ᴛᴇɴᴛᴏᴜ ʀᴏᴜʙᴀʀ ʀᴇᴄᴇɴᴛᴇᴍᴇɴᴛᴇ.\n\n⏳ ᴛᴇᴍᴘᴏ ʀᴇsᴛᴀɴᴛᴇ: ${minutos}ᴍ ${segundos}s`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -111,14 +112,14 @@ module.exports = {
       // 🔥 VERIFICA SE A VÍTIMA TEM GOLD SUFICIENTE
       if (vitima.gold < 10) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴇsᴛᴇ ᴜsᴜᴀ́ʀɪᴏ ᴇsᴛᴀ́ ᴘᴏʙʀᴇ ᴅᴇᴍᴀɪs ᴘᴀʀᴀ sᴇʀ ʀᴏᴜʙᴀᴅᴏ! (${vitima.gold} golds)`,
+          text: `❌ ᴇsᴛᴇ ᴜsᴜᴀ́ʀɪᴏ ᴇsᴛᴀ́ ᴘᴏʙʀᴇ ᴅᴇᴍᴀɪs ᴘᴀʀᴀ sᴇʀ ʀᴏᴜʙᴀᴅᴏ! (${vitima.gold} ɢᴏʟᴅs)`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
 
       // 🔥 DETERMINA O RESULTADO (50% SUCESSO / 50% FALHA)
       const sucesso = Math.random() < 0.5;
-      
+
       let mensagem = "";
       let goldRoubado = 0;
       let xpPerdido = 0;
@@ -127,10 +128,10 @@ module.exports = {
         // 🔥 SUCESSO: Rouba entre 20% e 30% do gold da vítima
         const percentual = Math.floor(Math.random() * 11) + 20; // 20% a 30%
         goldRoubado = Math.floor(vitima.gold * (percentual / 100));
-        
+
         // Garante que não rouba mais do que a vítima tem
         if (goldRoubado > vitima.gold) goldRoubado = vitima.gold;
-        
+
         // Transfere o gold
         vitima.gold -= goldRoubado;
         ladrao.gold += goldRoubado;
@@ -152,10 +153,10 @@ module.exports = {
         // 🔥 FALHA: Perde entre 3% e 7% de XP
         const percentualXp = Math.floor(Math.random() * 5) + 3; // 3% a 7%
         xpPerdido = Math.floor(ladrao.xp * (percentualXp / 100));
-        
+
         // Garante que não perde mais XP do que tem
         if (xpPerdido > ladrao.xp) xpPerdido = ladrao.xp;
-        
+
         ladrao.xp -= xpPerdido;
 
         mensagem = `❌ *ᴛᴇɴᴛᴀᴛɪᴠᴀ ᴅᴇ ʀᴏᴜʙᴏ ғᴀʟʜᴏᴜ!*

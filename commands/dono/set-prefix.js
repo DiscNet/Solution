@@ -39,6 +39,7 @@ async function reply(conn, from, msg, text, bot) {
 }
 
 module.exports = {
+  permissions: { owner: true },
   name: "setprefix",
   aliases: ["set-prefix", "prefixo", "changeprefix"],
   description: "ᴀʟᴛᴇʀᴀ ᴏ ᴘʀᴇғɪxᴏ ᴅᴏ ʙᴏᴛ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",

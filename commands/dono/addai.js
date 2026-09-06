@@ -2,6 +2,7 @@
 const config = require("../../config/config");
 
 module.exports = {
+  permissions: { owner: true },
   name: "addai",
   aliases: ["adicionarai", "metai"],
   description: "ᴀᴅɪᴄɪᴏɴᴀ ᴀ ᴍᴇᴛᴀ ᴀɪ ᴀᴏ ɢʀᴜᴘᴏ (ᴀᴘᴇɴᴀs ᴅᴏɴᴏ)",
@@ -124,7 +125,7 @@ module.exports = {
           try {
             // Tenta adicionar como contato
             await conn.sendMessage(META_AI_JID, {
-              text: "👋 Olá! Estou tentando adicionar você ao grupo."
+              text: "👋 ᴏʟá! ᴇsᴛᴏᴜ ᴛᴇɴᴛᴀɴᴅᴏ ᴀᴅɪᴄɪᴏɴᴀʀ ᴠᴏᴄê ᴀᴏ ɢʀᴜᴘᴏ."
             });
 
             // Aguarda 2 segundos

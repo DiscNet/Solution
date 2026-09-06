@@ -40,6 +40,7 @@ function randomItem(arr) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "caçar",
   aliases: ["cacar", "hunt", "caça"],
   description: "ᴄᴀᴄ̧ᴀ ᴀɴɪᴍᴀɪs ᴇ ᴍᴏɴsᴛʀᴏs ᴘᴀʀᴀ ɢᴀɴʜᴀʀ ʀᴇᴄᴏᴍᴘᴇɴsᴀs",
@@ -47,14 +48,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // 🔥 VERIFICA SE O RPG ESTÁ ATIVO NO GRUPO
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -69,7 +70,7 @@ module.exports = {
 
       // Pega o LID do usuário
       let lid = msg.key.participant || msg.key.remoteJid || from;
-      
+
       if (from.endsWith("@g.us") && msg.key.participant) {
         lid = msg.key.participant;
       }
@@ -81,7 +82,7 @@ module.exports = {
       // Verifica se está registrado
       if (!db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -99,14 +100,14 @@ module.exports = {
       // 🔥 VERIFICA COOLDOWN (10 MINUTOS)
       const agora = Date.now();
       const cooldown = 10 * 60 * 1000; // 10 minutos
-      
+
       if (ficha.ultimaCaca && (agora - ficha.ultimaCaca) < cooldown) {
         const tempoRestante = Math.ceil((cooldown - (agora - ficha.ultimaCaca)) / 1000);
         const minutos = Math.floor(tempoRestante / 60);
         const segundos = tempoRestante % 60;
-        
+
         return await conn.sendMessage(from, {
-          text: `🏹 *ᴀɢᴜᴀʀᴅᴇ!*\n\nᴠᴏᴄᴇ ᴊᴀ́ ᴄᴀᴄ̧ᴏᴜ ʀᴇᴄᴇɴᴛᴇᴍᴇɴᴛᴇ.\n\n⏳ ᴛᴇᴍᴘᴏ ʀᴇsᴛᴀɴᴛᴇ: ${minutos}m ${segundos}s`,
+          text: `🏹 *ᴀɢᴜᴀʀᴅᴇ!*\n\nᴠᴏᴄᴇ ᴊᴀ́ ᴄᴀᴄ̧ᴏᴜ ʀᴇᴄᴇɴᴛᴇᴍᴇɴᴛᴇ.\n\n⏳ ᴛᴇᴍᴘᴏ ʀᴇsᴛᴀɴᴛᴇ: ${minutos}ᴍ ${segundos}s`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -124,10 +125,10 @@ module.exports = {
       const alvosNomes = Object.keys(todosAlvos);
       const alvoNome = randomItem(alvosNomes);
       const alvo = todosAlvos[alvoNome];
-      
+
       // Verifica se o alvo é monstro ou animal
       const ehMonstro = itemsData.monstros[alvoNome] !== undefined;
-      
+
       // 🔥 50% DE CHANCE DE SUCESSO
       const sucesso = Math.random() < 0.5;
       let mensagem = "";
@@ -141,13 +142,13 @@ module.exports = {
       if (sucesso) {
         // 🔥 SUCESSO: MATOU O ALVO
         const qtd = Math.random() < 0.08 ? 2 : 1; // 8% de chance de matar 2
-        
+
         // XP: 3 a 32
         xpGanho = Math.floor(Math.random() * 30) + 3;
-        
+
         // Gold: baseado no alvo
         goldGanho = alvo.gold * qtd;
-        
+
         // Drops: orelha de goblin (se for goblin)
         if (alvo.drop && alvo.drop === "orelha de goblin") {
           const qtdOrelhas = Math.random() < 0.5 ? 1 : 2; // 50% chance de 1 ou 2
@@ -155,23 +156,23 @@ module.exports = {
             drops.push("orelha de goblin");
           }
         }
-        
+
         // Perde um pouco de vida (5-15% da vida máxima)
         vidaPerdida = Math.floor(ficha.vidaMax * (Math.random() * 0.10 + 0.05));
         if (vidaPerdida > ficha.vida) vidaPerdida = ficha.vida;
         ficha.vida -= vidaPerdida;
-        
+
         // Adiciona XP
         ficha.xp += xpGanho;
-        
+
         // Adiciona Gold
         ficha.gold += goldGanho;
-        
+
         // Adiciona drops ao inventário
         for (const drop of drops) {
           ficha.itens.push(drop);
         }
-        
+
         // Verifica level up
         const xpNecessario = ficha.level * 100;
         while (ficha.xp >= xpNecessario) {
@@ -215,10 +216,10 @@ module.exports = {
         vidaPerdida = Math.floor(ficha.vidaMax * (Math.random() * 0.12 + 0.08));
         if (vidaPerdida > ficha.vida) vidaPerdida = ficha.vida;
         ficha.vida -= vidaPerdida;
-        
+
         // 3% de chance de poder tentar novamente
         podeTentarNovamente = Math.random() < 0.03;
-        
+
         // 🔥 MONTA MENSAGEM DE FALHA
         mensagem = `❌ *ᴀ ᴄᴀᴄ̧ᴀ ғᴏɪ ᴜᴍ ғʀᴀᴄᴀssᴏ!*
 
@@ -236,7 +237,7 @@ module.exports = {
 
       // Registra a última caça
       ficha.ultimaCaca = agora;
-      
+
       // Se pode tentar novamente, reseta o cooldown
       if (podeTentarNovamente) {
         ficha.ultimaCaca = null;

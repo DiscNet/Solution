@@ -26,6 +26,7 @@ function salvarDb(data) {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "lojapets",
   aliases: ["petshop", "petstore", "lojapet"],
   description: "ᴄᴏᴍᴘʀᴇ ᴘᴇᴛs ᴘᴀʀᴀ ᴛᴇ ᴀᴄᴏᴍᴘᴀɴʜᴀʀ ᴇᴍ sᴜᴀs ᴀᴠᴇɴᴛᴜʀᴀs",
@@ -33,14 +34,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // Verifica se o RPG está ativo
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -55,7 +56,7 @@ module.exports = {
 
       if (!db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
       }
@@ -66,7 +67,7 @@ module.exports = {
       if (args[0] && args[0].toLowerCase() === "comprar") {
         let petNome = args.slice(1).join(" ").trim();
         petNome = petNome.replace(/^["']|["']$/g, "").trim();
-        
+
         if (!petNome) {
           return await conn.sendMessage(from, {
             text: `❌ ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴍᴇ ᴅᴏ ᴘᴇᴛ!\n📌 ${prefix}lojapets comprar filhote de lobo\n📌 ${prefix}lojapets comprar "filhote de lobo"`,
@@ -126,14 +127,14 @@ ${petEncontrado.emoji} *ᴘᴇᴛ:* ${petNomeOriginal}
 📝 ${petEncontrado.descricao}`,
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
-        
+
         return;
       }
 
       // =====================
       // MENU INTERATIVO DA LOJA DE PETS
       // =====================
-      
+
       const sections = [];
 
       // Agrupa pets por raridade
@@ -150,14 +151,14 @@ ${petEncontrado.emoji} *ᴘᴇᴛ:* ${petNomeOriginal}
 
         if (petsDaRaridade.length > 0) {
           const rows = [];
-          
+
           for (const [nome, pet] of petsDaRaridade) {
             const disponivel = ficha.level >= pet.level;
             const status = disponivel ? "✅" : "🔒";
             rows.push({
               id: `${prefix}lojapets comprar "${nome}"`,
               title: `${status} ${pet.emoji} ${nome}`,
-              description: `💰 ${pet.preco} golds | Lv.${pet.level} | ${pet.descricao.substring(0, 30)}...`
+              description: `💰 ${pet.preco} ɢᴏʟᴅs | ʟᴠ.${pet.level} | ${pet.descricao.substring(0, 30)}...`
             });
           }
 
@@ -175,11 +176,11 @@ ${petEncontrado.emoji} *ᴘᴇᴛ:* ${petNomeOriginal}
           {
             id: `${prefix}ficha`,
             title: `📊 ${ficha.pushName}`,
-            description: `Level ${ficha.level} | ${ficha.classe} | 💰 ${ficha.gold} golds`
+            description: `ʟᴇᴠᴇʟ ${ficha.level} | ${ficha.classe} | 💰 ${ficha.gold} ɢᴏʟᴅs`
           },
           {
             id: `${prefix}petinfo`,
-            title: `🐾 ${ficha.pet.length} pets`,
+            title: `🐾 ${ficha.pet.length} ᴘᴇᴛs`,
             description: ficha.pet.length > 0 ? ficha.pet.join(", ") : "ɴᴇɴʜᴜᴍ ᴘᴇᴛ"
           }
         ]

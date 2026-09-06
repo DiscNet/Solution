@@ -9,7 +9,7 @@ const execPromise = util.promisify(exec);
 
 module.exports = {
   name: "sepia",
-  description: "Aplica efeito sépia",
+  description: "ᴀᴘʟɪᴄᴀ ᴇғᴇɪᴛᴏ séᴘɪᴀ",
   async execute(conn, msg, args, from) {
     try {
       const owner = config.ownerName || "LukaModzz";
@@ -20,7 +20,7 @@ module.exports = {
         const q = msg.message.extendedTextMessage.contextInfo.quotedMessage;
         imageBuffer = await downloadMediaMessage({ message: { imageMessage: q.imageMessage }, key: msg.key }, "buffer", {}, {});
       }
-      if (!imageBuffer) return conn.sendMessage(from, { text: "❌ Envie ou responda a uma imagem com .sepia" }, { quoted: msg });
+      if (!imageBuffer) return conn.sendMessage(from, { text: "❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ .sepia" }, { quoted: msg });
       await conn.sendMessage(from, { react: { text: "🟤", key: msg.key } });
       const d = path.join(__dirname, "..", "..", "temp"); if (!fs.existsSync(d)) fs.mkdirSync(d, { recursive: true });
       const i = path.join(d, `s_${Date.now()}.jpg`), o = path.join(d, `s_${Date.now()}.jpg`);

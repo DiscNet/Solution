@@ -47,7 +47,7 @@ module.exports = {
   async execute(conn, msg, args, from, axiosInstance){
     try{
       const owner = config.ownerName || "LukaModzz";
-      
+
       let pushName = "Usuário";
       try {
         pushName = msg.pushName || "LukaModzz";
@@ -56,10 +56,10 @@ module.exports = {
       }
 
       const quoted = msg.message?.extendedTextMessage?.contextInfo;
-      
+
       if(!quoted?.quotedMessage?.imageMessage) {
         return conn.sendMessage(from, {
-          text: "❌ Responda a uma imagem para remover o fundo!",
+          text: "❌ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴘᴀʀᴀ ʀᴇᴍᴏᴠᴇʀ ᴏ ғᴜɴᴅᴏ!",
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -123,7 +123,7 @@ module.exports = {
     } catch(e) {
       console.log(e);
       await conn.sendMessage(from, {
-        text: "❌ Erro ao remover fundo!",
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ʀᴇᴍᴏᴠᴇʀ ғᴜɴᴅᴏ!",
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,

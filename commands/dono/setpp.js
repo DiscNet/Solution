@@ -4,6 +4,7 @@ const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 
 module.exports = {
+  permissions: { owner: true },
   name: "setpp",
   description: "𝑻𝒓𝒐𝒄𝒂 𝒂 𝒇𝒐𝒕𝒐 𝒅𝒆 𝒑𝒆𝒓𝒇𝒊𝒍 𝒅𝒐 𝒃𝒐𝒕",
   async execute(conn, msg, args, from, axiosInstance) {
@@ -25,7 +26,7 @@ module.exports = {
 
       if (!imageBuffer) {
         return conn.sendMessage(from, {
-          text: "❌ Envie ou responda a uma imagem com .setpp",
+          text: "❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ .setpp",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
@@ -36,7 +37,7 @@ module.exports = {
       await conn.updateProfilePicture(conn.user.id, imageBuffer);
 
       await conn.sendMessage(from, {
-        text: "✅ Foto de perfil do bot atualizada!",
+        text: "✅ ғᴏᴛᴏ ᴅᴇ ᴘᴇʀғɪʟ ᴅᴏ ʙᴏᴛ ᴀᴛᴜᴀʟɪᴢᴀᴅᴀ!",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: " ̵ ̵̲͞𝑳𝒖𝒌𝒂𝐌𝐨𝐝𝐳𝐳 だ", serverMessageId: 116 } }
       }, {
         quoted: createStatusQuoted(msg)
@@ -46,7 +47,7 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro setpp:", error);
-      await conn.sendMessage(from, { text: "❌ Erro ao trocar foto de perfil." }, { quoted: msg });
+      await conn.sendMessage(from, { text: "❌ ᴇʀʀᴏ ᴀᴏ ᴛʀᴏᴄᴀʀ ғᴏᴛᴏ ᴅᴇ ᴘᴇʀғɪʟ." }, { quoted: msg });
     }
   }
 };

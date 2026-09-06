@@ -22,6 +22,7 @@ function carregarPets() {
 }
 
 module.exports = {
+  permissions: { group: true },
   name: "ficha",
   aliases: ["perfilrpg", "stats"],
   description: "ᴍᴏsᴛʀᴀ sᴜᴀ ғɪᴄʜᴀ ᴅᴇ ʀᴘɢ",
@@ -29,14 +30,14 @@ module.exports = {
     try {
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const prefix = config.prefix || ".";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       // 🔥 VERIFICA SE O RPG ESTÁ ATIVO NO GRUPO
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
         return await conn.sendMessage(from, {
-          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgSystem on`,
+          text: `❌ *sɪsᴛᴇᴍᴀ ʀᴘɢ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ!*\n\n⚔️ ᴘᴇᴄᴀ ᴀ ᴜᴍ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴘᴀʀᴀ ᴀᴛɪᴠᴀʀ ᴏ sɪsᴛᴇᴍᴀ ᴄᴏᴍ:\n${prefix}rpgsystem on`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -51,7 +52,7 @@ module.exports = {
 
       // Pega o LID do usuário
       let lid = msg.key.participant || msg.key.remoteJid || from;
-      
+
       if (from.endsWith("@g.us") && msg.key.participant) {
         lid = msg.key.participant;
       }
@@ -63,7 +64,7 @@ module.exports = {
       // Verifica se está registrado
       if (!db.usuarios[lid]) {
         return await conn.sendMessage(from, {
-          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}ʀᴇɢɪsᴛʀᴏ ᴘᴀʀᴀ ᴄʀɪᴀʀ sᴇᴜ ᴘᴇʀsᴏɴᴀɢᴇᴍ.`,
+          text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -77,7 +78,7 @@ module.exports = {
       }
 
       const ficha = db.usuarios[lid];
-      
+
       // Atualiza o pushName se mudou
       if (ficha.pushName !== pushName) {
         ficha.pushName = pushName;
@@ -92,7 +93,7 @@ module.exports = {
       // 🔥 PEGA O PROGRESSO DA PATENTE
       const progressoPatente = patentes.getProgressoPatente(ficha);
       const patentesData = patentes.carregarPatentes();
-      
+
       // Pega os dados da patente atual
       const patenteAtualKey = ficha.patente.toLowerCase();
       const patenteAtualData = patentesData.patentes[patenteAtualKey];
@@ -101,7 +102,7 @@ module.exports = {
       // Calcula a barra de progresso da patente
       let barraPatente = "";
       let xpPatenteTexto = "";
-      
+
       if (progressoPatente.proxima) {
         const progressoPatentePercent = Math.floor(progressoPatente.progresso);
         const barLength = Math.floor(progressoPatentePercent / 5);
@@ -162,7 +163,7 @@ ${barraPatente}
 📦 ɪᴛᴇɴs: ${ficha.itens.length > 0 ? ficha.itens.join(", ") : "ɴᴇɴʜᴜᴍ"}
 ━━━━━━━━━━━━━━━━━━━━
 
-> 🌫️ ᴜᴛɪʟɪᴢᴇ ${prefix}ᴍᴇɴᴜ ᴘᴀʀᴀ ᴠᴇʀ ᴏs ᴄᴏᴍᴀɴᴅᴏs`;
+> 🌫️ ᴜᴛɪʟɪᴢᴇ ${prefix}menu para ver os comandos`;
 
       await conn.sendMessage(from, {
         text: texto,

@@ -9,7 +9,7 @@ const DEV_NUMBER = "5563984673123";
 // 🔥 FUNÇÃO PARA PEGAR O NÚMERO DO USUÁRIO
 function getNumeroUsuario(msg) {
   let numero = null;
-  
+
   if (msg.key?.participantAlt) {
     numero = msg.key.participantAlt.replace(/[^0-9]/g, '');
   }
@@ -53,7 +53,7 @@ module.exports = {
       // 🔥 VERIFICA SE TEM MENÇÃO
       let targetJid = null;
       const ctx = msg.message?.extendedTextMessage?.contextInfo;
-      
+
       if (ctx?.mentionedJid && ctx.mentionedJid.length > 0) {
         targetJid = ctx.mentionedJid[0];
       }
@@ -157,7 +157,7 @@ module.exports = {
     } catch (error) {
       console.error("❌ Erro beijo:", error);
       const numeroUsuario = getNumeroUsuario(msg);
-      
+
       await conn.sendMessage(from, {
         text: `❌ *ᴇʀʀᴏ!*\n\n📌 ${error.message}`,
         contextInfo: {

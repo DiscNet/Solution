@@ -7,7 +7,7 @@ const path = require("path");
 
 module.exports = {
   name: "tl",
-  description: "Carousel Horizontal Scroll",
+  description: "ᴄᴀʀᴏᴜsᴇʟ ʜᴏʀɪᴢᴏɴᴛᴀʟ sᴄʀᴏʟʟ",
 
   async execute(conn, msg, args, from) {
     try {
@@ -16,10 +16,10 @@ module.exports = {
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       const imgPath = path.join(__dirname, "..", "..", "imagens", "bot.jpg");
-      
+
       if (!fs.existsSync(imgPath)) {
         return conn.sendMessage(from, {
-          text: "❌ Imagem bot.jpg não encontrada em /imagens"
+          text: "❌ ɪᴍᴀɢᴇᴍ ʙᴏᴛ.jpg ɴãᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴀ ᴇᴍ /imagens"
         }, { quoted: msg });
       }
 
@@ -34,31 +34,31 @@ module.exports = {
       const cards = [
         {
           header: { hasMediaAttachment: true, imageMessage: media.imageMessage },
-          body: { text: "Card 1 - Deslize →" },
-          footer: { text: "LukaModzz" },
+          body: { text: "ᴄᴀʀᴅ 1 - ᴅᴇsʟɪᴢᴇ →" },
+          footer: { text: "ʟᴜᴋᴀᴍᴏᴅᴢᴢ" },
           nativeFlowMessage: {
             buttons: [
-              { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Opção 1", id: "op1" }) }
+              { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "ᴏᴘçãᴏ 1", id: "op1" }) }
             ]
           }
         },
         {
           header: { hasMediaAttachment: true, imageMessage: media.imageMessage },
-          body: { text: "Card 2 - Deslize →" },
-          footer: { text: "LukaModzz" },
+          body: { text: "ᴄᴀʀᴅ 2 - ᴅᴇsʟɪᴢᴇ →" },
+          footer: { text: "ʟᴜᴋᴀᴍᴏᴅᴢᴢ" },
           nativeFlowMessage: {
             buttons: [
-              { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Opção 2", id: "op2" }) }
+              { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "ᴏᴘçãᴏ 2", id: "op2" }) }
             ]
           }
         },
         {
           header: { hasMediaAttachment: true, imageMessage: media.imageMessage },
-          body: { text: "Card 3" },
-          footer: { text: "LukaModzz" },
+          body: { text: "ᴄᴀʀᴅ 3" },
+          footer: { text: "ʟᴜᴋᴀᴍᴏᴅᴢᴢ" },
           nativeFlowMessage: {
             buttons: [
-              { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "Opção 3", id: "op3" }) }
+              { name: "quick_reply", buttonParamsJson: JSON.stringify({ display_text: "ᴏᴘçãᴏ 3", id: "op3" }) }
             ]
           }
         }
@@ -81,7 +81,7 @@ module.exports = {
     } catch (err) {
       console.error("Erro tl:", err);
       await conn.sendMessage(from, {
-        text: "❌ Erro: " + err.message,
+        text: "❌ ᴇʀʀᴏ: " + err.message,
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, { quoted: msg });
     }

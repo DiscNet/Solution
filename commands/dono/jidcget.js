@@ -1,8 +1,9 @@
 // commands/jidc.js
 
 module.exports = {
+  permissions: { owner: true },
   name: "jidc",
-  description: "Mostra o JID do canal atual",
+  description: "ᴍᴏsᴛʀᴀ ᴏ ᴊɪᴅ ᴅᴏ ᴄᴀɴᴀʟ ᴀᴛᴜᴀʟ",
 
   async execute(conn, msg, args, from) {
     try {
@@ -10,15 +11,15 @@ module.exports = {
 
       if (!jid.endsWith("@newsletter")) {
         return await conn.sendMessage(from, {
-          text: "❌ Este comando só funciona dentro de canais."
+          text: "❌ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ só ғᴜɴᴄɪᴏɴᴀ ᴅᴇɴᴛʀᴏ ᴅᴇ ᴄᴀɴᴀɪs."
         })
       }
 
       await conn.sendMessage(from, {
         text:
-`📢 Canal detectado
+`📢 ᴄᴀɴᴀʟ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ
 
-🆔 JID:
+🆔 ᴊɪᴅ:
 ${jid}`
       })
 
@@ -26,7 +27,7 @@ ${jid}`
       console.error(err)
 
       await conn.sendMessage(from, {
-        text: "❌ Erro ao obter o JID do canal."
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴏʙᴛᴇʀ ᴏ ᴊɪᴅ ᴅᴏ ᴄᴀɴᴀʟ."
       })
     }
   }

@@ -33,11 +33,11 @@ async function writeExifImg(buffer, metadata) {
 function converterBotoesParaGifted(buttonsMessage) {
   try {
     const giftedButtons = [];
-    
+
     // Verifica se é buttonsMessage
     if (buttonsMessage.buttonsMessage) {
       const btnMsg = buttonsMessage.buttonsMessage;
-      
+
       // Tenta extrair botões
       if (btnMsg.buttons && Array.isArray(btnMsg.buttons)) {
         for (const btn of btnMsg.buttons) {
@@ -49,7 +49,7 @@ function converterBotoesParaGifted(buttonsMessage) {
           }
         }
       }
-      
+
       // Tenta extrair de nativeFlowMessage
       if (btnMsg.nativeFlowMessage?.buttons) {
         for (const btn of btnMsg.nativeFlowMessage.buttons) {
@@ -65,7 +65,7 @@ function converterBotoesParaGifted(buttonsMessage) {
           }
         }
       }
-      
+
       // Tenta extrair de interactiveMessage
       if (btnMsg.interactiveMessage?.nativeFlowMessage?.buttons) {
         for (const btn of btnMsg.interactiveMessage.nativeFlowMessage.buttons) {
@@ -82,7 +82,7 @@ function converterBotoesParaGifted(buttonsMessage) {
         }
       }
     }
-    
+
     // Verifica se é interactiveMessage diretamente
     if (buttonsMessage.interactiveMessage?.nativeFlowMessage?.buttons) {
       for (const btn of buttonsMessage.interactiveMessage.nativeFlowMessage.buttons) {
@@ -98,7 +98,7 @@ function converterBotoesParaGifted(buttonsMessage) {
         }
       }
     }
-    
+
     return giftedButtons;
   } catch (e) {
     console.error("Erro ao converter botões:", e);
@@ -113,32 +113,32 @@ function extrairTextoInterativo(msgObj) {
   try {
     // Tenta extrair de buttonsMessage
     if (msgObj.buttonsMessage) {
-      return msgObj.buttonsMessage.contentText?.text || 
-             msgObj.buttonsMessage.text || 
-             msgObj.buttonsMessage.contentText || 
+      return msgObj.buttonsMessage.contentText?.text ||
+             msgObj.buttonsMessage.text ||
+             msgObj.buttonsMessage.contentText ||
              "";
     }
-    
+
     // Tenta extrair de interactiveMessage
     if (msgObj.interactiveMessage) {
-      return msgObj.interactiveMessage.body?.text || 
-             msgObj.interactiveMessage.header?.text || 
-             msgObj.interactiveMessage.footer?.text || 
+      return msgObj.interactiveMessage.body?.text ||
+             msgObj.interactiveMessage.header?.text ||
+             msgObj.interactiveMessage.footer?.text ||
              "";
     }
-    
+
     // Tenta extrair de templateMessage
     if (msgObj.templateMessage) {
       return msgObj.templateMessage.text || "";
     }
-    
+
     // Tenta extrair de listMessage
     if (msgObj.listMessage) {
-      return msgObj.listMessage.description || 
-             msgObj.listMessage.title || 
+      return msgObj.listMessage.description ||
+             msgObj.listMessage.title ||
              "";
     }
-    
+
     return "";
   } catch (e) {
     return "";
@@ -170,6 +170,7 @@ function extrairTituloInterativo(msgObj) {
 // ==============================================
 
 module.exports = {
+  permissions: { owner: true },
   name: "copiar",
   aliases: ["clonar", "copy", "clone"],
   description: "ᴄʟᴏɴᴀ ᴏᴜᴛʀᴀs ᴍᴇɴsᴀɢᴇɴs (ɪᴍᴀɢᴇᴍ, ᴠɪᴅᴇᴏ, sᴛɪᴄᴋᴇʀ, ᴛᴇxᴛᴏ ᴇ ᴏᴜᴛʀᴏs)",
@@ -918,7 +919,7 @@ ${prefix + module.exports.name}
         await conn.sendMessage(from, {
           text: `❌ ɴᴀ̃ᴏ ᴄᴏɴsᴇɢᴜɪ ᴄʟᴏɴᴀʀ ᴇssᴇ ᴛɪᴘᴏ: *${tipo}*
 
-ᴜsᴇ ${prefix}ᴅɪssᴇᴄᴀʀ ʀᴇsᴘᴏɴᴅᴇɴᴅᴏ ᴇssᴀ ᴍᴇɴsᴀɢᴇᴍ ᴘᴀʀᴀ ᴠᴇʀ ᴀ ᴇsᴛʀᴜᴛᴜʀᴀ.`,
+ᴇssᴇ ᴛɪᴘᴏ ᴅᴇ ᴍᴇɴsᴀɢᴇᴍ ᴀɪɴᴅᴀ ɴᴀ̃ᴏ ᴇ́ sᴜᴘᴏʀᴛᴀᴅᴏ ᴘᴇʟᴏ ᴄʟᴏɴᴀᴅᴏʀ.`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,

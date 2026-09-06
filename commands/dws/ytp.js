@@ -4,12 +4,12 @@ const { generateWAMessageFromContent } = require("@whiskeysockets/baileys");
 
 module.exports = {
   name: "teste",
-  description: "Teste de mensagem fantasma",
+  description: "ᴛᴇsᴛᴇ ᴅᴇ ᴍᴇɴsᴀɢᴇᴍ ғᴀɴᴛᴀsᴍᴀ",
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const owner = config.ownerName || "LukaModzz";
       const botName = config.botName || "LukaModzz";
-      
+
       let pushName = "Usuário";
       try {
         pushName = msg.pushName || "LukaModzz";
@@ -37,7 +37,7 @@ module.exports = {
       const isGroup = from ? from.includes("@g.us") : false;
 
       // ========== EXTRAIR MENSAGEM ORIGINAL ==========
-      let originalMessage = "Nenhuma";
+      let originalMessage = "ɴᴇɴʜᴜᴍᴀ";
       try {
         if (msg.message) {
           const msgKeys = Object.keys(msg.message);
@@ -66,7 +66,7 @@ module.exports = {
         from,
         {
           extendedTextMessage: {
-            text: `🧪 *DETALHES DO COMANDO*\n\n` +
+            text: `🧪 *ᴅᴇᴛᴀʟʜᴇs ᴅᴏ ᴄᴏᴍᴀɴᴅᴏ*\n\n` +
                   `━━━━━━━━━━━━━━━━━━\n\n` +
                   `📌 *Comando:* .${commandName}\n` +
                   `📝 *Descrição:* ${commandDescription}\n` +
@@ -114,10 +114,10 @@ module.exports = {
       );
 
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-      
+
     } catch (error) {
       console.error("Erro:", error);
-      await conn.sendMessage(from, { text: `❌ *Erro:* ${error.message}` });
+      await conn.sendMessage(from, { text: `❌ *ᴇʀʀᴏ:* ${error.message}` });
     }
   }
 };

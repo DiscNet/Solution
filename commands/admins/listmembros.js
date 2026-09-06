@@ -4,6 +4,7 @@ const config = require("../../config/config");
 const readmore = String.fromCharCode(8206).repeat(4001);
 
 module.exports = {
+  permissions: { group: true },
   name: "membros",
   description: "𝑳𝒊𝒔𝒕𝒂 𝒕𝒐𝒅𝒐𝒔 𝒐𝒔 𝒎𝒆𝒎𝒃𝒓𝒐𝒔 𝒅𝒐 𝒈𝒓𝒖𝒑𝒐",
   async execute(conn, msg, args, from, axiosInstance) {
@@ -11,12 +12,12 @@ module.exports = {
       const prefix = config.prefix || ".";
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
       if (!from.endsWith("@g.us")) {
-        return conn.sendMessage(from, { 
+        return conn.sendMessage(from, {
           text: "❌ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ sᴏ́ ғᴜɴᴄɪᴏɴᴀ ᴇᴍ ɢʀᴜᴘᴏs.",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
@@ -43,7 +44,7 @@ module.exports = {
           try { const c = await conn.getContact(a.id); nome = c.notifyName || nome; } catch (e) {}
           lista += `${cont++}. @${a.id.split("@")[0]} ${a.admin === "superadmin" ? "👑" : "👮"}\n`;
         }
-        
+
         return conn.sendMessage(from, {
           text: `👑 *ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀᴇs (${admins.length})*\n━━━━━━━━━━━━━━━━━━━━\n\n${lista}`,
           mentions: admins.map(a => a.id),
@@ -75,7 +76,7 @@ module.exports = {
             encontrados.push(p);
           }
         }
-        
+
         if (encontrados.length === 0) {
           return conn.sendMessage(from, {
             text: `🔍 ɴᴇɴʜᴜᴍ ᴍᴇᴍʙʀᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ ᴘᴀʀᴀ: *${busca}*`,
@@ -140,7 +141,7 @@ ${lista}${membros.length > 30 ? `\n⚠️ ᴇ ᴍᴀɪs ${membros.length - 30}..
 
     } catch (error) {
       console.error("ᴇʀʀᴏ ᴍᴇᴍʙʀᴏs:", error);
-      await conn.sendMessage(from, { 
+      await conn.sendMessage(from, {
         text: "❌ ᴇʀʀᴏ ᴀᴏ ʟɪsᴛᴀʀ ᴍᴇᴍʙʀᴏs.",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });

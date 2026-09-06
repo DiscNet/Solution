@@ -239,7 +239,7 @@ async function downloadSourceMedia(source) {
 module.exports = {
   name: "s",
   aliases: ["sticker", "figurinha", "f"],
-  description: "Cria figurinha a partir de imagem ou vídeo",
+  description: "ᴄʀɪᴀ ғɪɢᴜʀɪɴʜᴀ ᴀ ᴘᴀʀᴛɪʀ ᴅᴇ ɪᴍᴀɢᴇᴍ ᴏᴜ ᴠíᴅᴇᴏ",
 
   async execute(conn, msg, args, from) {
     const bot = config.botName || "LukaModzz";
@@ -257,7 +257,7 @@ module.exports = {
       if (quotedSource?.type === "sticker") {
         await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
         return sendWithStatus(conn, from, {
-          text: `❌ Já é uma figurinha! Use ${prefix}toimg para converter.`,
+          text: `❌ ᴊá é ᴜᴍᴀ ғɪɢᴜʀɪɴʜᴀ! ᴜsᴇ ${prefix}toimg para converter.`,
           contextInfo: newsletterContext(bot)
         }, msg);
       }
@@ -267,7 +267,7 @@ module.exports = {
         await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
         return sendWithStatus(conn, from, {
           text:
-            `❌ Envie uma imagem/vídeo com ${prefix}s na legenda ou responda a uma mídia com ${prefix}s\n\n` +
+            `❌ ᴇɴᴠɪᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ/víᴅᴇᴏ ᴄᴏᴍ ${prefix}s na legenda ou responda a uma midia com ${prefix}s\n\n` +
             `📝 *Exemplos:*\n` +
             `• Envie uma imagem e use ${prefix}s na legenda\n` +
             `• Responda a uma imagem com ${prefix}s`,
@@ -324,7 +324,7 @@ module.exports = {
 
       await conn.sendMessage(from, { react: { text: "❌", key: msg.key } }).catch(() => {});
       await sendWithStatus(conn, from, {
-        text: "❌ Não foi possível criar a figurinha. O conversor de mídia encontrou um erro.",
+        text: "❌ ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴄʀɪᴀʀ ᴀ ғɪɢᴜʀɪɴʜᴀ. ᴏ ᴄᴏɴᴠᴇʀsᴏʀ ᴅᴇ ᴍíᴅɪᴀ ᴇɴᴄᴏɴᴛʀᴏᴜ ᴜᴍ ᴇʀʀᴏ.",
         contextInfo: newsletterContext(bot)
       }, msg).catch(() => {});
     } finally {

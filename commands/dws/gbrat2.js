@@ -10,7 +10,7 @@ const execPromise = promisify(exec);
 
 module.exports = {
   name: "gbrat2",
-  description: "🎨 Gera GIF Brat com dois textos separados por |",
+  description: "🎨 ɢᴇʀᴀ ɢɪғ ʙʀᴀᴛ ᴄᴏᴍ ᴅᴏɪs ᴛᴇxᴛᴏs sᴇᴘᴀʀᴀᴅᴏs ᴘᴏʀ |",
 
   async execute(conn, msg, args, from) {
     try {
@@ -19,27 +19,27 @@ module.exports = {
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       const fullText = args.join(' ') || 'brat | brat';
-      
+
       // 🔥 Divide por |
       const parts = fullText.split('|').map(t => t.trim());
       const text1 = parts[0] || 'brat';
       const text2 = parts[1] || 'brat';
-      
+
       const tempDir = join(__dirname, '..', '..', 'temp');
       if (!existsSync(tempDir)) mkdirSync(tempDir, { recursive: true });
-      
+
       const outputPath = join(tempDir, `gbrat2_${Date.now()}.mp4`);
 
       // 🔥 Função para processar um texto
       function processText(text) {
         const words = text.split(' ');
         const totalChars = text.length;
-        
+
         let charsPerLine;
         if (totalChars <= 6) charsPerLine = totalChars;
         else if (totalChars <= 10) charsPerLine = Math.ceil(totalChars / 2);
         else charsPerLine = 9;
-        
+
         let lines = [];
         let currentLine = '';
         for (const word of words) {
@@ -64,7 +64,7 @@ module.exports = {
 
         const allWords = [];
         for (const line of lines) allWords.push(...line.split(' '));
-        
+
         return { lines, fontSize, allWords, charsPerLine };
       }
 
@@ -90,11 +90,11 @@ module.exports = {
           }
         }
         if (tempLine) displayLines.push(tempLine);
-        
+
         const framePath = join(tempDir, `gbrat2_a_${i}.png`);
         const frameTextPath = join(tempDir, `gbrat2_ta_${i}.txt`);
         writeFileSync(frameTextPath, displayLines.join('\n'), 'utf8');
-        
+
         await execPromise(`ffmpeg -f lavfi -i color=c=white:s=540x540:d=1 -vf "drawtext=textfile='${frameTextPath.replace(/'/g, "'\\''")}':fontcolor=black@1.0:fontsize=${data1.fontSize}:x=15:y=(h-text_h)/2:line_spacing=10,boxblur=3:2,scale=1080:1080:flags=neighbor" -frames:v 1 -y "${framePath}"`, { timeout: 10000 });
         allFrames.push({ path: framePath, duration: 0.3 });
       }
@@ -126,11 +126,11 @@ module.exports = {
           }
         }
         if (tempLine) displayLines.push(tempLine);
-        
+
         const framePath = join(tempDir, `gbrat2_b_${i}.png`);
         const frameTextPath = join(tempDir, `gbrat2_tb_${i}.txt`);
         writeFileSync(frameTextPath, displayLines.join('\n'), 'utf8');
-        
+
         await execPromise(`ffmpeg -f lavfi -i color=c=white:s=540x540:d=1 -vf "drawtext=textfile='${frameTextPath.replace(/'/g, "'\\''")}':fontcolor=black@1.0:fontsize=${data2.fontSize}:x=15:y=(h-text_h)/2:line_spacing=10,boxblur=3:2,scale=1080:1080:flags=neighbor" -frames:v 1 -y "${framePath}"`, { timeout: 10000 });
         allFrames.push({ path: framePath, duration: 0.3 });
       }
@@ -191,7 +191,7 @@ module.exports = {
     } catch (error) {
       console.error("Erro gbrat2:", error);
       await conn.sendMessage(from, {
-        text: "❌ Erro ao criar GIF Brat!",
+        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ɢɪғ ʙʀᴀᴛ!",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
       }, { quoted: msg });
     }

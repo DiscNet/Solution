@@ -23,42 +23,42 @@ function getRandomNumber(min, max) {
 async function addStickerMetadata(mediaBuffer, packname, author) {
   const tempInput = path.join(__dirname, "..", "..", "temp", `input_${Date.now()}.webp`);
   const tempOutput = path.join(__dirname, "..", "..", "temp", `output_${Date.now()}.webp`);
-  
+
   const tempDir = path.join(__dirname, "..", "..", "temp");
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-  
+
   fs.writeFileSync(tempInput, mediaBuffer);
-  
+
   try {
     const img = new webp.Image();
-    
+
     const json = {
       "sticker-pack-id": `${getRandomNumber(10000, 99999)}`,
       "sticker-pack-name": packname,
       "sticker-pack-publisher": author,
       emojis: ["✨", "🎨"]
     };
-    
+
     const exifAttr = Buffer.from([
       0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
       0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00
     ]);
-    
+
     const jsonBuff = Buffer.from(JSON.stringify(json), "utf-8");
     const exif = Buffer.concat([exifAttr, jsonBuff]);
     exif.writeUIntLE(jsonBuff.length, 14, 4);
-    
+
     await img.load(tempInput);
     img.exif = exif;
     await img.save(tempOutput);
-    
+
     const resultBuffer = fs.readFileSync(tempOutput);
-    
+
     fs.unlinkSync(tempInput);
     fs.unlinkSync(tempOutput);
-    
+
     return resultBuffer;
-    
+
   } catch (error) {
     try {
       if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
@@ -70,13 +70,13 @@ async function addStickerMetadata(mediaBuffer, packname, author) {
 
 module.exports = {
   name: "steffect",
-  description: "Aplicar efeitos no sticker",
+  description: "ᴀᴘʟɪᴄᴀʀ ᴇғᴇɪᴛᴏs ɴᴏ sᴛɪᴄᴋᴇʀ",
 
   async execute(conn, msg, args, from) {
     try {
       const prefix = config.prefix || ".";
       const owner = config.ownerName || "LukaModzz";
-      
+
       let pushName = "Usuário";
       try {
         pushName = msg.pushName || "LukaModzz";
@@ -90,7 +90,7 @@ module.exports = {
         return await conn.sendMessage(
           from,
           {
-            text: `❌ Responda uma imagem!\n\nEfeitos: blur, grayscale, sepia, negative, bright, dark\nExemplo: ${prefix}steffect grayscale`,
+            text: `❌ ʀᴇsᴘᴏɴᴅᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ!\n\nᴇғᴇɪᴛᴏs: ʙʟᴜʀ, ɢʀᴀʏsᴄᴀʟᴇ, sᴇᴘɪᴀ, ɴᴇɢᴀᴛɪᴠᴇ, ʙʀɪɢʜᴛ, ᴅᴀʀᴋ\nᴇxᴇᴍᴘʟᴏ: ${prefix}steffect grayscale`,
             contextInfo: {
               forwardingScore: 1,
               isForwarded: true,
@@ -111,8 +111,8 @@ module.exports = {
 
       await conn.sendMessage(
         from,
-        { 
-          text: `⏳ Aplicando efeito ${effect}...`,
+        {
+          text: `⏳ ᴀᴘʟɪᴄᴀɴᴅᴏ ᴇғᴇɪᴛᴏ ${effect}...`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -186,7 +186,7 @@ module.exports = {
 
       await conn.sendMessage(
         from,
-        { 
+        {
           sticker: finalStickerBuffer,
           mimetype: "image/webp",
           contextInfo: {
@@ -219,8 +219,8 @@ module.exports = {
 
       await conn.sendMessage(
         from,
-        { 
-          text: "❌ Erro ao aplicar efeito!",
+        {
+          text: "❌ ᴇʀʀᴏ ᴀᴏ ᴀᴘʟɪᴄᴀʀ ᴇғᴇɪᴛᴏ!",
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,

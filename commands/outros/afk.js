@@ -25,7 +25,7 @@ module.exports = {
       afk.setAfk(sender, motivo);
 
       await conn.sendMessage(from, {
-        text: `🛌 *${pushName}* está ausente!\n\n📌 *Motivo:* ${motivo}\n\n📌 Quando alguém te marcar, o bot avisará que você está ausente.\n📌 Quando você enviar uma mensagem, o AFK será removido.`,
+        text: `🛌 *${pushName}* ᴇsᴛá ᴀᴜsᴇɴᴛᴇ!\n\n📌 *ᴍᴏᴛɪᴠᴏ:* ${motivo}\n\n📌 ǫᴜᴀɴᴅᴏ ᴀʟɢᴜéᴍ ᴛᴇ ᴍᴀʀᴄᴀʀ, ᴏ ʙᴏᴛ ᴀᴠɪsᴀʀá ǫᴜᴇ ᴠᴏᴄê ᴇsᴛá ᴀᴜsᴇɴᴛᴇ.\n📌 ǫᴜᴀɴᴅᴏ ᴠᴏᴄê ᴇɴᴠɪᴀʀ ᴜᴍᴀ ᴍᴇɴsᴀɢᴇᴍ, ᴏ ᴀғᴋ sᴇʀá ʀᴇᴍᴏᴠɪᴅᴏ.`,
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,

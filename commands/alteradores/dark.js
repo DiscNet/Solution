@@ -20,7 +20,7 @@ async function downloadImage(imageMessage) {
 module.exports = {
   name: "dark",
   aliases: ["escuro"],
-  description: "Aplica efeito escuro em preto e branco",
+  description: "ᴀᴘʟɪᴄᴀ ᴇғᴇɪᴛᴏ ᴇsᴄᴜʀᴏ ᴇᴍ ᴘʀᴇᴛᴏ ᴇ ʙʀᴀɴᴄᴏ",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -29,7 +29,7 @@ module.exports = {
       const imageMessage = getImageMessage(msg);
       if (!imageMessage) {
         return conn.sendMessage(from, {
-          text: `❌ Envie uma imagem com ${prefix}dark na legenda ou responda a uma imagem com ${prefix}dark.`
+          text: `❌ ᴇɴᴠɪᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ ${prefix}dark na legenda ou responda a uma imagem com ${prefix}dark.`
         }, { quoted: createStatusQuoted(msg) });
       }
 
@@ -52,7 +52,7 @@ module.exports = {
     } catch (error) {
       console.error("dark:", error);
       await conn.sendMessage(from, { react: { text: "❌", key: msg.key } }).catch(() => {});
-      await conn.sendMessage(from, { text: "❌ Não foi possível aplicar o efeito dark." }, { quoted: createStatusQuoted(msg) }).catch(() => {});
+      await conn.sendMessage(from, { text: "❌ ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴀᴘʟɪᴄᴀʀ ᴏ ᴇғᴇɪᴛᴏ ᴅᴀʀᴋ." }, { quoted: createStatusQuoted(msg) }).catch(() => {});
     }
   }
 };

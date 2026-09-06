@@ -18,7 +18,7 @@ function getRegistry() {
 module.exports = {
   name: "info",
   aliases: ["cmdinfo", "infocmd"],
-  description: "Mostra informações de um comando específico",
+  description: "ᴍᴏsᴛʀᴀ ɪɴғᴏʀᴍᴀçõᴇs ᴅᴇ ᴜᴍ ᴄᴏᴍᴀɴᴅᴏ ᴇsᴘᴇᴄíғɪᴄᴏ",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -26,7 +26,7 @@ module.exports = {
     try {
       if (!args?.[0]) {
         return conn.sendMessage(from, {
-          text: `❌ *Informe um comando!*\n\n📌 *Exemplo:* ${prefix}info menu`
+          text: `❌ *ɪɴғᴏʀᴍᴇ ᴜᴍ ᴄᴏᴍᴀɴᴅᴏ!*\n\n📌 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}info menu`
         }, { quoted: createStatusQuoted(msg) });
       }
 
@@ -36,7 +36,7 @@ module.exports = {
 
       if (!command?.name) {
         return conn.sendMessage(from, {
-          text: `❌ *Comando "${args[0]}" não encontrado!*`
+          text: `❌ *ᴄᴏᴍᴀɴᴅᴏ "${args[0]}" ɴãᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ!*`
         }, { quoted: createStatusQuoted(msg) });
       }
 
@@ -58,7 +58,7 @@ module.exports = {
     } catch (error) {
       console.error("info:", error);
       await conn.sendMessage(from, {
-        text: "❌ *Erro ao buscar informações do comando!*"
+        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴜsᴄᴀʀ ɪɴғᴏʀᴍᴀçõᴇs ᴅᴏ ᴄᴏᴍᴀɴᴅᴏ!*"
       }, { quoted: createStatusQuoted(msg) }).catch(() => {});
     }
   }

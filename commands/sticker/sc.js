@@ -22,42 +22,42 @@ function getRandomNumber(min, max) {
 async function addStickerMetadata(mediaBuffer, packname, author) {
   const tempInput = path.join(__dirname, "..", "..", "temp", `input_${Date.now()}.webp`);
   const tempOutput = path.join(__dirname, "..", "..", "temp", `output_${Date.now()}.webp`);
-  
+
   const tempDir = path.join(__dirname, "..", "..", "temp");
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-  
+
   fs.writeFileSync(tempInput, mediaBuffer);
-  
+
   try {
     const img = new webp.Image();
-    
+
     const json = {
       "sticker-pack-id": `${getRandomNumber(10000, 99999)}`,
       "sticker-pack-name": packname,
       "sticker-pack-publisher": author,
       emojis: ["✨", "🎨"]
     };
-    
+
     const exifAttr = Buffer.from([
       0x49, 0x49, 0x2a, 0x00, 0x08, 0x00, 0x00, 0x00, 0x01, 0x00, 0x41, 0x57,
       0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x16, 0x00, 0x00, 0x00
     ]);
-    
+
     const jsonBuff = Buffer.from(JSON.stringify(json), "utf-8");
     const exif = Buffer.concat([exifAttr, jsonBuff]);
     exif.writeUIntLE(jsonBuff.length, 14, 4);
-    
+
     await img.load(tempInput);
     img.exif = exif;
     await img.save(tempOutput);
-    
+
     const resultBuffer = fs.readFileSync(tempOutput);
-    
+
     fs.unlinkSync(tempInput);
     fs.unlinkSync(tempOutput);
-    
+
     return resultBuffer;
-    
+
   } catch (error) {
     try {
       if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
@@ -69,12 +69,12 @@ async function addStickerMetadata(mediaBuffer, packname, author) {
 
 module.exports = {
   name: "sc",
-  description: "Cria figurinha circular a partir de imagem ou vídeo",
+  description: "ᴄʀɪᴀ ғɪɢᴜʀɪɴʜᴀ ᴄɪʀᴄᴜʟᴀʀ ᴀ ᴘᴀʀᴛɪʀ ᴅᴇ ɪᴍᴀɢᴇᴍ ᴏᴜ ᴠíᴅᴇᴏ",
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
@@ -86,16 +86,16 @@ module.exports = {
       if (msg.message?.imageMessage || msg.message?.videoMessage) {
         const caption = msg.message.imageMessage?.caption || msg.message.videoMessage?.caption || "";
         const hasCommand = /(^|\s)(\.scirculo\b|\.sc\b|scirculo\b|sc\b)/.test(caption);
-        
+
         if (!hasCommand) {
-          return conn.sendMessage(from, { 
+          return conn.sendMessage(from, {
             text: "❌ *ᴜsᴇ .sc ᴏᴜ .scirculo ɴᴀ ʟᴇɢᴇɴᴅᴀ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ᴍɪ́ᴅɪᴀ*",
             contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
           }, {
             quoted: createStatusQuoted(msg)
           });
         }
-        
+
         if (msg.message?.imageMessage) {
           mediaBuffer = await downloadMediaMessage(msg, "buffer", {}, {});
         } else {
@@ -107,32 +107,32 @@ module.exports = {
         const quoted = msg.message.extendedTextMessage.contextInfo.quotedMessage;
         const text = msg.message.extendedTextMessage.text || "";
         const hasCommand = /(^|\s)(\.scirculo\b|\.sc\b|scirculo\b|sc\b)/.test(text);
-        
+
         if (!hasCommand) {
-          return conn.sendMessage(from, { 
+          return conn.sendMessage(from, {
             text: "❌ *ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ/ᴠɪ́ᴅᴇᴏ ᴄᴏᴍ .sc*",
             contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
           }, {
             quoted: createStatusQuoted(msg)
           });
         }
-        
+
         if (quoted.imageMessage) {
           const quotedMsg = { message: { imageMessage: quoted.imageMessage }, key: msg.key };
           mediaBuffer = await downloadMediaMessage(quotedMsg, "buffer", {}, {});
-        } 
+        }
         else if (quoted.videoMessage) {
           const quotedMsg = { message: { videoMessage: quoted.videoMessage }, key: msg.key };
           mediaBuffer = await downloadMediaMessage(quotedMsg, "buffer", {}, {});
           isVideo = true;
         }
         else if (quoted.stickerMessage) {
-          return conn.sendMessage(from, { 
+          return conn.sendMessage(from, {
             text: "❌ *ᴊᴀ́ ᴇ́ ᴜᴍᴀ ғɪɢᴜʀɪɴʜᴀ! ᴜsᴇ .toimg*",
             contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
           }, { quoted: msg });
         } else {
-          return conn.sendMessage(from, { 
+          return conn.sendMessage(from, {
             text: "❌ *ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴏᴜ ᴠɪ́ᴅᴇᴏ ᴄᴏᴍ .sc*",
             contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
           }, { quoted: msg });
@@ -140,7 +140,7 @@ module.exports = {
       }
 
       if (!mediaBuffer) {
-        return conn.sendMessage(from, { 
+        return conn.sendMessage(from, {
           text: "❌ *ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ/ᴠɪ́ᴅᴇᴏ ᴄᴏᴍ .sc*",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, { quoted: msg });
@@ -148,13 +148,13 @@ module.exports = {
 
       const tempDir = path.join(__dirname, "..", "..", "temp");
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-      
+
       const tempInput = path.join(tempDir, `input_${Date.now()}.png`);
       const tempCircular = path.join(tempDir, `circular_${Date.now()}.png`);
       const tempOutput = path.join(tempDir, `sticker_${Date.now()}.webp`);
-      
+
       fs.writeFileSync(tempInput, mediaBuffer);
-      
+
       if (isVideo) {
         const tempFrame = path.join(tempDir, `frame_${Date.now()}.png`);
         await execPromise(`ffmpeg -i "${tempInput}" -vframes 1 -f image2 "${tempFrame}" -y`);
@@ -165,24 +165,24 @@ module.exports = {
         await execPromise(`convert "${tempInput}" -resize 512x512^ -gravity center -extent 512x512 \\( +clone -threshold -1 -negate -fill white -draw "circle 256,256 256,0" \\) -alpha off -compose copy_opacity -composite "${tempCircular}"`);
         await execPromise(`ffmpeg -i "${tempCircular}" -c:v libwebp -lossless 0 -q:v 90 -preset default -an "${tempOutput}" -y`);
       }
-      
+
       if (fs.existsSync(tempOutput) && fs.statSync(tempOutput).size > 0) {
         const stickerBuffer = fs.readFileSync(tempOutput);
         const finalStickerBuffer = await addStickerMetadata(stickerBuffer, PACKNAME, AUTHOR);
-        
-        await conn.sendMessage(from, { 
+
+        await conn.sendMessage(from, {
           sticker: finalStickerBuffer,
           mimetype: "image/webp",
           contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
         }, {
           quoted: createStatusQuoted(msg)
         });
-        
+
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
       } else {
         throw new Error("Falha ao criar figurinha circular");
       }
-      
+
       try {
         if (fs.existsSync(tempInput)) fs.unlinkSync(tempInput);
         if (fs.existsSync(tempCircular)) fs.unlinkSync(tempCircular);
@@ -192,9 +192,9 @@ module.exports = {
     } catch (error) {
       console.error("sᴄ:", error);
       try { await conn.sendMessage(from, { react: { text: "❌", key: msg.key } }); } catch (e) {}
-      
-      await conn.sendMessage(from, { 
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ғɪɢᴜʀɪɴʜᴀ ᴄɪʀᴄᴜʟᴀʀ!*\n\n📌 ᴠᴇʀɪғɪǫᴜᴇ sᴇ ᴏ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ ᴇsᴛᴀ́ ɪɴsᴛᴀʟᴀᴅᴏ: pkg install imagemagick",
+
+      await conn.sendMessage(from, {
+        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ғɪɢᴜʀɪɴʜᴀ ᴄɪʀᴄᴜʟᴀʀ!*\n\n📌 ᴠᴇʀɪғɪǫᴜᴇ sᴇ ᴏ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ ᴇsᴛᴀ́ ɪɴsᴛᴀʟᴀᴅᴏ: ᴘᴋɢ ɪɴsᴛᴀʟʟ ɪᴍᴀɢᴇᴍᴀɢɪᴄᴋ",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
       }, { quoted: msg });
     }

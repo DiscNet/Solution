@@ -7,33 +7,33 @@ module.exports = {
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const prefix = config.prefix || ".";
-      
+
       if (!args[0]) {
-        await conn.sendMessage(from, { 
-          text: `❌ *Por favor, forneça um CEP!*\n\n📌 *Exemplo:* ${prefix}cep 77064012` 
+        await conn.sendMessage(from, {
+          text: `❌ *ᴘᴏʀ ғᴀᴠᴏʀ, ғᴏʀɴᴇçᴀ ᴜᴍ ᴄᴇᴘ!*\n\n📌 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}cep 77064012`
         }, { quoted: msg });
         return;
       }
 
       const cep = args[0].replace(/\D/g, '');
-      
+
       if (cep.length !== 8) {
-        await conn.sendMessage(from, { 
-          text: `❌ *CEP inválido!* Digite um CEP com 8 dígitos (ex: 77064012).` 
+        await conn.sendMessage(from, {
+          text: `❌ *ᴄᴇᴘ ɪɴᴠáʟɪᴅᴏ!* ᴅɪɢɪᴛᴇ ᴜᴍ ᴄᴇᴘ ᴄᴏᴍ 8 ᴅíɢɪᴛᴏs (ᴇx: 77064012).`
         }, { quoted: msg });
         return;
       }
 
-      await conn.sendMessage(from, { text: "⏳ *Consultando CEP...*" }, { quoted: msg });
+      await conn.sendMessage(from, { text: "⏳ *ᴄᴏɴsᴜʟᴛᴀɴᴅᴏ ᴄᴇᴘ...*" }, { quoted: msg });
 
       // Usar API ViaCEP
       const response = await axiosInstance.get(`https://viacep.com.br/ws/${cep}/json/`);
-      
+
       const endereco = response.data;
-      
+
       if (endereco.erro) {
-        await conn.sendMessage(from, { 
-          text: `❌ *CEP ${cep} não encontrado!* Verifique o número.` 
+        await conn.sendMessage(from, {
+          text: `❌ *ᴄᴇᴘ ${cep} ɴãᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ!* ᴠᴇʀɪғɪǫᴜᴇ ᴏ ɴúᴍᴇʀᴏ.`
         }, { quoted: msg });
         return;
       }
@@ -44,14 +44,14 @@ module.exports = {
 ╰══════════════════════════════╯
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-📌 *CEP:* ${endereco.cep}
-🏙️ *Cidade:* ${endereco.localidade} - ${endereco.uf}
-📍 *Bairro:* ${endereco.bairro || "Não informado"}
-🏠 *Logradouro:* ${endereco.logradouro || "Não informado"}
-🏷️ *Complemento:* ${endereco.complemento || "Não informado"}
+📌 *ᴄᴇᴘ:* ${endereco.cep}
+🏙️ *ᴄɪᴅᴀᴅᴇ:* ${endereco.localidade} - ${endereco.uf}
+📍 *ʙᴀɪʀʀᴏ:* ${endereco.bairro || "Não informado"}
+🏠 *ʟᴏɢʀᴀᴅᴏᴜʀᴏ:* ${endereco.logradouro || "Não informado"}
+🏷️ *ᴄᴏᴍᴘʟᴇᴍᴇɴᴛᴏ:* ${endereco.complemento || "Não informado"}
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-📌 *Use ${prefix}menu para mais comandos*
+📌 *ᴜsᴇ ${prefix}menu para mais comandos*
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
 
       await conn.sendMessage(from, { text: texto }, { quoted: msg });
@@ -59,13 +59,13 @@ module.exports = {
 
     } catch (error) {
       console.error("Erro no cep:", error);
-      
-      let errorMsg = "❌ *Erro ao consultar CEP!* Tente novamente.";
-      
+
+      let errorMsg = "❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴏɴsᴜʟᴛᴀʀ ᴄᴇᴘ!* ᴛᴇɴᴛᴇ ɴᴏᴠᴀᴍᴇɴᴛᴇ.";
+
       if (error.response?.status === 400) {
         errorMsg = `❌ *CEP ${args[0]} inválido!* Verifique o número.`;
       }
-      
+
       await conn.sendMessage(from, { text: errorMsg }, { quoted: msg });
     }
   }

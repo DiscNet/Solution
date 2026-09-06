@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 
 module.exports = {
+  permissions: { owner: true },
   name: "getcmd",
   aliases: ["getcommand", "pegarcomando"],
   description: "ᴇɴᴠɪᴀ ᴜᴍ ᴄᴏᴍᴀɴᴅᴏ ᴘᴀʀᴀ ᴏ ᴘᴠ ᴅᴏ ᴅᴏɴᴏ",
@@ -18,7 +19,7 @@ module.exports = {
       const texto = msg.message?.extendedTextMessage?.text || msg.message?.conversation || "";
       // 🔥 PEGA O QUE O USUÁRIO DIGITOU (COM ALIASES)
       const cmd = texto.split(" ")[0].replace(prefixAtual, "").trim();
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
@@ -60,7 +61,7 @@ module.exports = {
       }
 
       const cmdName = args[0].toLowerCase();
-      
+
       // 🔥 CAMINHOS POSSÍVEIS PARA O COMANDO
       const pathsToCheck = [
         path.join(__dirname, "..", "..", "commands", "geral", `${cmdName}.js`),
@@ -100,7 +101,7 @@ module.exports = {
       // 🔥 ENVIA O COMANDO PARA O PV DO DONO
       const donoJid = ownerLid;
 
-      const mensagem = `📄 *ᴄᴏᴍᴀɴᴅᴏ:* ${cmdName}\n📂 *ᴘᴀsᴛᴀ:* ${path.basename(path.dirname(cmdPath))}\n📁 *ᴀʀǫᴜɪᴠᴏ:* ${path.basename(cmdPath)}\n\n\`\`\`javascript\n${cmdContent}\n\`\`\``;
+      const mensagem = `📄 *ᴄᴏᴍᴀɴᴅᴏ:* ${cmdName}\n📂 *ᴘᴀsᴛᴀ:* ${path.basename(path.dirname(cmdPath))}\n📁 *ᴀʀǫᴜɪᴠᴏ:* ${path.basename(cmdPath)}\n\n\`\`\`ᴊᴀᴠᴀsᴄʀɪᴘᴛ\n${cmdContent}\n\`\`\``;
 
       await conn.sendMessage(donoJid, {
         text: mensagem,

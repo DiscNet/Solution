@@ -30,7 +30,7 @@ function getUptime() {
   const minutos = Math.floor(segundos / 60);
   const horas = Math.floor(minutos / 60);
   const dias = Math.floor(horas / 24);
-  
+
   if (dias > 0) return `${dias}d ${horas % 24}h ${minutos % 60}m`;
   if (horas > 0) return `${horas}h ${minutos % 60}m ${segundos % 60}s`;
   if (minutos > 0) return `${minutos}m ${segundos % 60}s`;
@@ -48,24 +48,24 @@ function getPlatform() {
 
 module.exports = {
   name: "ping",
-  description: "Mostra a latência do bot",
+  description: "ᴍᴏsᴛʀᴀ ᴀ ʟᴀᴛêɴᴄɪᴀ ᴅᴏ ʙᴏᴛ",
   async execute(conn, msg, args, from) {
     try {
       const prefix = config.prefix || ".";
       const owner = config.ownerName || "LukaModzz";
       const name = config.botName || "LukaModzz BOT";
       const version = config.botVersion || "7.0.0-rc9";
-      
+
       let pushName = "Usuário";
       try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
 
       const start = Date.now();
       await axios.get("https://api.github.com/zen", { timeout: 5000 }).catch(() => {});
       const pingMs = Date.now() - start;
-      
+
       // 🔥 Pega só os 2 primeiros dígitos
       const pingDisplay = String(pingMs).slice(0, 2);
-      
+
       const uptime = getUptime();
       const memory = getMemoryUsage();
       const platform = getPlatform();
@@ -116,7 +116,7 @@ module.exports = {
     } catch (err) {
       console.error(err);
       await conn.sendMessage(from, {
-        text: "❌ *Erro ao calcular ping!*",
+        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴀʟᴄᴜʟᴀʀ ᴘɪɴɢ!*",
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,

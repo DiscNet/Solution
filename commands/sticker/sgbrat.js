@@ -19,12 +19,12 @@ function getRandomNumber(min, max) {
 async function addStickerMetadata(mediaBuffer, packname, author) {
   const tempInput = path.join(__dirname, "..", "..", "temp", `meta_in_${Date.now()}.webp`);
   const tempOutput = path.join(__dirname, "..", "..", "temp", `meta_out_${Date.now()}.webp`);
-  
+
   const tempDir = path.join(__dirname, "..", "..", "temp");
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-  
+
   fs.writeFileSync(tempInput, mediaBuffer);
-  
+
   try {
     const img = new webp.Image();
     const json = {
@@ -53,14 +53,14 @@ async function addStickerMetadata(mediaBuffer, packname, author) {
 
 module.exports = {
   name: "gsbrat",
-  description: "🎨 Gera figurinha animada Brat",
+  description: "🎨 ɢᴇʀᴀ ғɪɢᴜʀɪɴʜᴀ ᴀɴɪᴍᴀᴅᴀ ʙʀᴀᴛ",
 
   async execute(conn, msg, args, from) {
     try {
       const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const API_KEY = config.tokitoApi;
-      
+
       let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
       try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
 
@@ -70,12 +70,12 @@ module.exports = {
 
       // 🔥 Passo 1: Baixa o vídeo da API
       const apiUrl = `https://tokito-apis.com.br/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${API_KEY}`;
-      
-      const response = await axios.get(apiUrl, { 
+
+      const response = await axios.get(apiUrl, {
         responseType: "arraybuffer",
-        timeout: 30000 
+        timeout: 30000
       });
-      
+
       const videoBuffer = Buffer.from(response.data);
 
       // 🔥 Passo 2: Salva o vídeo temporariamente
@@ -85,7 +85,7 @@ module.exports = {
       const uniqueId = Date.now();
       const tempInput = path.join(tempDir, `gsbrat_${uniqueId}.mp4`);
       const tempOutput = path.join(tempDir, `gsbrat_${uniqueId}.webp`);
-      
+
       fs.writeFileSync(tempInput, videoBuffer);
 
       // 🔥 Passo 3: Converte MP4 para WebP animado

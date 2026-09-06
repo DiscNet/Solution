@@ -1,6 +1,17 @@
 const fs = require("fs");
 const path = require("path");
 
+const ADMIN_GROUP_ONLY = new Set(["admlist", "listmembros"]);
+const ADMIN_BOT_ADMIN = new Set([
+  "abrir", "add-user", "ban", "del-perfil", "fechar",
+  "promover", "rebaixar", "set-desc", "set-nome", "set-perfil"
+]);
+const RPG_GROUP_COMMANDS = new Set([
+  "cacar", "ficha", "loja", "lojapets", "minerar", "pets",
+  "rankgold", "ranklevel", "registro", "roubar"
+]);
+const RPG_OWNER_COMMANDS = new Set(["set-gold", "ver-ficha"]);
+
 function normalizeCommandName(value) {
   if (typeof value !== "string") return null;
   const normalized = value.trim().toLowerCase();
@@ -14,11 +25,50 @@ function getCommandAliases(command) {
   if (Array.isArray(command?.aliases)) raw.push(...command.aliases);
   else if (typeof command?.aliases === "string") raw.push(command.aliases);
 
-  // Compatibilidade com módulos antigos que usam `alias` no singular.
   if (Array.isArray(command?.alias)) raw.push(...command.alias);
   else if (typeof command?.alias === "string") raw.push(command.alias);
 
   return [...new Set(raw.map(normalizeCommandName).filter(Boolean))];
+}
+
+function normalizePermissions(value = {}) {
+  const permissions = {};
+  for (const key of ["owner", "group", "private", "admin", "botAdmin"]) {
+    if (value?.[key] === true) permissions[key] = true;
+    else if (value?.[key] === false) permissions[key] = false;
+  }
+  return permissions;
+}
+
+function inferLegacyPermissions(file, name) {
+  const normalized = String(file || "").replace(/\\/g, "/");
+  const filename = path.basename(normalized, ".js").toLowerCase();
+
+  if (normalized.includes("/commands/dono/")) return { owner: true };
+
+  if (normalized.includes("/commands/admins/")) {
+    if (ADMIN_GROUP_ONLY.has(filename)) return { group: true };
+    const permissions = { group: true, admin: true };
+    if (ADMIN_BOT_ADMIN.has(filename)) permissions.botAdmin = true;
+    return permissions;
+  }
+
+  if (normalized.includes("/commands/rpg/")) {
+    if (RPG_OWNER_COMMANDS.has(filename) || RPG_OWNER_COMMANDS.has(name)) return { owner: true };
+    if (RPG_GROUP_COMMANDS.has(filename) || RPG_GROUP_COMMANDS.has(name)) return { group: true };
+  }
+
+  return {};
+}
+
+function getCommandPermissions(command, file, name) {
+  const inferred = inferLegacyPermissions(file, name);
+  const explicit = normalizePermissions(command?.permissions);
+  const merged = { ...inferred, ...explicit };
+  for (const key of Object.keys(merged)) {
+    if (merged[key] !== true) delete merged[key];
+  }
+  return merged;
 }
 
 function walkJsFiles(dir, out = []) {
@@ -52,7 +102,17 @@ function loadCommandModules(commandsPath, options = {}) {
       const name = normalizeCommandName(command?.name);
       if (!name) continue;
 
-      records.push({ file, command, name, aliases: getCommandAliases(command) });
+      // Compatibilidade durante a migração: módulos antigos ainda recebem uma
+      // política segura pela pasta, enquanto módulos novos podem declarar
+      // `permissions` diretamente no próprio comando.
+      command.permissions = getCommandPermissions(command, file, name);
+      records.push({
+        file,
+        command,
+        name,
+        aliases: getCommandAliases(command),
+        permissions: command.permissions
+      });
     } catch (error) {
       errors.push({ file, error });
     }
@@ -66,17 +126,10 @@ function buildCommandRegistry(records) {
   const owners = new Map();
   const collisions = [];
 
-  // Primeiro reserva todos os nomes canônicos. Assim um alias nunca pode
-  // sobrescrever o nome real de outro comando.
   for (const record of records) {
     const existing = owners.get(record.name);
     if (existing && existing.record.command !== record.command) {
-      collisions.push({
-        type: "canonical",
-        key: record.name,
-        kept: existing.record,
-        ignored: record
-      });
+      collisions.push({ type: "canonical", key: record.name, kept: existing.record, ignored: record });
       continue;
     }
 
@@ -84,7 +137,6 @@ function buildCommandRegistry(records) {
     owners.set(record.name, { type: "canonical", record });
   }
 
-  // Depois registra aliases sem sobrescrever nomes ou aliases já válidos.
   for (const record of records) {
     if (registry[record.name] !== record.command) continue;
 
@@ -127,6 +179,9 @@ function formatRegistryIssue(issue, root = process.cwd()) {
 module.exports = {
   normalizeCommandName,
   getCommandAliases,
+  normalizePermissions,
+  inferLegacyPermissions,
+  getCommandPermissions,
   walkJsFiles,
   loadCommandModules,
   buildCommandRegistry,

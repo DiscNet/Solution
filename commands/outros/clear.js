@@ -7,7 +7,7 @@ module.exports = {
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const prefix = config.prefix || ".";
-      
+
       // Mensagem com muitas quebras de linha para "empurrar" o chat para cima
       const mensagemClear = `
 
@@ -734,15 +734,15 @@ module.exports = {
 
 
       `;
-      
+
       await conn.sendMessage(from, { text: mensagemClear }, { quoted: msg });
       await conn.sendMessage(from, { text: mensagemClear }, { quoted: msg });
       await conn.sendMessage(from, { react: { text: "🧹", key: msg.key } });
 
     } catch (error) {
       console.error("Erro no clear:", error);
-      await conn.sendMessage(from, { 
-        text: "❌ *Erro ao limpar o chat!*" 
+      await conn.sendMessage(from, {
+        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʟɪᴍᴘᴀʀ ᴏ ᴄʜᴀᴛ!*"
       }, { quoted: msg });
     }
   }

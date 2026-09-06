@@ -12,19 +12,19 @@ module.exports = {
   async execute(conn, msg, args, from, axiosInstance) {
     try {
       const prefix = config.prefix || ".";
-      
+
       if (!args[0]) {
-        await conn.sendMessage(from, { 
-          text: `❌ *Por favor, forneça um link do Pinterest!*\n\n📌 *Exemplo:* ${prefix}pinmp4 https://br.pinterest.com/pin/xxxxx` 
+        await conn.sendMessage(from, {
+          text: `❌ *ᴘᴏʀ ғᴀᴠᴏʀ, ғᴏʀɴᴇçᴀ ᴜᴍ ʟɪɴᴋ ᴅᴏ ᴘɪɴᴛᴇʀᴇsᴛ!*\n\n📌 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}pinmp4 https://br.pinterest.com/pin/xxxxx`
         }, { quoted: msg });
         return;
       }
 
       const link = args[0];
-      
+
       if (!link.includes('pinterest.com') && !link.includes('pin.it')) {
-        await conn.sendMessage(from, { 
-          text: `❌ *Link inválido!* Por favor, forneça um link do Pinterest.` 
+        await conn.sendMessage(from, {
+          text: `❌ *ʟɪɴᴋ ɪɴᴠáʟɪᴅᴏ!* ᴘᴏʀ ғᴀᴠᴏʀ, ғᴏʀɴᴇçᴀ ᴜᴍ ʟɪɴᴋ ᴅᴏ ᴘɪɴᴛᴇʀᴇsᴛ.`
         }, { quoted: msg });
         return;
       }
@@ -36,42 +36,42 @@ module.exports = {
       if (!fs.existsSync(tempDir)) {
         fs.mkdirSync(tempDir, { recursive: true });
       }
-      
+
       const outputPath = path.join(tempDir, `pin_video_${Date.now()}.mp4`);
-      
+
       // Usar yt-dlp para baixar o vídeo
       const command = `yt-dlp -f bestvideo+bestaudio --merge-output-format mp4 -o "${outputPath}" "${link}"`;
-      
+
       await execPromise(command);
-      
+
       if (!fs.existsSync(outputPath)) {
         throw new Error("Falha ao baixar vídeo");
       }
-      
+
       const videoBuffer = fs.readFileSync(outputPath);
-      
+
       await conn.sendMessage(from, {
         video: videoBuffer,
         caption: `✅ *Vídeo baixado com sucesso!*\n\n📌 *Use ${prefix}menu para mais comandos*`
       }, { quoted: msg });
-      
+
       setTimeout(() => {
         try { fs.unlinkSync(outputPath); } catch(e) {}
       }, 5000);
-      
+
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
 
     } catch (error) {
       console.error("Erro no pinmp4:", error);
-      
-      let errorMsg = "❌ *Erro ao baixar vídeo!* Tente novamente.";
-      
+
+      let errorMsg = "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴀɪxᴀʀ ᴠíᴅᴇᴏ!* ᴛᴇɴᴛᴇ ɴᴏᴠᴀᴍᴇɴᴛᴇ.";
+
       if (error.message.includes("Video unavailable")) {
         errorMsg = "❌ *Vídeo indisponível!* Verifique o link.";
       } else if (error.message.includes("429")) {
         errorMsg = "❌ *Muitas tentativas!* Aguarde um momento.";
       }
-      
+
       await conn.sendMessage(from, { text: errorMsg }, { quoted: msg });
     }
   }

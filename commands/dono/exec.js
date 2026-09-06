@@ -13,6 +13,7 @@ const comandosPermitidos = [
 ];
 
 module.exports = {
+  permissions: { owner: true },
   name: "exec",
   description: "𝑬𝒙𝒆𝒄𝒖𝒕𝒂 𝒄𝒐𝒎𝒂𝒏𝒅𝒐𝒔 𝒃𝒂́𝒔𝒊𝒄𝒐𝒔 𝒏𝒐 𝑻𝒆𝒓𝒎𝒖𝒙 (𝑫𝒐𝒏𝒐)",
   async execute(conn, msg, args, from, axiosInstance) {
@@ -22,39 +23,39 @@ module.exports = {
       const texto = msg.message?.extendedTextMessage?.text || msg.message?.conversation || "";
       // 🔥 PEGA O QUE O USUÁRIO DIGITOU (COM ALIASES)
       const cm = texto.split(" ")[0].replace(prefixAtual, "").trim();
-        
+
       // Verificar se é o dono usando ownerLid do config
       const ownerJid = config.ownerLid || config.ownerNumber + "@s.whatsapp.net";
       const senderJid = msg.key.participant || msg.key.remoteJid;
-      
+
       if (senderJid !== ownerJid && !senderJid.includes(config.ownerNumber)) {
-        await conn.sendMessage(from, { 
-          text: "❌ *Apenas o dono pode usar este comando!*" 
+        await conn.sendMessage(from, {
+          text: "❌ *ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!*"
         }, { quoted: msg });
         return;
       }
 
       if (!args[0]) {
-        await conn.sendMessage(from, { 
-          text: `📌 *Comandos disponíveis:*\n\n${comandosPermitidos.map(cmd => `🔹 ${cmd}`).join('\n')}\n\n📌 *Exemplos:*\n${prefix}${cm} ls\n${prefix}${cm} ls commands\n${prefix}${cm} pwd` 
+        await conn.sendMessage(from, {
+          text: `📌 *ᴄᴏᴍᴀɴᴅᴏs ᴅɪsᴘᴏɴíᴠᴇɪs:*\n\n${comandosPermitidos.map(cmd => `🔹 ${cmd}`).join('\n')}\n\n📌 *ᴇxᴇᴍᴘʟᴏs:*\n${prefix}${cm} ls\n${prefix}${cm} ls commands\n${prefix}${cm} pwd`
         }, { quoted: msg });
         return;
       }
 
       const comando = args.join(" ");
-      
+
       // Verificar se o comando é permitido
       const comandoBase = comando.split(' ')[0];
       if (!comandosPermitidos.some(cmd => cmd === comandoBase || cmd.startsWith(comandoBase))) {
         if (comandoBase !== 'ls') {
-          await conn.sendMessage(from, { 
-            text: `❌ *Comando não permitido!*\n\n📌 *Comandos permitidos:*\n${comandosPermitidos.map(cmd => `🔹 ${cmd}`).join('\n')}` 
+          await conn.sendMessage(from, {
+            text: `❌ *ᴄᴏᴍᴀɴᴅᴏ ɴãᴏ ᴘᴇʀᴍɪᴛɪᴅᴏ!*\n\n📌 *ᴄᴏᴍᴀɴᴅᴏs ᴘᴇʀᴍɪᴛɪᴅᴏs:*\n${comandosPermitidos.map(cmd => `🔹 ${cmd}`).join('\n')}`
           }, { quoted: msg });
           return;
         }
       }
 
-      await conn.sendMessage(from, { text: "⏳ *Executando comando...*" }, { quoted: msg });
+      await conn.sendMessage(from, { text: "⏳ *ᴇxᴇᴄᴜᴛᴀɴᴅᴏ ᴄᴏᴍᴀɴᴅᴏ...*" }, { quoted: msg });
 
       // Executar comando
       const { stdout, stderr } = await execPromise(comando, {
@@ -74,10 +75,10 @@ module.exports = {
      💻 *𝑬𝑿𝑬𝑪 𝑪𝑶𝑴𝑨𝑵𝑫𝑶* 💻
 ╰══════════════════════╯
 ━━━━━━━━━━━━━━━━━━━━━━
-📟 *Comando:* ${comando}
-📂 *Diretório:* ${path.join(__dirname, '..')}
+📟 *ᴄᴏᴍᴀɴᴅᴏ:* ${comando}
+📂 *ᴅɪʀᴇᴛóʀɪᴏ:* ${path.join(__dirname, '..')}
 ━━━━━━━━━━━━━━━━━━━━━━
-📤 *Saída:*
+📤 *sᴀíᴅᴀ:*
 ${resultado}
 ━━━━━━━━━━━━━━━━━━━━━━
       `;
@@ -87,8 +88,8 @@ ${resultado}
 
     } catch (error) {
       console.error("Erro no exec:", error);
-      await conn.sendMessage(from, { 
-        text: `❌ *Erro ao executar comando!*\n\n${error.message.slice(0, 500)}` 
+      await conn.sendMessage(from, {
+        text: `❌ *ᴇʀʀᴏ ᴀᴏ ᴇxᴇᴄᴜᴛᴀʀ ᴄᴏᴍᴀɴᴅᴏ!*\n\n${error.message.slice(0, 500)}`
       }, { quoted: msg });
     }
   }
