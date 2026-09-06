@@ -12,6 +12,7 @@ const fs = require("fs");
 const path = require("path");
 const axios = require("axios");
 const { createStatusQuoted } = require("./functions/statusCard");
+const { forwardPrivateMessageToOwner } = require("./functions/privateInbox");
 const {
   normalizeCommandName,
   loadCommandModules,
@@ -516,11 +517,15 @@ async function startBot() {
   
   async function processIncomingMessage(msg) {
     if (!msg?.message) return;
+    if (msg.key?.fromMe) return;
     
     // 🔥 RECARREGA O CONFIG A CADA MENSAGEM (se ativado)
     if (config.recarregarConfig !== false) {
       config = configLoader.carregarConfig();
     }
+
+    // Encaminha mensagens privadas recebidas para o dono antes do restante do processamento.
+    await forwardPrivateMessageToOwner(conn, msg);
     
     const from = msg.key.remoteJid;
     const sender = msg.key.participant || msg.key.remoteJid;
