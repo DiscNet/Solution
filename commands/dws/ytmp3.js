@@ -1,52 +1,65 @@
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { randomUUID } = require("crypto");
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/midia/ytmp3.js
 const config = require("../../config/config");
-const axios = require("axios");
+const { getVideo, downloadAudioMp3 } = require("../../functions/youtubeClient");
+
+function safeFileName(value) {
+  return String(value || "audio")
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "audio";
+}
 
 module.exports = {
   name: "ytmp3",
-  description: "𝑩𝒂𝒊𝒙𝒂 𝒂́𝒖𝒅𝒊𝒐 𝒅𝒐 𝒀𝒐𝒖𝑻𝒖𝒃𝒆",
-  async execute(conn, msg, args, from, axiosInstance) {
+  description: "ʙᴀɪxᴀ ᴀ́ᴜᴅɪᴏ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ",
+  async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
+    const tempDir = path.join(os.tmpdir(), "grimmjow-youtube");
+    const outputPath = path.join(tempDir, `${Date.now()}-${randomUUID()}.mp3`);
+
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const API_KEY = config.tokitoApi;
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      if (!args[0]) {
-        return await conn.sendMessage(from, {
-          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ʟɪɴᴋ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ʏᴛᴍᴘ3 https://youtu.be/xxxxx`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
+      const target = args.join(" ").trim();
+      if (!target) {
+        return conn.sendMessage(from, {
+          text: `❌ *ɪɴғᴏʀᴍᴇ ᴜᴍ ʟɪɴᴋ ᴏᴜ ɴᴏᴍᴇ ᴅᴏ ᴠɪ́ᴅᴇᴏ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}ytmp3 https://youtu.be/xxxxx`
+        }, { quoted: createStatusQuoted(msg) });
       }
 
-      const link = args[0];
       await conn.sendMessage(from, { react: { text: "🎵", key: msg.key } });
+      const loading = await conn.sendMessage(from, {
+        text: "📥 *ʙᴀɪxᴀɴᴅᴏ ᴀ́ᴜᴅɪᴏ...*"
+      }, { quoted: createStatusQuoted(msg) });
 
-      // 🔥 API Tokito - youtube-audio
-      const apiUrl = `https://tokito-apis.com.br/api/youtube-audio?q=${encodeURIComponent(link)}&apikey=${API_KEY}`;
+      const video = await getVideo(target);
+      if (!video) throw new Error("ERR_YOUTUBE_NOT_FOUND");
+
+      await downloadAudioMp3(video.id, outputPath);
 
       await conn.sendMessage(from, {
-        audio: { url: apiUrl },
-        mimetype: "audio/mpeg",
-        fileName: "audio.mp3",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
+        text: "✅ *ᴀ́ᴜᴅɪᴏ ᴘʀᴏɴᴛᴏ. ᴇɴᴠɪᴀɴᴅᴏ...*",
+        edit: loading.key
       });
 
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
-    } catch (error) {
-      console.error("ʏᴛᴍᴘ3:", error);
       await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴀɪxᴀʀ ᴏ ᴀ́ᴜᴅɪᴏ!*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
+        audio: { url: outputPath },
+        mimetype: "audio/mpeg",
+        fileName: `${safeFileName(video.title)}.mp3`,
+        ptt: false
+      }, { quoted: createStatusQuoted(msg) });
+
+      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+    } catch (error) {
+      console.error("[ERROR] ytmp3 | ERR_YOUTUBE_AUDIO", error);
+      await conn.sendMessage(from, {
+        text: "❌ *ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇ ʙᴀɪxᴀʀ ᴏ ᴀ́ᴜᴅɪᴏ.*"
+      }, { quoted: createStatusQuoted(msg) });
+    } finally {
+      try { await fs.promises.unlink(outputPath); } catch {}
     }
   }
 };

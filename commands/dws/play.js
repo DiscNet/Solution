@@ -1,96 +1,72 @@
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { randomUUID } = require("crypto");
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/midia/play.js
 const config = require("../../config/config");
-const axios = require("axios");
+const { getVideo, downloadAudioMp3 } = require("../../functions/youtubeClient");
+
+function safeFileName(value) {
+  return String(value || "audio")
+    .replace(/[\\/:*?"<>|\u0000-\u001f]/g, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 80) || "audio";
+}
 
 module.exports = {
   name: "play",
-  description: "𝑷𝒆𝒔𝒒𝒖𝒊𝒔𝒂 𝒆 𝒕𝒐𝒄𝒂 𝒎ú𝒔𝒊𝒄𝒂 𝒏𝒐 𝒀𝒐𝒖𝑻𝒖𝒃𝒆",
-  async execute(conn, msg, args, from, axiosInstance) {
+  description: "ᴘᴇsǫᴜɪsᴀ ᴇ ᴇɴᴠɪᴀ ᴀ́ᴜᴅɪᴏ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ",
+  async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
+    const tempDir = path.join(os.tmpdir(), "grimmjow-youtube");
+    const outputPath = path.join(tempDir, `${Date.now()}-${randomUUID()}.mp3`);
+
     try {
-      const prefix = config.prefix || ".";
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const API_KEY = config.tokitoApi;
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      const q = args.join(" ");
-
-      if (!q || !q.trim()) {
-        return await conn.sendMessage(from, {
-          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴍᴇ ᴅᴀ ᴍᴜ́sɪᴄᴀ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}play mc poze`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
+      const query = args.join(" ").trim();
+      if (!query) {
+        return conn.sendMessage(from, {
+          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ɴᴏᴍᴇ ᴅᴀ ᴍᴜ́sɪᴄᴀ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}play mc poze`
+        }, { quoted: createStatusQuoted(msg) });
       }
 
       await conn.sendMessage(from, { react: { text: "🎧", key: msg.key } });
+      const loading = await conn.sendMessage(from, {
+        text: `🔎 *ᴘᴇsǫᴜɪsᴀɴᴅᴏ:* ${query}`
+      }, { quoted: createStatusQuoted(msg) });
 
-      // 🔥 API Tokito - youtube-search
-      const searchUrl = `https://tokito-apis.com.br/api/youtube-search?query=${encodeURIComponent(q)}&apikey=${API_KEY}`;
-      const { data: json } = await axios.get(searchUrl, { timeout: 15000 });
+      const video = await getVideo(query);
+      if (!video) throw new Error("ERR_YOUTUBE_NOT_FOUND");
 
-      if (!json.status || !json.resultado || !json.resultado.length) {
-        return await conn.sendMessage(from, {
-          text: "❌ *ɴᴇɴʜᴜᴍ ʀᴇsᴜʟᴛᴀᴅᴏ!*",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, { quoted: msg });
+      if (video.thumbnail) {
+        await conn.sendMessage(from, {
+          image: { url: video.thumbnail },
+          caption: `🎵 *${video.title}*\n👤 ${video.channel}\n⏱️ ${video.duration}`
+        }, { quoted: createStatusQuoted(msg) });
       }
 
-      const video = json.resultado[0];
-      const title = video.title;
-      const channel = video.author?.name || "Desconhecido";
-      const duration = video.timestamp || "N/A";
-      const thumbnail = video.thumbnail;
-      const url = video.url;
-
-      // 🔥 Canvas da Tokito COM apikey
-      const cardUrl = `https://tokito-apis.com.br/canvas/youtube?capa=${encodeURIComponent(thumbnail)}&titulo=${encodeURIComponent(title)}&canal=${encodeURIComponent(channel)}&duracao=${encodeURIComponent(duration)}&url=${encodeURIComponent(url)}&apikey=${API_KEY}`;
-
-      // Envia imagem
       await conn.sendMessage(from, {
-        image: { url: cardUrl },
-        caption: null,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
+        text: "📥 *ʙᴀɪxᴀɴᴅᴏ ᴀ́ᴜᴅɪᴏ...*",
+        edit: loading.key
       });
 
-      // 🔥 Áudio
-      const audioUrl = `https://tokito-apis.com.br/api/youtube-audio?q=${encodeURIComponent(url)}&apikey=${API_KEY}`;
+      await downloadAudioMp3(video.id, outputPath);
 
-      try {
-        await conn.sendMessage(from, {
-          audio: { url: audioUrl },
-          mimetype: "audio/mpeg",
-          ptt: false,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      } catch (err) {
-        const fallbackAudio = `https://tokito-apis.com.br/api/youtube-audio?q=${encodeURIComponent(`${title} ${channel}`)}&apikey=${API_KEY}`;
-        await conn.sendMessage(from, {
-          audio: { url: fallbackAudio },
-          mimetype: "audio/mpeg",
-          ptt: false,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      }
-
-      await conn.sendMessage(from, { react: { text: "🎧", key: msg.key } });
-
-    } catch (error) {
-      console.error("ᴘʟᴀʏ:", error);
       await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴜsᴄᴀʀ ᴀ ᴍᴜ́sɪᴄᴀ!*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
+        audio: { url: outputPath },
+        mimetype: "audio/mpeg",
+        fileName: `${safeFileName(video.title)}.mp3`,
+        ptt: false
+      }, { quoted: createStatusQuoted(msg) });
+
+      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+    } catch (error) {
+      console.error("[ERROR] play | ERR_YOUTUBE_PLAY", error);
+      await conn.sendMessage(from, {
+        text: "❌ *ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇ ʙᴜsᴄᴀʀ ᴏᴜ ʙᴀɪxᴀʀ ᴏ ᴀ́ᴜᴅɪᴏ.*"
+      }, { quoted: createStatusQuoted(msg) });
+    } finally {
+      try { await fs.promises.unlink(outputPath); } catch {}
     }
   }
 };

@@ -1,74 +1,56 @@
+const fs = require("fs");
+const os = require("os");
+const path = require("path");
+const { randomUUID } = require("crypto");
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/midia/ytmp4.js
 const config = require("../../config/config");
-const axios = require("axios");
+const { getVideo, downloadVideo } = require("../../functions/youtubeClient");
 
 module.exports = {
   name: "ytmp4",
-  description: "𝑩𝒂𝒊𝒙𝒂 𝒗𝒊́𝒅𝒆𝒐 𝒅𝒐 𝒀𝒐𝒖𝑻𝒖𝒃𝒆",
-  async execute(conn, msg, args, from, axiosInstance) {
+  description: "ʙᴀɪxᴀ ᴠɪ́ᴅᴇᴏ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ",
+  async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
+    const tempDir = path.join(os.tmpdir(), "grimmjow-youtube");
+    const outputPath = path.join(tempDir, `${Date.now()}-${randomUUID()}.mp4`);
+
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const API_KEY = config.tokitoApi;
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      if (!args[0]) {
-        return await conn.sendMessage(from, {
-          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ʟɪɴᴋ ᴅᴏ ʏᴏᴜᴛᴜʙᴇ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ʏᴛᴍᴘ4 https://youtu.be/xxxxx`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
+      const target = args.join(" ").trim();
+      if (!target) {
+        return conn.sendMessage(from, {
+          text: `❌ *ɪɴғᴏʀᴍᴇ ᴜᴍ ʟɪɴᴋ ᴏᴜ ɴᴏᴍᴇ ᴅᴏ ᴠɪ́ᴅᴇᴏ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}ytmp4 https://youtu.be/xxxxx`
+        }, { quoted: createStatusQuoted(msg) });
       }
-
-      const link = args[0];
 
       await conn.sendMessage(from, { react: { text: "📹", key: msg.key } });
+      const loading = await conn.sendMessage(from, {
+        text: "📥 *ʙᴀɪxᴀɴᴅᴏ ᴠɪ́ᴅᴇᴏ...*"
+      }, { quoted: createStatusQuoted(msg) });
 
-      const loadingMsg = await conn.sendMessage(from, {
-        text: "📥 *ᴀɢᴜᴀʀᴅᴇ ᴇɴǫᴜᴀɴᴛᴏ ғᴀᴄ̧ᴏ ᴏ ᴅᴏᴡɴʟᴏᴀᴅ...*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
+      const video = await getVideo(target);
+      if (!video) throw new Error("ERR_YOUTUBE_NOT_FOUND");
 
-      // 🔥 API youtube-video com link COMPLETO (sem encodeURIComponent)
-      const apiUrl = `https://tokito-apis.com.br/api/youtube-video?q=${link}&apikey=${API_KEY}`;
-
-      const response = await axios.get(apiUrl, {
-        responseType: "arraybuffer",
-        timeout: 180000
-      });
-
-      const videoBuffer = Buffer.from(response.data);
-
-      if (videoBuffer.length < 10000) {
-        throw new Error("Vídeo muito pequeno");
-      }
+      await downloadVideo(video.id, outputPath);
 
       await conn.sendMessage(from, {
-        text: "✅ *ᴅᴏᴡɴʟᴏᴀᴅ ᴄᴏɴᴄʟᴜɪ́ᴅᴏ! ᴇɴᴠɪᴀɴᴅᴏ...*",
-        edit: loadingMsg.key
+        text: "✅ *ᴠɪ́ᴅᴇᴏ ᴘʀᴏɴᴛᴏ. ᴇɴᴠɪᴀɴᴅᴏ...*",
+        edit: loading.key
       });
 
       await conn.sendMessage(from, {
-        video: videoBuffer,
+        video: { url: outputPath },
         mimetype: "video/mp4",
-        caption: null,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
+        caption: `🎬 *${video.title}*\n👤 ${video.channel}`
+      }, { quoted: createStatusQuoted(msg) });
 
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
     } catch (error) {
-      console.error("ʏᴛᴍᴘ4:", error.message);
+      console.error("[ERROR] ytmp4 | ERR_YOUTUBE_VIDEO", error);
       await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴀɪxᴀʀ ᴏ ᴠɪ́ᴅᴇᴏ! ᴛᴇɴᴛᴇ ᴏ ᴏᴜᴛʀᴏ ʟɪɴᴋ.*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"}`, serverMessageId: 116 } }
-      }, { quoted: msg });
+        text: "❌ *ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇ ʙᴀɪxᴀʀ ᴏ ᴠɪ́ᴅᴇᴏ.*"
+      }, { quoted: createStatusQuoted(msg) });
+    } finally {
+      try { await fs.promises.unlink(outputPath); } catch {}
     }
   }
 };
