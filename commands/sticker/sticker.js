@@ -91,8 +91,8 @@ async function imageToWebp(mediaBuffer) {
   return sharp(mediaBuffer, { failOn: "none" })
     .rotate()
     .resize(512, 512, {
-      fit: "contain",
-      background: { r: 0, g: 0, b: 0, alpha: 0 }
+      // O bot padroniza toda figurinha em 1:1, mesmo que precise esticar a mídia.
+      fit: "fill"
     })
     .webp({ quality: 88, effort: 4, smartSubsample: true })
     .toBuffer();
@@ -114,11 +114,8 @@ async function ensureFfmpeg() {
 async function ffmpegToWebp(inputPath, outputPath, isVideo) {
   await ensureFfmpeg();
 
-  const scaleFilter =
-    "scale=512:512:force_original_aspect_ratio=decrease," +
-    "format=rgba," +
-    "pad=512:512:(ow-iw)/2:(oh-ih)/2:color=0x00000000";
-
+  // Sem contain/pad: força 512x512 e preserva alpha quando a fonte tiver transparência.
+  const scaleFilter = "scale=512:512,format=rgba";
   const args = ["-y", "-hide_banner", "-loglevel", "error", "-i", inputPath];
 
   if (isVideo) {
@@ -159,6 +156,29 @@ async function ffmpegToWebp(inputPath, outputPath, isVideo) {
   return fs.readFileSync(outputPath);
 }
 
+function makeQuotedMessage(msg, contextInfo, messageType, mediaMessage) {
+  return {
+    key: {
+      remoteJid: msg.key?.remoteJid,
+      fromMe: false,
+      id: contextInfo?.stanzaId,
+      participant: contextInfo?.participant
+    },
+    message: { [messageType]: mediaMessage }
+  };
+}
+
+function imageDocumentSource(documentMessage, message) {
+  const mimetype = documentMessage?.mimetype || "";
+  if (!/^image\//i.test(mimetype)) return null;
+  return {
+    type: "image",
+    mimetype,
+    message,
+    isDocument: true
+  };
+}
+
 function getQuotedMedia(msg) {
   const contextInfo = msg.message?.extendedTextMessage?.contextInfo;
   const quoted = contextInfo?.quotedMessage;
@@ -168,15 +188,7 @@ function getQuotedMedia(msg) {
     return {
       type: "image",
       mimetype: quoted.imageMessage.mimetype || "image/jpeg",
-      message: {
-        key: {
-          remoteJid: msg.key?.remoteJid,
-          fromMe: false,
-          id: contextInfo?.stanzaId,
-          participant: contextInfo?.participant
-        },
-        message: { imageMessage: quoted.imageMessage }
-      }
+      message: makeQuotedMessage(msg, contextInfo, "imageMessage", quoted.imageMessage)
     };
   }
 
@@ -184,16 +196,15 @@ function getQuotedMedia(msg) {
     return {
       type: "video",
       mimetype: quoted.videoMessage.mimetype || "video/mp4",
-      message: {
-        key: {
-          remoteJid: msg.key?.remoteJid,
-          fromMe: false,
-          id: contextInfo?.stanzaId,
-          participant: contextInfo?.participant
-        },
-        message: { videoMessage: quoted.videoMessage }
-      }
+      message: makeQuotedMessage(msg, contextInfo, "videoMessage", quoted.videoMessage)
     };
+  }
+
+  if (quoted.documentMessage) {
+    return imageDocumentSource(
+      quoted.documentMessage,
+      makeQuotedMessage(msg, contextInfo, "documentMessage", quoted.documentMessage)
+    );
   }
 
   if (quoted.stickerMessage) return { type: "sticker" };
@@ -217,6 +228,10 @@ function getDirectMedia(msg) {
     };
   }
 
+  if (msg.message?.documentMessage) {
+    return imageDocumentSource(msg.message.documentMessage, msg);
+  }
+
   return null;
 }
 
@@ -229,6 +244,8 @@ function extensionFor(type, mimetype) {
 
   if (/png/i.test(mimetype)) return "png";
   if (/webp/i.test(mimetype)) return "webp";
+  if (/gif/i.test(mimetype)) return "gif";
+  if (/avif/i.test(mimetype)) return "avif";
   return "jpg";
 }
 
@@ -239,13 +256,15 @@ async function downloadSourceMedia(source) {
 module.exports = {
   name: "s",
   aliases: ["sticker", "figurinha", "f"],
-  description: "ᴄʀɪᴀ ғɪɢᴜʀɪɴʜᴀ ᴀ ᴘᴀʀᴛɪʀ ᴅᴇ ɪᴍᴀɢᴇᴍ ᴏᴜ ᴠíᴅᴇᴏ",
+  description: "ᴄʀɪᴀ ғɪɢᴜʀɪɴʜᴀ ᴀ ᴘᴀʀᴛɪʀ ᴅᴇ ɪᴍᴀɢᴇᴍ, ᴠɪ́ᴅᴇᴏ ᴏᴜ ᴀʀǫᴜɪᴠᴏ ᴅᴇ ɪᴍᴀɢᴇᴍ",
 
-  async execute(conn, msg, args, from) {
-    const bot = config.botName || "LukaModzz";
+  async execute(conn, msg, args, from, _axiosInstance, requestedName) {
+    const bot = config.botName || "GrimmJow";
     const prefix = config.prefix || ".";
-    const PACKNAME = "Created by LᴜᴋᴀMᴏᴅᴢᴢ Rᴏʙᴏᴛ\nDev & Owner: Kxʟʏɴ\n";
-    const AUTHOR = "\nBᴏᴛ: +55 (63) 9200-3562\nMy hatred shall build empires.";
+    const invokedName = String(requestedName || "s").trim().toLowerCase() || "s";
+    const invokedCommand = `${prefix}${invokedName}`;
+    const PACKNAME = "GrimmJow";
+    const AUTHOR = "GrimmJow";
 
     let inputPath = null;
     let outputPath = null;
@@ -257,7 +276,7 @@ module.exports = {
       if (quotedSource?.type === "sticker") {
         await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
         return sendWithStatus(conn, from, {
-          text: `❌ ᴊá é ᴜᴍᴀ ғɪɢᴜʀɪɴʜᴀ! ᴜsᴇ ${prefix}toimg para converter.`,
+          text: `❌ ᴊá é ᴜᴍᴀ ғɪɢᴜʀɪɴʜᴀ! ᴜsᴇ ${prefix}toimg ᴘᴀʀᴀ ᴄᴏɴᴠᴇʀᴛᴇʀ.`,
           contextInfo: newsletterContext(bot)
         }, msg);
       }
@@ -267,10 +286,11 @@ module.exports = {
         await conn.sendMessage(from, { react: { text: "❌", key: msg.key } });
         return sendWithStatus(conn, from, {
           text:
-            `❌ ᴇɴᴠɪᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ/víᴅᴇᴏ ᴄᴏᴍ ${prefix}s na legenda ou responda a uma midia com ${prefix}s\n\n` +
-            `📝 *Exemplos:*\n` +
-            `• Envie uma imagem e use ${prefix}s na legenda\n` +
-            `• Responda a uma imagem com ${prefix}s`,
+            `❌ ᴇɴᴠɪᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ, ᴠɪ́ᴅᴇᴏ ᴏᴜ ᴀʀǫᴜɪᴠᴏ ᴅᴇ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ ${invokedCommand} ɴᴀ ʟᴇɢᴇɴᴅᴀ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ᴍɪ́ᴅɪᴀ ᴄᴏᴍ ${invokedCommand}\n\n` +
+            `📝 *ᴇxᴇᴍᴘʟᴏs:*\n` +
+            `• ᴇɴᴠɪᴇ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴇ ᴜsᴇ ${invokedCommand} ɴᴀ ʟᴇɢᴇɴᴅᴀ\n` +
+            `• ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ ${invokedCommand}\n` +
+            `• ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍ ᴀʀǫᴜɪᴠᴏ .png ᴄᴏᴍ ${invokedCommand}`,
           contextInfo: newsletterContext(bot)
         }, msg);
       }
@@ -290,7 +310,7 @@ module.exports = {
 
       if (source.type === "image") {
         try {
-          // Imagens não dependem de ffmpeg: sharp é mais estável no Railway.
+          // Sharp preserva transparência de PNG/WebP/AVIF e força a saída para 512x512.
           stickerBuffer = await imageToWebp(mediaBuffer);
         } catch (sharpError) {
           console.error("Falha no sharp; tentando ffmpeg:", sharpError.message);
