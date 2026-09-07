@@ -32,6 +32,23 @@ const menuImages = {
   menugeral: "menu.jpg",
 };
 
+const smallCapsMap = {
+  a: "ᴀ", b: "ʙ", c: "ᴄ", d: "ᴅ", e: "ᴇ", f: "ғ", g: "ɢ", h: "ʜ",
+  i: "ɪ", j: "ᴊ", k: "ᴋ", l: "ʟ", m: "ᴍ", n: "ɴ", o: "ᴏ", p: "ᴘ",
+  q: "ǫ", r: "ʀ", s: "s", t: "ᴛ", u: "ᴜ", v: "ᴠ", w: "ᴡ", x: "x",
+  y: "ʏ", z: "ᴢ",
+};
+
+function smallCaps(text) {
+  return String(text || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .split("")
+    .map((char) => smallCapsMap[char] || char)
+    .join("");
+}
+
 function getFraseFilosofica() {
   try {
     const file = path.join(__dirname, "..", "database", "frases.json");
@@ -89,21 +106,25 @@ function decoratePage(text) {
     const heading = line.match(/^\*(.+)\*$/);
     if (heading) {
       if (sectionOpen) {
-        out.push("╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯");
+        out.push("╰─");
         out.push("");
       }
-      out.push(`╭━━━━━━━━〔 🧊 ${heading[1].toUpperCase()} 〕━━━━━━━━╮`);
+
+      const [category, ...sectionParts] = heading[1].split(" - ");
+      const section = sectionParts.join(" - ");
+      out.push(`╭─〔 🧊 ${smallCaps(category)} 〕`);
+      if (section) out.push(`│ ${smallCaps(section)}`);
       sectionOpen = true;
       continue;
     }
     if (!sectionOpen) {
-      out.push("╭━━━━━━━━〔 🧊 𝙲𝙾𝙼𝙰𝙽𝙳𝙾𝚂 〕━━━━━━━━╮");
+      out.push("╭─〔 🧊 ᴄᴏᴍᴀɴᴅᴏs 〕");
       sectionOpen = true;
     }
     out.push(`├̬⌑ؔ͟ 「🧊」${line}`);
   }
 
-  if (sectionOpen) out.push("╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯");
+  if (sectionOpen) out.push("╰─");
   return out.join("\n");
 }
 
