@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Edição | Comando: rename
 // commands/sticker/rename.js
 const fs = require("fs");
 const path = require("path");
@@ -122,3 +123,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Edição",
+  "usage": "rename pacote | autor (responda à figurinha)",
+  "description": "Uso: .rename pacote | autor (responda à figurinha)"
+});

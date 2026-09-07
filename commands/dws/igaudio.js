@@ -1,3 +1,4 @@
+// Menu: Downloads - Instagram | Comando: igaudio
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/igaudio.js
 const config = require("../../config/config");
@@ -51,3 +52,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Instagram",
+  "usage": "igaudio link",
+  "description": "Uso: .igaudio link"
+});

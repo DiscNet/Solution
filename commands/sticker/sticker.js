@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Criação | Comando: s
 // commands/sticker/sticker.js
 const fs = require("fs");
 const path = require("path");
@@ -353,3 +354,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Criação",
+  "usage": "s (responda à imagem ou vídeo)",
+  "description": "Uso: .s (responda à imagem ou vídeo)"
+});

@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: addai
 // commands/dono/addai.js
 const config = require("../../config/config");
 
@@ -251,3 +252,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "description": "adiciona a meta ai ao grupo"
+});

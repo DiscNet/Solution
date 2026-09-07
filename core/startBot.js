@@ -243,9 +243,9 @@ function isUserDono(senderJid) {
 }
 
 async function verificarManutencao(conn, from, cmdName, senderJid, msg) {
-  const emManutencao = comandosEmManutencao.includes(cmdName);
+  const emManutencao = require("../functions/maintenance").list().includes(cmdName);
   if (!emManutencao) return false;
-  const isDono = isUserDono(senderJid);
+  const isDono = require("../functions/permissions").isOwner(msg);
   if (isDono) {
     await conn.sendMessage(from, { text: `⚠️ *ᴀᴛᴇɴÇÃᴏ ᴅᴏɴᴏ!*\n\n🔧 ᴏ ᴄᴏᴍᴀɴᴅᴏ "${cmdName}" ᴇsᴛá ᴇᴍ ᴍᴀɴᴜᴛᴇɴçãᴏ ᴘᴀʀᴀ ᴜsᴜáʀɪᴏs ᴄᴏᴍᴜɴs, ᴍᴀs ᴠᴏᴄê ᴛᴇᴍ ᴘᴇʀᴍɪssãᴏ ᴘᴀʀᴀ ᴜsᴀʀ.\n\n📌 ᴄᴏɴᴛɪɴᴜᴇ ᴄᴏᴍ ᴏ ᴄᴏᴍᴀɴᴅᴏ ɴᴏʀᴍᴀʟᴍᴇɴᴛᴇ.` }, { quoted: msg });
     return false;
@@ -345,6 +345,7 @@ function reloadCommandsFromDisk() {
   const { registry, collisions } = buildCommandRegistry(records);
 
   replaceRegistry(commands, registry);
+  require("../functions/menuCatalog").prime(records, errors, collisions);
   comandosCarregados = records.length;
   comandosFalhos = errors.map(({ file, error }) =>
     `${path.relative(ROOT_DIR, file)}: ${error.message}`
@@ -506,6 +507,8 @@ async function startBot() {
     const isMediaCommand = hasMediaInMessage || isReplyingMedia;
 
     try {
+      if (await require("../functions/adminPolicy").moderateMessage(conn, msg, from, text)) return;
+
       // ========== EXTRAIR DADOS PARA LOG ==========
       const remetenteNumero = sender ? sender.split('@')[0] : 'desconhecido';
       const participantAlt = msg.key.participant ? msg.key.participant.split('@')[0] : null;
@@ -594,30 +597,7 @@ async function startBot() {
         }
       }
 
-      // ========== 🔥 VERIFICAÇÃO DE COMANDOS BLOQUEADOS ==========
-      if (grupo && text && text.startsWith(config.prefix)) {
-        const cmdName = text.slice(config.prefix.length).trim().split(/ +/)[0].toLowerCase();
-        const canonicalCmdName = getCanonicalCommandName(cmdName);
-        if (
-          isCommandBlocked(from, cmdName) ||
-          (canonicalCmdName && canonicalCmdName !== cmdName && isCommandBlocked(from, canonicalCmdName))
-        ) {
-          await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-          await conn.sendMessage(from, {
-            text: `🚫 *ᴄᴏᴍᴀɴᴅᴏ ʙʟᴏǫᴜᴇᴀᴅᴏ!*\n\n📌 ᴏ ᴄᴏᴍᴀɴᴅᴏ *${cmdName}* ғᴏɪ ʙʟᴏǫᴜᴇᴀᴅᴏ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ.`,
-            contextInfo: {
-              forwardingScore: 1,
-              isForwarded: true,
-              forwardedNewsletterMessageInfo: {
-                newsletterJid: "120363426698503859@newsletter",
-                newsletterName: `${config.botName || 'LukaModzz'}`,
-                serverMessageId: 116
-              }
-            }
-          });
-          return;
-        }
-      }
+      // Bloqueios de comandos são verificados no executor para texto e botões.
 
       // ========== 🔥 VERIFICAÇÃO DE CONTEÚDO BLOQUEADO (ANTI) ==========
       if (grupo) {
@@ -1202,3 +1182,4 @@ async function startBotWithRecovery() {
 }
 
 module.exports = { startBot, startBotWithRecovery };
+

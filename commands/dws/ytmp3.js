@@ -1,3 +1,4 @@
+// Menu: Downloads - YouTube | Comando: ytmp3
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -63,3 +64,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "YouTube",
+  "usage": "ytmp3 link",
+  "description": "Uso: .ytmp3 link"
+});

@@ -1,3 +1,4 @@
+// Menu: Grupos - Configuração | Comando: tag
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/tag.js
 const config = require("../../config/config");
@@ -239,3 +240,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Configuração",
+  "description": "marca todos os membros do grupo"
+});

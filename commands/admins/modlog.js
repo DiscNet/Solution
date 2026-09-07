@@ -1,3 +1,4 @@
+// Menu: Grupos - Histórico | Comando: modlog
 const config = require("../../config/config");
 const modLog = require("../../functions/modLog");
 const { createStatusQuoted } = require("../../functions/statusCard");
@@ -45,3 +46,11 @@ module.exports = {
     return conn.sendMessage(from, { text }, { quoted: createStatusQuoted(msg) });
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Histórico",
+  "usage": "modlog [quantidade]",
+  "description": "Uso: .modlog [quantidade]"
+});

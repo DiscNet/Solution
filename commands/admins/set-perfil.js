@@ -1,3 +1,4 @@
+// Menu: Grupos - Configuração | Comando: set-perfil
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/set-perfil.js
 const config = require("../../config/config");
@@ -61,3 +62,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Configuração",
+  "usage": "set-perfil (responda à imagem)",
+  "description": "Uso: .set-perfil (responda à imagem)"
+});

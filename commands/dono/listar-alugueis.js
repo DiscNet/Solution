@@ -1,3 +1,4 @@
+// Menu: Dono - Aluguel | Comando: listar-alugueis
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/listar-alugueis.js
 const config = require("../../config/config");
@@ -112,3 +113,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Aluguel",
+  "description": "lista todos os grupos com aluguel"
+});

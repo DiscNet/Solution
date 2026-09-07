@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Texto | Comando: sbrat
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/sbrat.js
 const { exec } = require('child_process');
@@ -173,3 +174,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Texto",
+  "usage": "sbrat texto",
+  "description": "Uso: .sbrat texto"
+});

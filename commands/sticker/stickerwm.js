@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Criação | Comando: stickerwm
 const fs = require("fs");
 const { exec } = require("child_process");
 const webp = require("node-webpmux");
@@ -121,3 +122,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Criação",
+  "usage": "stickerwm (responda à imagem ou vídeo)",
+  "description": "Uso: .stickerwm (responda à imagem ou vídeo)"
+});

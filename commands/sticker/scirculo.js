@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Criação | Comando: scirculo
 // commands/scirculo.js
 const fs = require("fs");
 const path = require("path");
@@ -204,3 +205,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Criação",
+  "usage": "scirculo (responda à imagem ou vídeo)",
+  "description": "Uso: .scirculo (responda à imagem ou vídeo)"
+});

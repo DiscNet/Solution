@@ -1,3 +1,4 @@
+// Menu: Utilidades - Ajuda | Comando: tc
 // commands/outros/tc.js
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
@@ -39,3 +40,10 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Ajuda",
+  "description": "envia o contato do dono do bot"
+});

@@ -1,3 +1,4 @@
+// Menu: Grupos - Proteção | Comando: antidoc
 // commands/admins/antidoc.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -160,3 +161,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Proteção",
+  "usage": "antidoc on|off",
+  "description": "Uso: .antidoc on|off"
+});

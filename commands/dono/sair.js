@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: sair
 // commands/sair.js
 const config = require("../../config/config");
 
@@ -48,3 +49,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "usage": "sair [id do grupo]",
+  "description": "Uso: .sair [id do grupo]"
+});

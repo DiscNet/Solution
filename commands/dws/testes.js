@@ -1,3 +1,4 @@
+// Menu: Downloads - Testes | Comando: tl
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/tl.js
 const config = require("../../config/config");
@@ -87,3 +88,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Testes",
+  "description": "carousel horizontal scroll"
+});

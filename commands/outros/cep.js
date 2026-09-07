@@ -1,3 +1,4 @@
+// Menu: Utilidades - Consulta | Comando: cep
 // commands/cep.js
 const config = require("../../config/config");
 
@@ -70,3 +71,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Consulta",
+  "usage": "cep CEP",
+  "description": "Uso: .cep CEP"
+});

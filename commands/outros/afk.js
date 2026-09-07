@@ -1,3 +1,4 @@
+// Menu: Utilidades - Perfil | Comando: afk
 // commands/geral/afk.js
 const config = require("../../config/config");
 const afk = require("../../functions/afk");
@@ -87,3 +88,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Perfil",
+  "usage": "afk [motivo]",
+  "description": "Uso: .afk [motivo]"
+});

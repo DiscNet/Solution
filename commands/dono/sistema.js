@@ -1,3 +1,4 @@
+// Menu: Dono - Diagnóstico | Comando: sistema
 // commands/sistema.js
 const { exec } = require("child_process");
 const util = require("util");
@@ -192,3 +193,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Diagnóstico",
+  "description": "Mostra informações detalhadas do sistema"
+});

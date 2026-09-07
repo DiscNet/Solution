@@ -3,6 +3,7 @@ const { checkCommandPermissions } = require("./permissions");
 const runtimeLogger = require("./runtimeLogger");
 const modLog = require("./modLog");
 const ui = require("./ui");
+const policy = require("./adminPolicy");
 
 function senderFromMessage(msg) {
   return msg?.key?.participantAlt || msg?.key?.participant || msg?.key?.remoteJidAlt || msg?.key?.remoteJid || "";
@@ -18,6 +19,7 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
   try {
     const permission = await checkCommandPermissions({ conn, msg, command, from });
     if (!permission.ok) {
+      policy.record(name, "denied", performance.now() - started);
       runtimeLogger.command({
         name,
         sender,
@@ -29,7 +31,15 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
       return true;
     }
 
-    await command.execute(conn, msg, args, from, axiosInstance, requestedName || name);
+    const denial = await policy.commandDenial({ conn, msg, from, command, permission });
+    if (denial) {
+      policy.record(name, "denied", performance.now() - started);
+      await ui.reply(conn, msg, denial, { from });
+      return true;
+    }
+    const result = await command.execute(conn, msg, args, from, axiosInstance, requestedName || name);
+    if (result === false) { policy.record(name, "denied", performance.now() - started); return true; }
+    policy.record(name, "ok", performance.now() - started);
 
     try {
       modLog.record({ command, name, requestedName: requestedName || name, msg, args, from });
@@ -51,6 +61,7 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
     });
     return true;
   } catch (error) {
+    policy.record(name, "error", performance.now() - started);
     const code = runtimeLogger.error({
       scope: "command",
       name,
@@ -82,3 +93,4 @@ module.exports = {
   executeCommand,
   senderFromMessage
 };
+

@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Texto | Comando: emoji
 const fs = require("fs");
 const axios = require("axios");
 const { exec } = require("child_process");
@@ -68,3 +69,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Texto",
+  "usage": "emoji emoji",
+  "description": "Uso: .emoji emoji"
+});

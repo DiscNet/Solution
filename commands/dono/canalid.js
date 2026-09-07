@@ -1,3 +1,4 @@
+// Menu: Dono - Comandos | Comando: raw
 module.exports = {
   permissions: { owner: true },
   name: "raw",
@@ -38,3 +39,9 @@ ${serverIdAtual - 1}`
     }
   }
 }
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Comandos",
+  "description": "Mostra dados da mensagem respondida."
+});

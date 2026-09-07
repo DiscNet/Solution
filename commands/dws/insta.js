@@ -1,3 +1,4 @@
+// Menu: Downloads - Instagram | Comando: insta
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/insta.js
 const config = require("../../config/config");
@@ -53,3 +54,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Instagram",
+  "usage": "insta link",
+  "description": "Uso: .insta link"
+});

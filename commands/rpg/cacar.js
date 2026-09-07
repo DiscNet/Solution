@@ -1,3 +1,4 @@
+// Menu: RPG - Personagem | Comando: caçar
 // commands/rpg/cacar.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -278,3 +279,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Personagem",
+  "description": "caça animais e monstros para ganhar recompensas"
+});

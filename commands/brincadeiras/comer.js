@@ -1,3 +1,4 @@
+// Menu: Brincadeiras - Interações | Comando: comer
 // commands/brincadeiras/comer.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -183,3 +184,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Brincadeiras",
+  "menuSection": "Interações",
+  "usage": "comer @usuario",
+  "description": "Uso: .comer @usuario"
+});

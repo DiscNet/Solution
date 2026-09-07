@@ -1,85 +1,14 @@
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/admins/rebaixar.js
-const config = require("../../config/config");
-const prefix = config.prefix || ".";
-
-module.exports = {
-  permissions: { group: true, admin: true, botAdmin: true },
-  name: "rebaixar",
-  description: "𝑹𝒆𝒎𝒐𝒗𝒆 𝒐 𝒄𝒂𝒓𝒈𝒐 𝒅𝒆 𝒂𝒅𝒎𝒊𝒏𝒊𝒔𝒕𝒓𝒂𝒅𝒐𝒓",
-  async execute(conn, msg, args, from, axiosInstance) {
-    try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      if (!from.endsWith("@g.us")) {
-        return conn.sendMessage(from, {
-          text: "❌ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ sᴏ́ ғᴜɴᴄɪᴏɴᴀ ᴇᴍ ɢʀᴜᴘᴏs.",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      }
-
-      const groupMetadata = await conn.groupMetadata(from);
-      const sender = msg.key.participant || msg.key.remoteJid;
-      const isAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-
-      if (!isAdmin) {
-        return conn.sendMessage(from, {
-          text: "❌ ᴀᴘᴇɴᴀs ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀᴇs ᴘᴏᴅᴇᴍ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ.",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      }
-
-      let targetUser = null;
-
-      if (msg.message?.extendedTextMessage?.contextInfo?.mentionedJid) {
-        targetUser = msg.message.extendedTextMessage.contextInfo.mentionedJid[0];
-      } else if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage) {
-        targetUser = msg.message.extendedTextMessage.contextInfo.participant;
-      }
-
-      if (!targetUser) {
-        return conn.sendMessage(from, {
-          text: `❌ *ᴍᴀʀǫᴜᴇ ᴜᴍ ᴜsᴜᴀ́ʀɪᴏ ᴘᴀʀᴀ ʀᴇʙᴀɪxᴀʀ.*\n\n📝 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}rebaixar @usuario`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, { quoted: msg });
-      }
-
-      await conn.groupParticipantsUpdate(from, [targetUser], "demote");
-
-      const targetNumber = targetUser.split("@")[0];
-
-      await conn.sendMessage(from, {
-        text: `👤 @${targetNumber} ʀᴇʙᴀɪxᴀᴅᴏ ᴀ ᴍᴇᴍʙʀᴏ ᴄᴏᴍᴜᴍ!`,
-        mentions: [targetUser],
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
-
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
-    } catch (error) {
-      console.error("ᴇʀʀᴏ ʀᴇʙᴀɪxᴀʀ:", error);
-
-      let errorMsg = "❌ ᴇʀʀᴏ ᴀᴏ ʀᴇʙᴀɪxᴀʀ ᴜsᴜᴀ́ʀɪᴏ.";
-      if (error.message?.includes("admin")) {
-        errorMsg = "❌ ᴏ ʙᴏᴛ ᴘʀᴇᴄɪsᴀ sᴇʀ ᴀᴅᴍɪɴɪsᴛʀᴀᴅᴏʀ ᴅᴏ ɢʀᴜᴘᴏ.";
-      } else if (error.message?.includes("demote")) {
-        errorMsg = "⚠️ ɴᴀ̃ᴏ ᴇ́ ᴘᴏssɪ́ᴠᴇʟ ʀᴇʙᴀɪxᴀʀ ᴏ ᴄʀɪᴀᴅᴏʀ ᴅᴏ ɢʀᴜᴘᴏ.";
-      }
-
-      await conn.sendMessage(from, {
-        text: errorMsg,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
-    }
-  }
-};
+// Menu: Grupos - Membros
+const h=require("../../functions/adminHelpers");
+const {sameIdentity,isOwner}=require("../../functions/permissions");
+module.exports=h.factory({name:"rebaixar",aliases:[],permissions:{group:true,admin:true,botAdmin:true},menuCategory:"Grupos",menuSection:"Membros",usage:"rebaixar"+" @usuario",description:"Uso: ."+"rebaixar"+" @usuario"},async ({conn,msg,args,from})=>{
+ const {p,jid}=await h.resolveMember(conn,from,msg,args);
+ h.need(p.admin!=="superadmin","O criador do grupo não pode ser alterado.");
+ h.need(!h.values(p).some(v=>[conn.user?.id,conn.user?.lid].some(b=>sameIdentity(v,b))),"Não é permitido atingir o próprio bot.");
+ if("demote"!=="promote")h.need(!h.values(p).some(v=>isOwner({key:{remoteJid:v}})),"Não é permitido atingir o dono do bot.");
+ if("demote"==="promote")h.need(!p.admin,"Esse membro já é administrador.");
+ if("demote"==="demote")h.need(p.admin,"Esse membro não é administrador.");
+ const results=await conn.groupParticipantsUpdate(from,[jid],"demote");
+ h.need(Array.isArray(results)&&results.length===1&&String(results[0].status)==="200","O WhatsApp não confirmou a alteração. Confira as permissões e tente novamente.");
+ return "Alteração confirmada pelo WhatsApp.";
+});

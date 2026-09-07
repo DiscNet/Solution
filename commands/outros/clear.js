@@ -1,3 +1,4 @@
+// Menu: Utilidades - Ajuda | Comando: clear
 // commands/clear.js
 const config = require("../../config/config");
 
@@ -747,3 +748,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Ajuda",
+  "description": "Envia uma mensagem com várias quebras de linha para simular chat limpo"
+});

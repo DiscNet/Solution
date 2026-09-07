@@ -1,3 +1,4 @@
+// Menu: Downloads - Imagens | Comando: gbrat
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/gbrat.js
 const config = require("../../config/config");
@@ -54,3 +55,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Imagens",
+  "usage": "gbrat texto",
+  "description": "Uso: .gbrat texto"
+});

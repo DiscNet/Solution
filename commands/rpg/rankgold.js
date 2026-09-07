@@ -1,3 +1,4 @@
+// Menu: RPG - Rankings | Comando: rankgold
 // commands/rpg/rankgold.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -84,3 +85,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Rankings",
+  "description": "mostra o ranking dos mais ricos"
+});

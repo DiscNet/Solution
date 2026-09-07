@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Criação | Comando: sc
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/sticker/sc.js
 const fs = require("fs");
@@ -200,3 +201,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Criação",
+  "usage": "sc (responda à imagem ou vídeo)",
+  "description": "Uso: .sc (responda à imagem ou vídeo)"
+});

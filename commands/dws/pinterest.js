@@ -1,3 +1,4 @@
+// Menu: Downloads - Pinterest | Comando: pin
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/pin.js
 const config = require("../../config/config");
@@ -94,3 +95,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Pinterest",
+  "usage": "pin termo",
+  "description": "Uso: .pin termo"
+});

@@ -1,7 +1,7 @@
 const path = require("path");
 const { createJsonStore } = require("./jsonStore");
 
-const BLOCKCMD_CONFIG_PATH = path.join(__dirname, "..", "config", "blockcmd.json");
+const BLOCKCMD_CONFIG_PATH = process.env.BOT_BLOCKCMD_PATH || path.join(__dirname, "..", "config", "blockcmd.json");
 const store = createJsonStore(BLOCKCMD_CONFIG_PATH, {});
 
 function loadConfig(force = false) {
@@ -21,3 +21,4 @@ function isCommandBlocked(groupId, cmdName) {
 }
 
 module.exports = { isCommandBlocked, loadConfig, saveConfig };
+

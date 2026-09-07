@@ -1,3 +1,4 @@
+// Menu: Downloads - Imagens | Comando: gbrat2
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/gbrat2.js
 const { exec } = require('child_process');
@@ -197,3 +198,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Imagens",
+  "usage": "gbrat2 texto1 | texto2",
+  "description": "Uso: .gbrat2 texto1 | texto2"
+});

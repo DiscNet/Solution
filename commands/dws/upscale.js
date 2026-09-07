@@ -1,3 +1,4 @@
+// Menu: Downloads - Imagens | Comando: upscale
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/upscale.js
 const config = require("../../config/config");
@@ -192,3 +193,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Imagens",
+  "usage": "upscale (responda à imagem)",
+  "description": "Uso: .upscale (responda à imagem)"
+});

@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Criação | Comando: stbg
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/stbg.js
 
@@ -139,3 +140,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Criação",
+  "usage": "stbg (responda à imagem)",
+  "description": "Uso: .stbg (responda à imagem)"
+});

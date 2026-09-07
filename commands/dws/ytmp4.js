@@ -1,3 +1,4 @@
+// Menu: Downloads - YouTube | Comando: ytmp4
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -54,3 +55,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "YouTube",
+  "usage": "ytmp4 link",
+  "description": "Uso: .ytmp4 link"
+});

@@ -1,3 +1,4 @@
+// Menu: Utilidades - Perfil | Comando: perfil
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/geral/perfil.js
 const config = require("../../config/config");
@@ -255,3 +256,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Perfil",
+  "description": "mostra as informações do seu perfil"
+});

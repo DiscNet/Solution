@@ -1,3 +1,4 @@
+// Menu: Grupos - Comandos | Comando: rpgsystem
 // commands/admins/rpgSystem.js
 const config = require("../../config/config");
 const rpgSystem = require("../../functions/rpgSystem");
@@ -101,3 +102,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Comandos",
+  "usage": "rpgsystem on|off",
+  "description": "Uso: .rpgsystem on|off"
+});

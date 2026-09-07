@@ -1,3 +1,4 @@
+// Menu: Brincadeiras - Interações | Comando: tapa
 // commands/brincadeiras/tapa.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -183,3 +184,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Brincadeiras",
+  "menuSection": "Interações",
+  "usage": "tapa @usuario",
+  "description": "Uso: .tapa @usuario"
+});

@@ -1,3 +1,4 @@
+// Menu: RPG - Administração | Comando: set-gold
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/set-gold.js
 const config = require("../../config/config");
@@ -186,3 +187,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Administração",
+  "usage": "set-gold @usuario valor",
+  "description": "Uso: .set-gold @usuario valor"
+});

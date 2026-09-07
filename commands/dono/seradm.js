@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: seradm
 // commands/seradm.js
 const config = require("../../config/config");
 
@@ -62,3 +63,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "description": "Dono do bot se torna administrador no grupo"
+});

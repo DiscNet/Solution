@@ -1,3 +1,4 @@
+// Menu: Brincadeiras - Interações | Comando: beijo
 // commands/brincadeiras/beijo.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -187,3 +188,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Brincadeiras",
+  "menuSection": "Interações",
+  "usage": "beijo @usuario",
+  "description": "Uso: .beijo @usuario"
+});

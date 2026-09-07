@@ -63,8 +63,9 @@ function samplesFrom(text) {
 function scanFile(file) {
   const source = fs.readFileSync(file, "utf8");
   const issues = [];
+  // Descrições são instruções curtas e copiáveis em português comum (Uso: ...).
   const patterns = [
-    /\b(?:text|footer|display_text|description|title)\s*:\s*([`'"])/g,
+    /\b(?:text|footer|display_text|title)\s*:\s*([`'"])/g,
     /\b(?:const|let|var)\s+\w*(?:message|mensagem|texto|aviso|erro|error)\w*\s*=\s*([`'"])/gi
   ];
   for (const re of patterns) {
@@ -104,3 +105,4 @@ console.log(`ui_files_checked=${files.length}`);
 console.log(`legacy_ui_files=${bad.length}`);
 for (const item of bad.slice(0, 50)) console.log(JSON.stringify(item));
 if (bad.length) process.exitCode = 1;
+

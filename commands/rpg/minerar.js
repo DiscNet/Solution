@@ -1,3 +1,4 @@
+// Menu: RPG - Economia e itens | Comando: minerar
 // commands/rpg/minerar.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -200,3 +201,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Economia e itens",
+  "description": "minera e consiga gold e xp"
+});

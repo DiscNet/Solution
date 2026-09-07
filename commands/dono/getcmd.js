@@ -1,3 +1,4 @@
+// Menu: Dono - Comandos | Comando: getcmd
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/getcmd.js
 const config = require("../../config/config");
@@ -146,3 +147,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Comandos",
+  "usage": "getcmd comando",
+  "description": "Uso: .getcmd comando"
+});

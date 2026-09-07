@@ -1,3 +1,4 @@
+// Menu: Grupos - Configuração | Comando: membros
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/admins/membros.js
 const config = require("../../config/config");
@@ -148,3 +149,9 @@ ${lista}${membros.length > 30 ? `\n⚠️ ᴇ ᴍᴀɪs ${membros.length - 30}..
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Configuração",
+  "description": "Lista todos os membros do grupo"
+});

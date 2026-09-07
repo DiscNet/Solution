@@ -1,3 +1,4 @@
+// Menu: RPG - Personagem | Comando: registro
 // commands/rpg/registro.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -161,3 +162,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Personagem",
+  "description": "registra seu personagem no rpg"
+});

@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: deladm
 // commands/deladm.js
 const config = require("../../config/config");
 
@@ -62,3 +63,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "description": "Remove o cargo de administrador do dono do bot"
+});

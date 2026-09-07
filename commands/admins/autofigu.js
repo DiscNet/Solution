@@ -1,3 +1,4 @@
+// Menu: Grupos - Automação | Comando: autofigu
 const fs = require("fs");
 const path = require("path");
 const util = require("util");
@@ -284,3 +285,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Automação",
+  "usage": "autofigu on|off",
+  "description": "Uso: .autofigu on|off"
+});

@@ -1,3 +1,4 @@
+// Menu: Dono - Mensagens | Comando: salmos91
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/flood-botoes.js
 const config = require("../../config/config");
@@ -189,3 +190,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Mensagens",
+  "description": "envia uma flood de mensagens com botões"
+});

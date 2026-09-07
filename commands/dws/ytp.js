@@ -1,3 +1,4 @@
+// Menu: Downloads - Testes | Comando: teste
 // commands/teste.js
 const config = require("../../config/config");
 const { generateWAMessageFromContent } = require("@whiskeysockets/baileys");
@@ -121,3 +122,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Testes",
+  "description": "teste de mensagem fantasma"
+});

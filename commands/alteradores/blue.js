@@ -1,3 +1,4 @@
+// Menu: Alteradores - Imagem | Comando: blue
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
@@ -33,3 +34,10 @@ module.exports = {
     } catch (e) { console.error(e); }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Alteradores",
+  "menuSection": "Imagem",
+  "usage": "blue (responda à imagem)",
+  "description": "Uso: .blue (responda à imagem)"
+});

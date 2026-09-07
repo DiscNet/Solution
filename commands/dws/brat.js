@@ -1,3 +1,4 @@
+// Menu: Downloads - Imagens | Comando: brat
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/brat.js
 const config = require("../../config/config");
@@ -51,3 +52,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Imagens",
+  "usage": "brat texto",
+  "description": "Uso: .brat texto"
+});

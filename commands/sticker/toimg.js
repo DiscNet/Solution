@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Edição | Comando: toimg
 // commands/sticker/toimg.js
 const fs = require("fs");
 const path = require("path");
@@ -233,3 +234,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Edição",
+  "usage": "toimg (responda à figurinha)",
+  "description": "Uso: .toimg (responda à figurinha)"
+});

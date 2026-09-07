@@ -1,3 +1,4 @@
+// Menu: Dono - Aluguel | Comando: permanecer-bot
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/permanecer-bot.js
 const config = require("../../config/config");
@@ -128,3 +129,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Aluguel",
+  "description": "torna o bot permanente no grupo"
+});

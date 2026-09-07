@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: criargrupo
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/criargrupo.js
 const config = require("../../config/config");
@@ -115,3 +116,10 @@ module.exports = {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "usage": "criargrupo nome",
+  "description": "Uso: .criargrupo nome"
+});

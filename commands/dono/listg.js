@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: listg
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/listg.js
 const config = require("../../config/config");
@@ -118,3 +119,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "description": "Lista todos os grupos que o bot está"
+});

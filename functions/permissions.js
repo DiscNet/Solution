@@ -14,6 +14,8 @@ function sameIdentity(a, b) {
   const bb = String(b || "");
   if (!aa || !bb) return false;
   if (aa === bb) return true;
+  const da = aa.split("@")[1], db = bb.split("@")[1];
+  if (da && db && da !== db) return false;
   const ad = jidNumber(aa);
   const bd = jidNumber(bb);
   return Boolean(ad && bd && ad === bd);
@@ -23,8 +25,7 @@ function senderCandidates(msg) {
   return [
     msg?.key?.participant,
     msg?.key?.participantAlt,
-    msg?.key?.remoteJid,
-    msg?.key?.remoteJidAlt
+    ...(!isGroupJid(msg?.key?.remoteJid) ? [msg?.key?.remoteJid, msg?.key?.remoteJidAlt] : [])
   ].filter(Boolean);
 }
 
@@ -96,5 +97,7 @@ module.exports = {
   isOwner,
   isGroupJid,
   isAdminParticipant,
-  checkCommandPermissions
+  checkCommandPermissions,
+  participantMatches
 };
+

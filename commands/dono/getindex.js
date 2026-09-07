@@ -1,3 +1,4 @@
+// Menu: Dono - Comandos | Comando: getindex
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/getindex.js
 const config = require("../../config/config");
@@ -122,3 +123,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Comandos",
+  "description": "envia o arquivo index.js para o pv do dono"
+});

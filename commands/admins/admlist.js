@@ -1,3 +1,4 @@
+// Menu: Grupos - Membros | Comando: admlist
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/admins/admlist.js
 const config = require("../../config/config");
@@ -76,3 +77,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Membros",
+  "description": "Lista todos os administradores do grupo"
+});

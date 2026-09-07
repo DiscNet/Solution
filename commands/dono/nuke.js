@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: nuke
 // commands/nuke.js
 const config = require("../../config/config");
 
@@ -93,3 +94,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "description": "💥 destrói o grupo (troca nome, descrição, imagem e remove todos)"
+});

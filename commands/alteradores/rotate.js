@@ -1,3 +1,4 @@
+// Menu: Alteradores - Imagem | Comando: rotate
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
@@ -33,3 +34,10 @@ module.exports = {
     } catch (e) { console.error(e); }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Alteradores",
+  "menuSection": "Imagem",
+  "usage": "rotate (responda à imagem)",
+  "description": "Uso: .rotate (responda à imagem)"
+});

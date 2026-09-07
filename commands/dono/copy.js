@@ -1,3 +1,4 @@
+// Menu: Dono - Mensagens | Comando: copiar
 // commands/admins/copiar.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -980,3 +981,10 @@ ${prefix + module.exports.name}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Mensagens",
+  "usage": "copiar (responda à mensagem)",
+  "description": "Uso: .copiar (responda à mensagem)"
+});

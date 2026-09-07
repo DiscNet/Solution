@@ -1,3 +1,4 @@
+// Menu: Grupos - Proteção | Comando: antiaudio
 // commands/admins/antiaudio.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -160,3 +161,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Proteção",
+  "usage": "antiaudio on|off",
+  "description": "Uso: .antiaudio on|off"
+});

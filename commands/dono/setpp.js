@@ -1,3 +1,4 @@
+// Menu: Dono - Configuração | Comando: setpp
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/setpp.js
 const config = require("../../config/config");
@@ -51,3 +52,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Configuração",
+  "usage": "setpp (responda à imagem)",
+  "description": "Uso: .setpp (responda à imagem)"
+});

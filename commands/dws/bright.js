@@ -1,3 +1,4 @@
+// Menu: Downloads - Imagens | Comando: bright
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
@@ -33,3 +34,10 @@ module.exports = {
     } catch (e) { console.error(e); }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Imagens",
+  "usage": "bright (responda à imagem)",
+  "description": "Uso: .bright (responda à imagem)"
+});

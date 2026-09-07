@@ -1,3 +1,4 @@
+// Menu: Dono - Diagnóstico | Comando: testecanal
 // commands/testecanal.js
 
 module.exports = {
@@ -94,3 +95,9 @@ module.exports = {
     }
   }
 }
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Diagnóstico",
+  "description": "teste de diferentes tipos de encaminhamento de canal"
+});

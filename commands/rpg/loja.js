@@ -1,3 +1,4 @@
+// Menu: RPG - Economia e itens | Comando: loja
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/rpg/loja.js
 const config = require("../../config/config");
@@ -255,3 +256,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Economia e itens",
+  "description": "Uso: .loja [comprar item]",
+  "usage": "loja [comprar item]"
+});

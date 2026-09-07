@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Edição | Comando: steffect
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/steffect.js
 
@@ -238,3 +239,10 @@ module.exports = {
     }
   },
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Edição",
+  "usage": "steffect efeito (responda à figurinha)",
+  "description": "Uso: .steffect efeito (responda à figurinha)"
+});

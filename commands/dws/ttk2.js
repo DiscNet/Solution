@@ -1,3 +1,4 @@
+// Menu: Downloads - TikTok | Comando: ttkmp3
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/tiktok2.js
 const axios = require("axios");
@@ -189,3 +190,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "TikTok",
+  "usage": "ttkmp3 link",
+  "description": "Uso: .ttkmp3 link"
+});

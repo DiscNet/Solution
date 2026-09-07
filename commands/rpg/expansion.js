@@ -1,3 +1,4 @@
+// Identificação e uso de cada comando: tabela menuMetadata no final deste arquivo.
 const engine = require("../../functions/rpgEngine");
 
 function sc(text) {
@@ -171,6 +172,737 @@ module.exports = definitions.map((definition) => ({
   permissions: definition.permissions,
   rpgCategory: definition.category,
   async execute(conn, msg, args, from, axiosInstance, requestedName) {
+    if (definition.name === "rpgcomandos") return require("../../functions/menuRenderer").createMenu("rpgcomandos", "RPG").execute(conn, msg, args, from);
     return engine.execute(definition, { conn, msg, args, from, axiosInstance, requestedName, catalog });
   }
 }));
+
+
+const menuMetadata = {
+  "rpgguia": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "guia completo do sistema rpg"
+  },
+  "rpgcomandos": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "lista os comandos do rpg por categoria"
+  },
+  "rpgstats": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra estatisticas completas do personagem"
+  },
+  "atributos": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra vida mana dano defesa e atributos"
+  },
+  "inventario": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra todos os itens carregados"
+  },
+  "equipamentos": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra os equipamentos ativos"
+  },
+  "habilidades": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra habilidades aprendidas"
+  },
+  "missoes": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra missoes ativas"
+  },
+  "conquistas": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra conquistas desbloqueadas"
+  },
+  "colecao": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra colecao de itens e pets"
+  },
+  "titulos": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra titulos desbloqueados"
+  },
+  "buffs": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra efeitos temporarios ativos"
+  },
+  "cooldowns": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra tempos de espera do rpg"
+  },
+  "classeinfo": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "explica a classe atual"
+  },
+  "patenteinfo": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra detalhes da patente"
+  },
+  "iteminfo": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "usage": "iteminfo item",
+    "description": "Uso: .iteminfo item"
+  },
+  "petinfo": {
+    "menuCategory": "RPG",
+    "menuSection": "Pets",
+    "description": "mostra informacoes do pet equipado"
+  },
+  "mapa": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra o mapa de exploracao"
+  },
+  "biomas": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "lista biomas e requisitos"
+  },
+  "monstros": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "lista monstros conhecidos"
+  },
+  "bosses": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "lista chefes do mundo"
+  },
+  "receitas": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "lista receitas de fabricacao"
+  },
+  "raridades": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "explica as raridades de itens"
+  },
+  "economia": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "explica gold banco e mercado"
+  },
+  "regrasrpg": {
+    "menuCategory": "RPG",
+    "menuSection": "Informações",
+    "description": "mostra as regras do sistema"
+  },
+  "diario": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "recompensa diaria"
+  },
+  "trabalhar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "trabalha por gold e experiencia"
+  },
+  "pescar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "pesca recursos e peixes"
+  },
+  "forragear": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "procura recursos naturais"
+  },
+  "escavar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "escava materiais do solo"
+  },
+  "lenhar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "coleta madeira"
+  },
+  "coletar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "coleta um material aleatorio"
+  },
+  "venderitem": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "venderitem item [quantidade]",
+    "description": "Uso: .venderitem item [quantidade]"
+  },
+  "compraritem": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "compraritem item [quantidade]",
+    "description": "Uso: .compraritem item [quantidade]"
+  },
+  "usaritem": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "usaritem item",
+    "description": "Uso: .usaritem item"
+  },
+  "equipar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "equipar item",
+    "description": "Uso: .equipar item"
+  },
+  "desequipar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "desequipar arma|armadura|acessorio",
+    "description": "Uso: .desequipar arma|armadura|acessorio"
+  },
+  "pagar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "pagar @usuario valor",
+    "description": "Uso: .pagar @usuario valor"
+  },
+  "depositar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "depositar valor",
+    "description": "Uso: .depositar valor"
+  },
+  "sacar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "sacar valor",
+    "description": "Uso: .sacar valor"
+  },
+  "banco": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "mostra o saldo bancario"
+  },
+  "trocaritem": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "trocaritem @usuario item quantidade",
+    "description": "Uso: .trocaritem @usuario item quantidade"
+  },
+  "mercadorpg": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "description": "mostra anuncios do mercado"
+  },
+  "anunciaritem": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "anunciaritem item quantidade preço",
+    "description": "Uso: .anunciaritem item quantidade preço"
+  },
+  "comprarmercado": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "comprarmercado id",
+    "description": "Uso: .comprarmercado id"
+  },
+  "cancelarvenda": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "cancelarvenda id",
+    "description": "Uso: .cancelarvenda id"
+  },
+  "craft": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "craft receita",
+    "description": "Uso: .craft receita"
+  },
+  "desmontar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "desmontar item",
+    "description": "Uso: .desmontar item"
+  },
+  "reparar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "reparar [slot]",
+    "description": "Uso: .reparar [slot]"
+  },
+  "reforjar": {
+    "menuCategory": "RPG",
+    "menuSection": "Economia e itens",
+    "usage": "reforjar [slot]",
+    "description": "Uso: .reforjar [slot]"
+  },
+  "treinar": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "treina e recebe experiencia"
+  },
+  "meditar": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "recupera mana e foco"
+  },
+  "descansar": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "recupera vida e energia"
+  },
+  "curar": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "recupera parte da vida"
+  },
+  "recuperarmana": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "recupera mana com custo de gold"
+  },
+  "uparforca": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "aumenta o dano do personagem"
+  },
+  "upardefesa": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "aumenta a defesa do personagem"
+  },
+  "uparagilidade": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "aumenta a agilidade"
+  },
+  "uparcritico": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "aumenta a chance critica"
+  },
+  "uparvida": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "aumenta a vida maxima"
+  },
+  "upamana": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "aumenta a mana maxima"
+  },
+  "classe": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "mostra classes disponiveis"
+  },
+  "trocarclasse": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "troca a classe do personagem"
+  },
+  "especializacao": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "escolhe uma especializacao"
+  },
+  "aprender": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "usage": "aprender habilidade",
+    "description": "Uso: .aprender habilidade"
+  },
+  "evoluir": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "usa essencia para evoluir atributos"
+  },
+  "prestigio": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "reinicia nivel avancado ganhando prestigio"
+  },
+  "titulo": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "mostra o titulo ativo"
+  },
+  "equipartitulo": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "equipa um titulo desbloqueado"
+  },
+  "renome": {
+    "menuCategory": "RPG",
+    "menuSection": "Progressão",
+    "description": "altera o nome do personagem no rpg"
+  },
+  "explorar": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora a regiao atual"
+  },
+  "viajar": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "usage": "viajar bioma",
+    "description": "Uso: .viajar bioma"
+  },
+  "floresta": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora a floresta"
+  },
+  "caverna": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora cavernas profundas"
+  },
+  "ruinas": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "investiga ruinas antigas"
+  },
+  "pantano": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora o pantano"
+  },
+  "deserto": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "atravessa o deserto"
+  },
+  "montanha": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "sobe a montanha"
+  },
+  "praia": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora a costa"
+  },
+  "vulcao": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora a area vulcanica"
+  },
+  "geleira": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora a geleira"
+  },
+  "templo": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "explora um templo antigo"
+  },
+  "masmorra": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "entra em uma masmorra"
+  },
+  "expedicao": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "parte em uma expedicao longa"
+  },
+  "patrulhar": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "patrulha a regiao atual"
+  },
+  "investigar": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "investiga pistas e eventos"
+  },
+  "procurartesouro": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "procura bau escondido"
+  },
+  "abrirbau": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "abre um bau do inventario"
+  },
+  "acampar": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "monta acampamento para recuperar recursos"
+  },
+  "cozinhar": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "cozinha alimentos coletados"
+  },
+  "rastrear": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "rastreia criaturas raras"
+  },
+  "colherervas": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "colhe ervas medicinais"
+  },
+  "extraircristal": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "extrai cristais de energia"
+  },
+  "cacaelite": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "caca um inimigo de elite"
+  },
+  "evento": {
+    "menuCategory": "RPG",
+    "menuSection": "Exploração",
+    "description": "mostra o evento atual do rpg"
+  },
+  "batalhar": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "inicia uma batalha contra um monstro"
+  },
+  "duelo": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "usage": "duelo @usuario",
+    "description": "Uso: .duelo @usuario"
+  },
+  "atacar": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "ataca o inimigo da batalha atual"
+  },
+  "defender": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "assume postura defensiva na batalha"
+  },
+  "esquivar": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "tenta evitar o proximo golpe"
+  },
+  "habilidade": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "usage": "habilidade [nome]",
+    "description": "Uso: .habilidade [nome]"
+  },
+  "fugir": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "tenta sair da batalha atual"
+  },
+  "boss": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "mostra ou invoca o chefe do grupo"
+  },
+  "atacarboss": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "ataca o chefe ativo do grupo"
+  },
+  "raid": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "mostra a raid ativa"
+  },
+  "entrarraid": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "entra na raid do grupo"
+  },
+  "atacarraid": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "ataca o inimigo da raid"
+  },
+  "arena": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "mostra o ranking de pvp"
+  },
+  "desafiar": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "usage": "desafiar @usuario",
+    "description": "Uso: .desafiar @usuario"
+  },
+  "pvpstatus": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "mostra vitorias e derrotas no pvp"
+  },
+  "alvo": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "mostra o desafio ou alvo atual"
+  },
+  "combateinfo": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "mostra o combate atual detalhado"
+  },
+  "reviver": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "recupera o personagem quando derrotado"
+  },
+  "pocao": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "usa uma pocao rapidamente"
+  },
+  "proteger": {
+    "menuCategory": "RPG",
+    "menuSection": "Combate",
+    "description": "gasta mana para aumentar a defesa"
+  },
+  "guilda": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "mostra informacoes da guilda"
+  },
+  "criarguilda": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "usage": "criarguilda nome",
+    "description": "Uso: .criarguilda nome"
+  },
+  "entrarguilda": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "usage": "entrarguilda nome",
+    "description": "Uso: .entrarguilda nome"
+  },
+  "sairguilda": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "sai da guilda atual"
+  },
+  "guildamembros": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "lista membros da guilda"
+  },
+  "guildarank": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "mostra ranking das guildas"
+  },
+  "doarguilda": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "usage": "doarguilda valor",
+    "description": "Uso: .doarguilda valor"
+  },
+  "missao": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "lista missoes disponiveis"
+  },
+  "aceitarmissao": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "usage": "aceitarmissao id",
+    "description": "Uso: .aceitarmissao id"
+  },
+  "abandonarmissao": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "abandona a missao ativa"
+  },
+  "entregarmissao": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "entrega uma missao concluida"
+  },
+  "recompensas": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "mostra recompensas recentes"
+  },
+  "amizaderpg": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "usage": "amizaderpg @usuario",
+    "description": "Uso: .amizaderpg @usuario"
+  },
+  "grupoaventura": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "description": "mostra seu grupo de aventura"
+  },
+  "convocar": {
+    "menuCategory": "RPG",
+    "menuSection": "Guildas e missões",
+    "usage": "convocar @usuario",
+    "description": "Uso: .convocar @usuario"
+  },
+  "rpgadmin": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "description": "mostra o painel administrativo do rpg"
+  },
+  "rpgset": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgset pvp|gold|xp valor",
+    "description": "Uso: .rpgset pvp|gold|xp valor"
+  },
+  "rpgadditem": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgadditem @usuario item quantidade",
+    "description": "Uso: .rpgadditem @usuario item quantidade"
+  },
+  "rpgremoveitem": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgremoveitem @usuario item quantidade",
+    "description": "Uso: .rpgremoveitem @usuario item quantidade"
+  },
+  "rpgreset": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgreset @usuario confirmar",
+    "description": "Uso: .rpgreset @usuario confirmar"
+  },
+  "rpgban": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgban @usuario",
+    "description": "Uso: .rpgban @usuario"
+  },
+  "rpgunban": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgunban @usuario",
+    "description": "Uso: .rpgunban @usuario"
+  },
+  "rpgevento": {
+    "menuCategory": "RPG",
+    "menuSection": "Administração",
+    "usage": "rpgevento nome|off",
+    "description": "Uso: .rpgevento nome|off"
+  }
+};
+for (const command of module.exports) Object.assign(command, menuMetadata[command.name]);

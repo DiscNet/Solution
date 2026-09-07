@@ -1,3 +1,4 @@
+// Menu: Downloads - Pinterest | Comando: pinmp4
 // commands/pinmp4.js
 const config = require("../../config/config");
 const { exec } = require('child_process');
@@ -76,3 +77,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Pinterest",
+  "usage": "pinmp4 link",
+  "description": "Uso: .pinmp4 link"
+});

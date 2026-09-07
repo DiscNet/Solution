@@ -1,3 +1,4 @@
+// Menu: Brincadeiras - Interações | Comando: gay
 // commands/brincadeiras/gay.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -134,3 +135,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Brincadeiras",
+  "menuSection": "Interações",
+  "usage": "gay @usuario",
+  "description": "Uso: .gay @usuario"
+});

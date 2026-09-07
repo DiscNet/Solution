@@ -1,3 +1,4 @@
+// Menu: Utilidades - Perfil | Comando: avatar
 module.exports = {
     name: "avatar",
     description: "ᴀᴠᴀᴛᴀʀ ᴘʀᴇᴍɪᴜᴍ (ᴀɴᴛɪ-ғᴀʟʜᴀ ʀᴄ13 + ʟɪᴅ)",
@@ -148,3 +149,10 @@ module.exports = {
         }
     }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Perfil",
+  "usage": "avatar [@usuario]",
+  "description": "Uso: .avatar [@usuario]"
+});

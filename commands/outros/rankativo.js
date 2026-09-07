@@ -1,3 +1,4 @@
+// Menu: Utilidades - Estatísticas | Comando: rankativo
 // commands/rpg/rankativo.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -126,3 +127,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Estatísticas",
+  "description": "mostra os mais ativos do grupo"
+});

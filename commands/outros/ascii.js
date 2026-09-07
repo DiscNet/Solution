@@ -1,3 +1,4 @@
+// Menu: Utilidades - Ajuda | Comando: ascii
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/ascii.js
 const config = require("../../config/config");
@@ -107,3 +108,11 @@ module.exports = {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Ajuda",
+  "usage": "ascii (responda à imagem)",
+  "description": "Uso: .ascii (responda à imagem)"
+});

@@ -1,3 +1,4 @@
+// Menu: Downloads - YouTube | Comando: ytplay
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { sendButtons } = require("gifted-btns");
@@ -61,3 +62,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "YouTube",
+  "usage": "ytplay termo ou link",
+  "description": "Uso: .ytplay termo ou link"
+});

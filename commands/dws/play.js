@@ -1,3 +1,4 @@
+// Menu: Downloads - YouTube | Comando: play
 const fs = require("fs");
 const os = require("os");
 const path = require("path");
@@ -70,3 +71,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "YouTube",
+  "usage": "play música ou link",
+  "description": "Uso: .play música ou link"
+});

@@ -1,3 +1,4 @@
+// Menu: RPG - Administração | Comando: ver-ficha
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/ver-ficha.js
 const config = require("../../config/config");
@@ -175,3 +176,10 @@ ${barra}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Administração",
+  "usage": "ver-ficha @usuario",
+  "description": "Uso: .ver-ficha @usuario"
+});

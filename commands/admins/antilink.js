@@ -1,3 +1,4 @@
+// Menu: Grupos - Proteção | Comando: antilink
 // commands/admins/antilink.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -163,3 +164,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Proteção",
+  "usage": "antilink on|off",
+  "description": "Uso: .antilink on|off"
+});

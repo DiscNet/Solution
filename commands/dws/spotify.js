@@ -1,3 +1,4 @@
+// Menu: Downloads - Música | Comando: spotify
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/spotify.js
 const config = require("../../config/config");
@@ -99,3 +100,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Música",
+  "usage": "spotify música",
+  "description": "Uso: .spotify música"
+});

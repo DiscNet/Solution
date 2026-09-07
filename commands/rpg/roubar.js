@@ -1,3 +1,4 @@
+// Menu: RPG - Economia e itens | Comando: roubar
 // commands/rpg/roubar.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -198,3 +199,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Economia e itens",
+  "usage": "roubar @usuario",
+  "description": "Uso: .roubar @usuario"
+});

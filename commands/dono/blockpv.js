@@ -1,3 +1,4 @@
+// Menu: Dono - Configuração | Comando: blockpv
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const { digits, isOwnerJid, isPrivateJid } = require("../../functions/privateInbox");
@@ -66,3 +67,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Configuração",
+  "usage": "blockpv número",
+  "description": "Uso: .blockpv número"
+});

@@ -1,3 +1,4 @@
+// Menu: Downloads - YouTube | Comando: ytsearch
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { sendInteractiveMessage } = require("gifted-btns");
@@ -84,3 +85,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "YouTube",
+  "usage": "ytsearch termo",
+  "description": "Uso: .ytsearch termo"
+});

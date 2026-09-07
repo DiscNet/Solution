@@ -1,3 +1,4 @@
+// Menu: Grupos - Configuração | Comando: bemvindo
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/admins/bemvindo.js
 const config = require("../../config/config");
@@ -119,3 +120,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Configuração",
+  "description": "ativa/desativa mensagens de boas-vindas e adeus"
+});

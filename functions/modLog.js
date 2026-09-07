@@ -3,9 +3,9 @@ const path = require("path");
 const { createJsonStore } = require("./jsonStore");
 
 const volumeDir = "/data";
-const filePath = fs.existsSync(volumeDir)
+const filePath = process.env.BOT_MODLOG_PATH || (fs.existsSync(volumeDir)
   ? path.join(volumeDir, "modlog.json")
-  : path.join(__dirname, "..", "database", "modlog.json");
+  : path.join(__dirname, "..", "database", "modlog.json"));
 const store = createJsonStore(filePath, { groups: {} }, { checkIntervalMs: 500 });
 const MAX_PER_GROUP = 250;
 
@@ -104,3 +104,4 @@ module.exports = {
   filePath,
   MAX_PER_GROUP
 };
+

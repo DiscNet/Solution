@@ -1,3 +1,4 @@
+// Menu: Dono - Identidade | Comando: lid
 // commands/lid.js
 const util = require("util");
 
@@ -159,3 +160,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Identidade",
+  "usage": "lid @usuario",
+  "description": "Uso: .lid @usuario"
+});

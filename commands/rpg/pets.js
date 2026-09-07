@@ -1,3 +1,4 @@
+// Menu: RPG - Pets | Comando: pets
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/rpg/pets.js
 const config = require("../../config/config");
@@ -243,3 +244,10 @@ ${petData.emoji} *ᴘᴇᴛ:* ${petNome}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Pets",
+  "description": "Uso: .pets [equipar nome|desequipar]",
+  "usage": "pets [equipar nome|desequipar]"
+});

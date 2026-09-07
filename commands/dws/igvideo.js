@@ -1,3 +1,4 @@
+// Menu: Downloads - Instagram | Comando: igvideo
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/igvideo.js
 const config = require("../../config/config");
@@ -51,3 +52,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Instagram",
+  "usage": "igvideo link",
+  "description": "Uso: .igvideo link"
+});

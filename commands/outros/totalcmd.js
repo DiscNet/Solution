@@ -1,3 +1,4 @@
+// Menu: Utilidades - Estatísticas | Comando: totalcmd
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const path = require("path");
@@ -67,3 +68,10 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Estatísticas",
+  "description": "mostra a quantidade total de comandos do bot"
+});

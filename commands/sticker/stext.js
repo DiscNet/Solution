@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Texto | Comando: stext
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/stext.js
 const fs = require("fs");
@@ -174,3 +175,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Texto",
+  "usage": "stext texto",
+  "description": "Uso: .stext texto"
+});

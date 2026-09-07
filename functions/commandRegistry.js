@@ -96,6 +96,7 @@ function loadCommandModules(commandsPath, options = {}) {
       for (const command of expandCommandExport(exported)) {
         const name = normalizeCommandName(command?.name);
         if (!name) continue;
+        command.name = name;
         command.permissions = getCommandPermissions(command, file, name);
         records.push({
           file,
@@ -177,3 +178,4 @@ module.exports = {
   replaceRegistry,
   formatRegistryIssue
 };
+

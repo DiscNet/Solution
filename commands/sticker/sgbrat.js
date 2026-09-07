@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Texto | Comando: gsbrat
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/gsbrat.js
 const config = require("../../config/config");
@@ -123,3 +124,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Texto",
+  "usage": "gsbrat texto",
+  "description": "Uso: .gsbrat texto"
+});

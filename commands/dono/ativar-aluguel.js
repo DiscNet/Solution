@@ -1,3 +1,4 @@
+// Menu: Dono - Aluguel | Comando: ativar-aluguel
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/ativar-aluguel.js
 const config = require("../../config/config");
@@ -194,3 +195,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Aluguel",
+  "usage": "ativar-aluguel plano [id@g.us]",
+  "description": "Uso: .ativar-aluguel plano [id@g.us]"
+});

@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: lidg
 // commands/lidg.js
 const config = require("../../config/config");
 const { sendInteractiveMessage } = require("gifted-btns");
@@ -109,3 +110,10 @@ ${prefix}sair ${groupLid}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "usage": "lidg número do grupo",
+  "description": "Uso: .lidg número do grupo"
+});

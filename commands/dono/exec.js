@@ -1,3 +1,4 @@
+// Menu: Dono - Comandos | Comando: exec
 // commands/exec.js
 const config = require("../../config/config");
 const { exec } = require('child_process');
@@ -94,3 +95,9 @@ ${resultado}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Comandos",
+  "description": "Executa comandos básicos no Termux"
+});

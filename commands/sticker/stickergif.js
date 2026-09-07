@@ -1,3 +1,4 @@
+// Menu: Figurinhas - Criação | Comando: stickergif
 // commands/sticker_gif.js (converter GIF/MP4 para sticker animado)
 const config = require("../../config/config");
 
@@ -36,3 +37,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Figurinhas",
+  "menuSection": "Criação",
+  "usage": "stickergif (responda à imagem ou vídeo)",
+  "description": "Uso: .stickergif (responda à imagem ou vídeo)"
+});

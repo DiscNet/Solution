@@ -1,3 +1,4 @@
+// Menu: Brincadeiras - Interações | Comando: corno
 // commands/brincadeiras/corno.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -132,3 +133,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Brincadeiras",
+  "menuSection": "Interações",
+  "usage": "corno @usuario",
+  "description": "Uso: .corno @usuario"
+});

@@ -1,3 +1,4 @@
+// Menu: Downloads - Imagens | Comando: asciiimg
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/asciiimg.js
 const config = require("../../config/config");
@@ -121,3 +122,10 @@ module.exports = {
 function delay(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
+
+Object.assign(module.exports, {
+  "menuCategory": "Downloads",
+  "menuSection": "Imagens",
+  "usage": "asciiimg (responda à imagem)",
+  "description": "Uso: .asciiimg (responda à imagem)"
+});

@@ -1,3 +1,4 @@
+// Menu: RPG - Personagem | Comando: ficha
 // commands/rpg/ficha.js
 const config = require("../../config/config");
 const fs = require("fs");
@@ -195,3 +196,9 @@ ${barraPatente}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Personagem",
+  "description": "mostra sua ficha de rpg"
+});

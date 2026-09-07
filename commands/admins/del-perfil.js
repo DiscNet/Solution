@@ -1,3 +1,4 @@
+// Menu: Grupos - Configuração | Comando: del-perfil
 // commands/del-perfil.js
 const config = require("../../config/config");
 
@@ -48,3 +49,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Configuração",
+  "description": "Remove a foto do grupo"
+});

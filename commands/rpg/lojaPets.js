@@ -1,3 +1,4 @@
+// Menu: RPG - Pets | Comando: lojapets
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/rpg/lojapets.js
 const config = require("../../config/config");
@@ -225,3 +226,10 @@ ${petEncontrado.emoji} *ᴘᴇᴛ:* ${petNomeOriginal}
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "RPG",
+  "menuSection": "Pets",
+  "description": "Uso: .lojapets [comprar nome]",
+  "usage": "lojapets [comprar nome]"
+});

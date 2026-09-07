@@ -1,3 +1,4 @@
+// Menu: Dono - Comandos | Comando: reload
 // commands/dono/reload.js
 const configLoader = require("../../functions/configLoader");
 
@@ -42,3 +43,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Comandos",
+  "description": "recarrega as configurações do bot"
+});

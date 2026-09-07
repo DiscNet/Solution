@@ -1,3 +1,4 @@
+// Menu: Alteradores - Imagem | Comando: gray
 const sharp = require("sharp");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const config = require("../../config/config");
@@ -55,3 +56,11 @@ module.exports = {
     }
   }
 };
+
+
+Object.assign(module.exports, {
+  "menuCategory": "Alteradores",
+  "menuSection": "Imagem",
+  "usage": "gray (responda à imagem)",
+  "description": "Uso: .gray (responda à imagem)"
+});

@@ -1,3 +1,4 @@
+// Menu: Dono - Identidade | Comando: jidc
 // commands/jidc.js
 
 module.exports = {
@@ -32,3 +33,9 @@ ${jid}`
     }
   }
 }
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Identidade",
+  "description": "mostra o jid do canal atual"
+});

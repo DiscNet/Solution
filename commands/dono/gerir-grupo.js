@@ -1,3 +1,4 @@
+// Menu: Dono - Grupos | Comando: gerenciar
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/dono/gerenciar.js
 const config = require("../../config/config");
@@ -221,3 +222,10 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Dono",
+  "menuSection": "Grupos",
+  "usage": "gerenciar id@g.us [ação]",
+  "description": "Uso: .gerenciar id@g.us [ação]"
+});

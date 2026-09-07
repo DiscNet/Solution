@@ -1,3 +1,4 @@
+// Menu: Grupos - Configuração | Comando: add
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/admins/add.js
 const config = require("../../config/config");
@@ -92,3 +93,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Grupos",
+  "menuSection": "Configuração",
+  "description": "Adiciona um usuário ao grupo pelo número"
+});

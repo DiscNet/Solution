@@ -1,3 +1,4 @@
+// Menu: Utilidades - Estatísticas | Comando: ping
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/ping.js
 const config = require("../../config/config");
@@ -132,3 +133,9 @@ module.exports = {
     }
   }
 };
+
+Object.assign(module.exports, {
+  "menuCategory": "Utilidades",
+  "menuSection": "Estatísticas",
+  "description": "mostra a latência do bot"
+});

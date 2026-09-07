@@ -1,3 +1,4 @@
+// Identificação e uso de cada comando: tabela menuMetadata no final deste arquivo.
 const { runTransform } = require("../../functions/mediaTransform");
 
 function sc(text) {
@@ -43,3 +44,140 @@ module.exports = definitions.map((definition) => ({
     return runTransform(definition, { conn, msg, args, from, axiosInstance, requestedName });
   }
 }));
+
+
+const menuMetadata = {
+  "areverse": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "areverse (responda ao áudio)",
+    "description": "Uso: .areverse (responda ao áudio)"
+  },
+  "aslow": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "aslow (responda ao áudio)",
+    "description": "Uso: .aslow (responda ao áudio)"
+  },
+  "aspeed": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "aspeed (responda ao áudio)",
+    "description": "Uso: .aspeed (responda ao áudio)"
+  },
+  "afinado": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "afinado (responda ao áudio)",
+    "description": "Uso: .afinado (responda ao áudio)"
+  },
+  "agravado": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "agravado (responda ao áudio)",
+    "description": "Uso: .agravado (responda ao áudio)"
+  },
+  "aestourado": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "aestourado (responda ao áudio)",
+    "description": "Uso: .aestourado (responda ao áudio)"
+  },
+  "ecoaudio": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "ecoaudio (responda ao áudio)",
+    "description": "Uso: .ecoaudio (responda ao áudio)"
+  },
+  "bassaudio": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "bassaudio (responda ao áudio)",
+    "description": "Uso: .bassaudio (responda ao áudio)"
+  },
+  "normalizeaudio": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "normalizeaudio (responda ao áudio)",
+    "description": "Uso: .normalizeaudio (responda ao áudio)"
+  },
+  "reverbaudio": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "reverbaudio (responda ao áudio)",
+    "description": "Uso: .reverbaudio (responda ao áudio)"
+  },
+  "cortaraudio": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Áudio",
+    "usage": "cortaraudio (responda ao áudio)",
+    "description": "Uso: .cortaraudio (responda ao áudio)"
+  },
+  "vreverse": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "vreverse (responda ao vídeo)",
+    "description": "Uso: .vreverse (responda ao vídeo)"
+  },
+  "vslow": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "vslow (responda ao vídeo)",
+    "description": "Uso: .vslow (responda ao vídeo)"
+  },
+  "vspeed": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "vspeed (responda ao vídeo)",
+    "description": "Uso: .vspeed (responda ao vídeo)"
+  },
+  "vpb": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "vpb (responda ao vídeo)",
+    "description": "Uso: .vpb (responda ao vídeo)"
+  },
+  "vestourado": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "vestourado (responda ao vídeo)",
+    "description": "Uso: .vestourado (responda ao vídeo)"
+  },
+  "extrairaudio": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "extrairaudio (responda ao vídeo)",
+    "description": "Uso: .extrairaudio (responda ao vídeo)"
+  },
+  "mutarvideo": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "mutarvideo (responda ao vídeo)",
+    "description": "Uso: .mutarvideo (responda ao vídeo)"
+  },
+  "espelharvideo": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "espelharvideo (responda ao vídeo)",
+    "description": "Uso: .espelharvideo (responda ao vídeo)"
+  },
+  "cortavideo": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "cortavideo início duração (responda ao vídeo)",
+    "description": "Uso: .cortavideo início duração (responda ao vídeo)"
+  },
+  "comprimirvideo": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "comprimirvideo (responda ao vídeo)",
+    "description": "Uso: .comprimirvideo (responda ao vídeo)"
+  },
+  "rotacionarvideo": {
+    "menuCategory": "Alteradores",
+    "menuSection": "Vídeo",
+    "usage": "rotacionarvideo (responda ao vídeo)",
+    "description": "Uso: .rotacionarvideo (responda ao vídeo)"
+  }
+};
+for (const command of module.exports) Object.assign(command, menuMetadata[command.name]);
