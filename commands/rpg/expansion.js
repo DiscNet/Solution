@@ -153,7 +153,16 @@ const admin = [
 
 const definitions = [...info, ...economy, ...progression, ...adventure, ...combat, ...social, ...admin];
 if (definitions.length !== 138) throw new Error(`RPG expansion expected 138 commands, got ${definitions.length}`);
-const catalog = Object.freeze(definitions.map((item) => ({ name: item.name, category: item.category, description: item.description })));
+const legacyCatalog = engine.LEGACY_COMMANDS.map((name) => ({
+  name,
+  category: "classicos",
+  description: sc("comando classico do rpg")
+}));
+const catalog = Object.freeze([
+  ...legacyCatalog,
+  ...definitions.map((item) => ({ name: item.name, category: item.category, description: item.description }))
+]);
+if (catalog.length !== 150) throw new Error(`RPG complete catalog expected 150 commands, got ${catalog.length}`);
 
 module.exports = definitions.map((definition) => ({
   name: definition.name,

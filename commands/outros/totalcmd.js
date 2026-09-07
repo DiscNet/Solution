@@ -1,48 +1,36 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/geral/totalcmd.js
 const config = require("../../config/config");
-const fs = require("fs");
 const path = require("path");
+const { loadCommandModules, buildCommandRegistry } = require("../../functions/commandRegistry");
+
+function getTotalCommands() {
+  const commandsPath = path.join(__dirname, "..");
+  const { records, errors } = loadCommandModules(commandsPath);
+
+  if (errors.length) {
+    const details = errors.map((item) => `${path.relative(commandsPath, item.file)}: ${item.error.message}`).join("; ");
+    throw new Error(`Falha ao carregar comandos: ${details}`);
+  }
+
+  const { registry, collisions } = buildCommandRegistry(records);
+  if (collisions.length) {
+    console.warn(`[TOTALCMD] ${collisions.length} colisão(ões) detectada(s) no registro.`);
+  }
+
+  // Conta apenas nomes canônicos realmente registrados. Aliases não entram no total.
+  return records.filter((record) => registry[record.name] === record.command).length;
+}
 
 module.exports = {
   name: "totalcmd",
   aliases: ["totalcmds", "cmdcount", "comandos"],
   description: "ᴍᴏsᴛʀᴀ ᴀ ǫᴜᴀɴᴛɪᴅᴀᴅᴇ ᴛᴏᴛᴀʟ ᴅᴇ ᴄᴏᴍᴀɴᴅᴏs ᴅᴏ ʙᴏᴛ",
+  getTotalCommands,
   async execute(conn, msg, args, from) {
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
+      const bot = config.botName || "GrimmJow";
+      const totalComandos = getTotalCommands();
 
-      let pushName = "Usuário";
-      try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
-
-      // 🔥 CAMINHO DA PASTA DE COMANDOS
-      const commandsPath = path.join(__dirname, "..");
-
-      let totalComandos = 0;
-
-      // 🔥 FUNÇÃO PARA PERCORRER TODAS AS PASTAS RECURSIVAMENTE
-      function contarComandos(pasta) {
-        const itens = fs.readdirSync(pasta);
-
-        for (const item of itens) {
-          const caminho = path.join(pasta, item);
-          const stats = fs.statSync(caminho);
-
-          if (stats.isDirectory()) {
-            // Se for pasta, entra dentro dela
-            contarComandos(caminho);
-          } else if (stats.isFile() && item.endsWith('.js')) {
-            // Se for arquivo .js, conta
-            totalComandos++;
-          }
-        }
-      }
-
-      // 🔥 INICIA A CONTAGEM A PARTIR DA PASTA COMMANDS
-      contarComandos(commandsPath);
-
-      // 🔥 MENSAGEM FORMATADA COM STATUS
       const texto = `📊 *ᴛᴏᴛᴀʟ ᴅᴇ ᴄᴏᴍᴀɴᴅᴏs*
 
 > ᴄᴍᴅ's: ${totalComandos}`;
@@ -54,28 +42,28 @@ module.exports = {
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
+            newsletterName: bot,
             serverMessageId: 116
           }
         }
       }, {
         quoted: createStatusQuoted(msg)
       });
-
     } catch (error) {
-      console.error("❌ Erro totalcmd:", error);
+      console.error("Erro totalcmd:", error);
+      const bot = config.botName || "GrimmJow";
       await conn.sendMessage(from, {
-        text: `❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴏɴᴛᴀʀ ᴄᴏᴍᴀɴᴅᴏs!*`,
+        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴏɴᴛᴀʀ ᴄᴏᴍᴀɴᴅᴏs!*",
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
+            newsletterName: bot,
             serverMessageId: 116
           }
         }
-      }, { quoted: msg });
+      }, { quoted: createStatusQuoted(msg) });
     }
   }
 };
