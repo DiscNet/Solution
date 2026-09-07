@@ -21,13 +21,10 @@ function normalizeCommandName(value) {
 
 function getCommandAliases(command) {
   const raw = [];
-
   if (Array.isArray(command?.aliases)) raw.push(...command.aliases);
   else if (typeof command?.aliases === "string") raw.push(command.aliases);
-
   if (Array.isArray(command?.alias)) raw.push(...command.alias);
   else if (typeof command?.alias === "string") raw.push(command.alias);
-
   return [...new Set(raw.map(normalizeCommandName).filter(Boolean))];
 }
 
@@ -43,21 +40,17 @@ function normalizePermissions(value = {}) {
 function inferLegacyPermissions(file, name) {
   const normalized = String(file || "").replace(/\\/g, "/");
   const filename = path.basename(normalized, ".js").toLowerCase();
-
   if (normalized.includes("/commands/dono/")) return { owner: true };
-
   if (normalized.includes("/commands/admins/")) {
     if (ADMIN_GROUP_ONLY.has(filename)) return { group: true };
     const permissions = { group: true, admin: true };
     if (ADMIN_BOT_ADMIN.has(filename)) permissions.botAdmin = true;
     return permissions;
   }
-
   if (normalized.includes("/commands/rpg/")) {
     if (RPG_OWNER_COMMANDS.has(filename) || RPG_OWNER_COMMANDS.has(name)) return { owner: true };
     if (RPG_GROUP_COMMANDS.has(filename) || RPG_GROUP_COMMANDS.has(name)) return { group: true };
   }
-
   return {};
 }
 
@@ -65,25 +58,26 @@ function getCommandPermissions(command, file, name) {
   const inferred = inferLegacyPermissions(file, name);
   const explicit = normalizePermissions(command?.permissions);
   const merged = { ...inferred, ...explicit };
-  for (const key of Object.keys(merged)) {
-    if (merged[key] !== true) delete merged[key];
-  }
+  for (const key of Object.keys(merged)) if (merged[key] !== true) delete merged[key];
   return merged;
 }
 
 function walkJsFiles(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
-
   const entries = fs.readdirSync(dir, { withFileTypes: true })
     .sort((a, b) => a.name.localeCompare(b.name));
-
   for (const entry of entries) {
     const fullPath = path.join(dir, entry.name);
     if (entry.isDirectory()) walkJsFiles(fullPath, out);
     else if (entry.isFile() && entry.name.endsWith(".js")) out.push(fullPath);
   }
-
   return out;
+}
+
+function expandCommandExport(exported) {
+  if (Array.isArray(exported)) return exported;
+  if (Array.isArray(exported?.commands)) return exported.commands;
+  return exported ? [exported] : [];
 }
 
 function loadCommandModules(commandsPath, options = {}) {
@@ -98,21 +92,19 @@ function loadCommandModules(commandsPath, options = {}) {
         delete require.cache[resolved];
       }
 
-      const command = require(file);
-      const name = normalizeCommandName(command?.name);
-      if (!name) continue;
-
-      // Compatibilidade durante a migração: módulos antigos ainda recebem uma
-      // política segura pela pasta, enquanto módulos novos podem declarar
-      // `permissions` diretamente no próprio comando.
-      command.permissions = getCommandPermissions(command, file, name);
-      records.push({
-        file,
-        command,
-        name,
-        aliases: getCommandAliases(command),
-        permissions: command.permissions
-      });
+      const exported = require(file);
+      for (const command of expandCommandExport(exported)) {
+        const name = normalizeCommandName(command?.name);
+        if (!name) continue;
+        command.permissions = getCommandPermissions(command, file, name);
+        records.push({
+          file,
+          command,
+          name,
+          aliases: getCommandAliases(command),
+          permissions: command.permissions
+        });
+      }
     } catch (error) {
       errors.push({ file, error });
     }
@@ -132,17 +124,14 @@ function buildCommandRegistry(records) {
       collisions.push({ type: "canonical", key: record.name, kept: existing.record, ignored: record });
       continue;
     }
-
     registry[record.name] = record.command;
     owners.set(record.name, { type: "canonical", record });
   }
 
   for (const record of records) {
     if (registry[record.name] !== record.command) continue;
-
     for (const alias of record.aliases) {
       if (alias === record.name) continue;
-
       const existing = owners.get(alias);
       if (existing) {
         if (existing.record.command !== record.command) {
@@ -155,7 +144,6 @@ function buildCommandRegistry(records) {
         }
         continue;
       }
-
       registry[alias] = record.command;
       owners.set(alias, { type: "alias", record });
     }
@@ -183,6 +171,7 @@ module.exports = {
   inferLegacyPermissions,
   getCommandPermissions,
   walkJsFiles,
+  expandCommandExport,
   loadCommandModules,
   buildCommandRegistry,
   replaceRegistry,

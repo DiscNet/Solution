@@ -28,15 +28,15 @@ function salvarDb(data) {
 module.exports = {
   permissions: { group: true },
   name: "pets",
-  aliases: ["pet", "meuspets", "equipar"],
+  aliases: ["pet", "meuspets"],
   description: "ᴠᴇʀ sᴇᴜs ᴘᴇᴛs ᴇ ᴇǫᴜɪᴘᴀʀ ᴜᴍ",
   async execute(conn, msg, args, from) {
     try {
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
+      const bot = config.botName || "ɢʀɪᴍᴍᴊᴏᴡ";
       const prefix = config.prefix || ".";
 
       let pushName = "Usuário";
-      try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
+      try { pushName = msg.pushName || "GrimmJow"; } catch (e) { pushName = "GrimmJow"; }
 
       // Verifica se o RPG está ativo
       if (from.endsWith("@g.us") && !rpgSystem.isRpgAtivo(from)) {
@@ -219,7 +219,7 @@ ${petData.emoji} *ᴘᴇᴛ:* ${petNome}
       // Envia a mensagem interativa
       await sendInteractiveMessage(conn, from, {
         text: texto,
-        footer: "ʟᴜᴋᴀᴍᴏᴅᴢᴢ • ʀᴘɢ",
+        footer: "ɢʀɪᴍᴍᴊᴏᴡ • ʀᴘɢ",
         contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } },
         interactiveButtons: [
           {

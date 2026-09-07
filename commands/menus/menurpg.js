@@ -1,124 +1,62 @@
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/menurpg.js
+const fs = require("fs");
+const path = require("path");
 const config = require("../../config/config");
-const fs = require('fs');
-const path = require('path');
-const readmore = String.fromCharCode(8206).repeat(4001);
+const { createStatusQuoted } = require("../../functions/statusCard");
+const { expandCommandExport } = require("../../functions/commandRegistry");
 
-function getFraseFilosofica() {
-  try {
-    const frasesPath = path.join(__dirname, "..", '..', 'database', 'frases.json');
-    if (fs.existsSync(frasesPath)) {
-      const data = JSON.parse(fs.readFileSync(frasesPath, 'utf8'));
-      const frases = data.frases || [];
-      if (frases.length > 0) {
-        const random = Math.floor(Math.random() * frases.length);
-        const item = frases[random];
-        return `\n\n╭─🪐〔 𝙵𝚁𝙰𝚂𝙴 𝙳𝙾 𝙳𝙸𝙰 〕🪐─╮\n┃ ✦ "${item.frase}"\n┃ ✦ — ${item.autor}\n╰─🪐━━━━━━━━━━━━━🪐─╯`;
-      }
-    }
-  } catch (e) {
-    console.error("Erro ao carregar frase:", e);
-  }
-  return "";
-}
-
-function getComandosDaPasta(pastaNome) {
-  const pastaPath = path.join(__dirname, '..', pastaNome);
-  if (!fs.existsSync(pastaPath)) return [];
-
-  const comandos = [];
-  const arquivos = fs.readdirSync(pastaPath).filter(f => f.endsWith('.js'));
-
-  for (const arquivo of arquivos) {
+function getRpgCommands() {
+  const dir = path.join(__dirname, "..", "rpg");
+  const commands = [];
+  for (const file of fs.readdirSync(dir).filter((name) => name.endsWith(".js")).sort()) {
     try {
-      const cmdPath = path.join(pastaPath, arquivo);
-      delete require.cache[require.resolve(cmdPath)];
-      const cmd = require(cmdPath);
-      if (cmd.name) {
-        comandos.push(cmd.name);
+      const full = path.join(dir, file);
+      delete require.cache[require.resolve(full)];
+      for (const command of expandCommandExport(require(full))) {
+        if (!command?.name) continue;
+        commands.push({ name: command.name, category: command.rpgCategory || "classicos" });
       }
-    } catch (e) {}
+    } catch (error) {
+      console.error(`Falha ao carregar RPG menu ${file}:`, error.message);
+    }
   }
-  return comandos.sort();
+  return commands.sort((a, b) => a.name.localeCompare(b.name));
 }
 
 module.exports = {
   name: "menurpg",
   aliases: ["menur", "rpg"],
-  description: "ᴍᴇɴᴜ ᴅᴏs ᴄᴏᴍᴀɴᴅᴏs ᴅᴏ ʀᴘɢ",
-  async execute(conn, msg, args, from, axiosInstance, cmdUsado) {
-    try {
-      const prefix = config.prefix || ".";
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const name = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-
-      let pushName = "Usuário";
-      try { pushName = msg.pushName || "Usuário"; } catch (e) { pushName = "Usuário"; }
-
-      const comandos = getComandosDaPasta('rpg');
-
-      const formatarLista = (cmds) => {
-        if (!cmds || cmds.length === 0) return '┃ ✦ ɴᴇɴʜᴜᴍ ᴄᴏᴍᴀɴᴅᴏ';
-        return cmds.map(c => `├̬⌑ؔ͟ 「🧊」${prefix}${c}`).join('\n');
-      };
-
-      let text = `╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮
-├̬⌑ؔ͟ ⎾🧊⏌͟ˉ̵͟͞𝙱𝚘𝚝: ${name}
-├̬⌑ؔ͟   ⎾🧊⏌͟ˉ̵͟͞𝙳𝚎𝚟: ${owner}
-├̬⌑ؔ͟   ⎾🧊⏌͟ˉ̵͟͞𝙷𝚘𝚛𝚊: ${new Date().toLocaleTimeString("pt-BR")}
-├̬⌑ؔ͟   ⎾🧊⏌͟ˉ̵͟͞𝙿𝚛𝚎𝚏𝚒𝚡𝚘: ${prefix}
-├̬⌑ؔ͟   ⎾🧊⏌͟ˉ̵͟͞𝙼𝚎𝚗𝚞: 𝚁𝚙𝚐
-╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯
-${readmore}
-╭─┄─💎〔 𝚁𝙿𝙶 〕
-${formatarLista(comandos)}
-╰─┄─💎
-${getFraseFilosofica()}`;
-
-      const img = path.join(__dirname, "..", '..', 'imagens', 'menu.jpg');
-
-      if (fs.existsSync(img)) {
-        await conn.sendMessage(from, {
-          image: fs.readFileSync(img),
-          caption: text,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: config.botName || "LukaModzz",
-              serverMessageId: 116
-            }
-          }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      } else {
-        await conn.sendMessage(from, {
-          text: text,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: config.botName || "LukaModzz", serverMessageId: 116 }
-          }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      }
-
-      await conn.sendMessage(from, { react: { text: "👑", key: msg.key } });
-
-    } catch (error) {
-      console.error("Erro no menurpg:", error);
-      await conn.sendMessage(from, {
-        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄᴀʀʀᴇɢᴀʀ ᴏ ᴍᴇɴᴜ!",
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: config.botName || "LukaModzz", serverMessageId: 116 }
-        }
-      }, { quoted: msg });
+  description: "ᴍᴇɴᴜ ᴏʀɢᴀɴɪᴢᴀᴅᴏ ᴅᴏ sɪsᴛᴇᴍᴀ ʀᴘɢ",
+  async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
+    const commands = getRpgCommands();
+    const categories = new Map();
+    for (const command of commands) {
+      if (!categories.has(command.category)) categories.set(command.category, []);
+      categories.get(command.category).push(command.name);
     }
+
+    const order = ["informacao", "economia", "progressao", "aventura", "combate", "social", "administracao", "classicos"];
+    const lines = [];
+    for (const category of order) {
+      const list = categories.get(category);
+      if (!list?.length) continue;
+      lines.push(`*${category}* — ${list.length}`);
+      lines.push(list.slice(0, 8).map((name) => `\`${prefix}${name}\``).join(" · ") + (list.length > 8 ? " · ..." : ""));
+      lines.push("");
+    }
+
+    const text = [
+      "⚔️ *ʀᴘɢ ɢʀɪᴍᴍᴊᴏᴡ*",
+      "",
+      `• ᴄᴏᴍᴀɴᴅᴏs: ${commands.length}`,
+      `• ᴄᴀᴛᴇɢᴏʀɪᴀs: ${categories.size}`,
+      "",
+      ...lines,
+      `📘 ɢᴜɪᴀ ᴄᴏᴍᴘʟᴇᴛᴏ: \`${prefix}rpgguia\``,
+      `📚 ʟɪsᴛᴀ ᴄᴏᴍᴘʟᴇᴛᴀ: \`${prefix}rpgcomandos\``,
+      `🛠️ ᴘᴀɪɴᴇʟ ᴀᴅᴍɪɴ: \`${prefix}rpgadmin\``
+    ].join("\n");
+
+    return conn.sendMessage(from, { text }, { quoted: createStatusQuoted(msg) });
   }
 };

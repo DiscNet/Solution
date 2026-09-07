@@ -1,6 +1,7 @@
 const { performance } = require("perf_hooks");
 const { checkCommandPermissions } = require("./permissions");
 const runtimeLogger = require("./runtimeLogger");
+const modLog = require("./modLog");
 const ui = require("./ui");
 
 function senderFromMessage(msg) {
@@ -29,6 +30,19 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
     }
 
     await command.execute(conn, msg, args, from, axiosInstance, requestedName || name);
+
+    try {
+      modLog.record({ command, name, requestedName: requestedName || name, msg, args, from });
+    } catch (error) {
+      runtimeLogger.error({
+        scope: "modlog",
+        name,
+        sender,
+        error,
+        code: "ERR_MODLOG_WRITE"
+      });
+    }
+
     runtimeLogger.command({
       name,
       sender,

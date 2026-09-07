@@ -22,11 +22,17 @@ function normalizeName(value) {
 
 function collectAliases(command) {
   const raw = [];
-  if (Array.isArray(command.aliases)) raw.push(...command.aliases);
-  else if (typeof command.aliases === "string") raw.push(command.aliases);
-  if (Array.isArray(command.alias)) raw.push(...command.alias);
-  else if (typeof command.alias === "string") raw.push(command.alias);
+  if (Array.isArray(command?.aliases)) raw.push(...command.aliases);
+  else if (typeof command?.aliases === "string") raw.push(command.aliases);
+  if (Array.isArray(command?.alias)) raw.push(...command.alias);
+  else if (typeof command?.alias === "string") raw.push(command.alias);
   return [...new Set(raw.map(normalizeName).filter(Boolean))];
+}
+
+function expand(exported) {
+  if (Array.isArray(exported)) return exported;
+  if (Array.isArray(exported?.commands)) return exported.commands;
+  return exported ? [exported] : [];
 }
 
 const records = [];
@@ -34,10 +40,12 @@ const loadErrors = [];
 for (const file of walk(ROOT)) {
   try {
     delete require.cache[require.resolve(file)];
-    const command = require(file);
-    const name = normalizeName(command?.name);
-    if (!name) continue;
-    records.push({ file: path.relative(path.join(__dirname, ".."), file), name, aliases: collectAliases(command) });
+    const exported = require(file);
+    for (const command of expand(exported)) {
+      const name = normalizeName(command?.name);
+      if (!name) continue;
+      records.push({ file: path.relative(path.join(__dirname, ".."), file), name, aliases: collectAliases(command) });
+    }
   } catch (error) {
     loadErrors.push({ file: path.relative(path.join(__dirname, ".."), file), error: error.message });
   }
