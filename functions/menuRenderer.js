@@ -60,15 +60,16 @@ function contextInfo() {
 }
 
 function index(prefix) {
-  return (
-    Object.entries(routes)
-      .map(
-        ([category, route]) =>
-          `├̬⌑ؔ͟ 「🧊」${prefix}${route} — ${category}\n┃  ${catalog.sections(category).join(" · ") || "Navegação"}`,
-      )
-      .join("\n") +
-    `\n├̬⌑ؔ͟ 「🧊」${prefix}menugeral — Todos os comandos\n├̬⌑ؔ͟ 「🧊」${prefix}info comando — Ajuda de um comando\n╰─┄─💎`
+  const blocks = Object.entries(routes).map(([category, route]) => {
+    const sections = catalog.sections(category).join(" • ") || "Navegação";
+    return `╭━━━━━━━━〔 🧊 ${category.toUpperCase()} 〕━━━━━━━━╮\n┃ ${prefix}${route}\n┃ Seções: ${sections}\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`;
+  });
+
+  blocks.push(
+    `╭━━━━━━━━〔 💎 EXTRAS 〕━━━━━━━━╮\n┃ ${prefix}menugeral — Todos os comandos\n┃ ${prefix}info comando — Ajuda de um comando\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
   );
+
+  return blocks.join("\n\n");
 }
 
 function menuHeader(title, prefix, page, pages) {
@@ -83,25 +84,35 @@ function decoratePage(text) {
   const out = [];
   let sectionOpen = false;
 
+  function closeSection() {
+    if (!sectionOpen) return;
+    out.push("╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯");
+    out.push("");
+    sectionOpen = false;
+  }
+
   for (const raw of lines) {
     const line = raw.trim();
     if (!line) continue;
+
     const heading = line.match(/^\*(.+)\*$/);
     if (heading) {
-      if (sectionOpen) out.push("╰─┄─💎");
-      out.push(`╭─┄─💎〔 ${heading[1].toUpperCase()} 〕`);
+      closeSection();
+      out.push(`╭━━━━━━━━〔 🧊 ${heading[1].toUpperCase()} 〕━━━━━━━━╮`);
       sectionOpen = true;
       continue;
     }
+
     if (!sectionOpen) {
-      out.push("╭─┄─💎〔 𝙲𝙾𝙼𝙰𝙽𝙳𝙾𝚂 〕");
+      out.push("╭━━━━━━━━〔 🧊 COMANDOS 〕━━━━━━━━╮");
       sectionOpen = true;
     }
-    out.push(`├̬⌑ؔ͟ 「🧊」${line}`);
+
+    out.push(`┃ ${line}`);
   }
 
-  if (sectionOpen) out.push("╰─┄─💎");
-  return out.join("\n");
+  closeSection();
+  return out.join("\n").trim();
 }
 
 function imagePath(name) {
@@ -111,20 +122,35 @@ function imagePath(name) {
   return fs.existsSync(preferred) ? preferred : fallback;
 }
 
-async function sendStyledMenu(conn, msg, from, { name, title, body, page, pages, next }) {
+async function sendStyledMenu(
+  conn,
+  msg,
+  from,
+  { name, title, body, page, pages, next, forceText = false },
+) {
   const prefix = config.prefix || ".";
-  const caption = `${menuHeader(title, prefix, page, pages)}\n${readmore}\n${body}${next ? `\n\n╭─┄─🧊〔 𝙽𝙰𝚅𝙴𝙶𝙰𝙲̧𝙰̃𝙾 〕\n├̬⌑ؔ͟ ${next}\n╰─┄─🧊` : ""}${getFraseFilosofica()}`;
+  const content = `${menuHeader(title, prefix, page, pages)}\n${readmore}\n${body}${
+    next
+      ? `\n\n╭━━━━━━━━〔 🧊 NAVEGAÇÃO 〕━━━━━━━━╮\n┃ ${next}\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`
+      : ""
+  }${getFraseFilosofica()}`;
   const img = imagePath(name);
   const quoted = createStatusQuoted(msg);
 
-  if (fs.existsSync(img)) {
+  // Menus muito grandes, principalmente o menugeral, são enviados como texto.
+  // Assim todo o conteúdo continua em UMA mensagem e não depende do limite de legenda.
+  if (forceText || content.length > 12000 || !fs.existsSync(img)) {
     await conn.sendMessage(
       from,
-      { image: fs.readFileSync(img), caption, contextInfo: contextInfo() },
+      { text: content, contextInfo: contextInfo() },
       { quoted },
     );
   } else {
-    await conn.sendMessage(from, { text: caption, contextInfo: contextInfo() }, { quoted });
+    await conn.sendMessage(
+      from,
+      { image: fs.readFileSync(img), caption: content, contextInfo: contextInfo() },
+      { quoted },
+    );
   }
 
   await conn.sendMessage(from, { react: { text: "🧊", key: msg.key } });
@@ -153,7 +179,7 @@ async function sendMainMenu(conn, msg, from) {
               {
                 title: "       》𝐌𝐄𝐍𝐔 𝐋𝐈𝐒𝐓𝐀《",
                 rows: [
-                  row("menugeral", "   『🧊』𝗠𝗘𝗡𝗨 𝗚𝗘𝗥𝗔𝗟", "ᴛᴏᴅᴏs ᴏs ᴄᴏᴍᴀɴᴅᴏs, ᴏʀɢᴀɴɪᴢᴀᴅᴏs ᴘᴏʀ sᴇᴄ̧ᴀ̃ᴏ"),
+                  row("menugeral", "   『🧊』𝗠𝗘𝗡𝗨 𝗚𝗘𝗥𝗔𝗟", "ᴛᴏᴅᴏs ᴏs ᴄᴏᴍᴀɴᴅᴏs, ᴇᴍ ᴜᴍᴀ ᴜ́ɴɪᴄᴀ ᴍᴇɴsᴀɢᴇᴍ"),
                   row("menuadm", "   『🧊』𝗠𝗘𝗡𝗨 𝗔𝗗𝗠", "ᴀᴅᴍɪɴɪsᴛʀᴀᴄ̧ᴀ̃ᴏ ᴇ ᴍᴏᴅᴇʀᴀᴄ̧ᴀ̃ᴏ ᴅᴇ ɢʀᴜᴘᴏs"),
                   row("menudono", "   『🧊』𝗠𝗘𝗡𝗨 𝗗𝗢𝗡𝗢", "ᴄᴏᴍᴀɴᴅᴏs ʀᴇsᴛʀɪᴛᴏs ᴀᴏ ᴅᴏɴᴏ"),
                   row("menurpg", "   『🧊』𝗠𝗘𝗡𝗨 𝗥𝗣𝗚", "sɪsᴛᴇᴍᴀ ʀᴘɢ ᴏʀɢᴀɴɪᴢᴀᴅᴏ ᴘᴏʀ sᴇᴄ̧ᴏ̃ᴇs"),
@@ -213,7 +239,7 @@ function createMenu(name, category, aliases = []) {
             return sendStyledMenu(conn, msg, from, {
               name,
               title: "Categorias",
-              body: `╭─┄─💎〔 𝙲𝙰𝚃𝙴𝙶𝙾𝚁𝙸𝙰𝚂 〕\n${index(prefix)}`,
+              body: index(prefix),
             });
           }
           chosen = catalog.categories[key];
@@ -229,22 +255,42 @@ function createMenu(name, category, aliases = []) {
         let page = 1;
         if (/^\d+$/.test(params.at(-1) || "")) page = Number(params.pop());
         const section = params.join(" ");
-        const parts = catalog.pages({ category: chosen, section, prefix });
+
+        // O menu geral completo nunca é paginado: todos os comandos ficam na mesma mensagem.
+        const singleMessage = name === "menugeral" && !chosen;
+        const parts = catalog.pages({
+          category: chosen,
+          section,
+          prefix,
+          limit: singleMessage ? 60000 : 3200,
+        });
 
         if (!parts.length) {
-          const available = catalog.sections(chosen).join(" · ") || "Nenhuma";
+          const available = catalog.sections(chosen).join(" • ") || "Nenhuma";
           return sendStyledMenu(conn, msg, from, {
             name,
             title: chosen || "Todos os comandos",
-            body: `╭─┄─💎〔 𝚂𝙴𝙲̧𝙾̃𝙴𝚂 〕\n├̬⌑ؔ͟ 「🧊」Seção não encontrada.\n├̬⌑ؔ͟ 「🧊」Disponíveis: ${available}\n╰─┄─💎`,
+            body: `╭━━━━━━━━〔 ⚠️ SEÇÃO NÃO ENCONTRADA 〕━━━━━━━━╮\n┃ Disponíveis: ${available}\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
           });
         }
 
-        if (!Number.isSafeInteger(page) || page < 1 || page > parts.length) {
+        if (
+          !singleMessage &&
+          (!Number.isSafeInteger(page) || page < 1 || page > parts.length)
+        ) {
           return sendStyledMenu(conn, msg, from, {
             name,
             title: chosen || "Todos os comandos",
-            body: `╭─┄─💎〔 𝙿𝙰́𝙶𝙸𝙽𝙰 〕\n├̬⌑ؔ͟ 「🧊」Informe uma página de 1 a ${parts.length}.\n╰─┄─💎`,
+            body: `╭━━━━━━━━〔 ⚠️ PÁGINA 〕━━━━━━━━╮\n┃ Informe uma página de 1 a ${parts.length}.\n╰━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╯`,
+          });
+        }
+
+        if (singleMessage) {
+          return sendStyledMenu(conn, msg, from, {
+            name,
+            title: "Todos os comandos",
+            body: decoratePage(parts.join("\n")),
+            forceText: true,
           });
         }
 
