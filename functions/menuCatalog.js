@@ -63,10 +63,13 @@ function formatLine(command, prefix = ".") {
   const description = usage ? `Uso: ${prefix}${usage}` : command.description;
   return `${prefix}${command.name} | ${description}`;
 }
+function visibleRecords() {
+  return records().filter((r) => r.command?.hidden !== true);
+}
 function sections(category) {
   return [
     ...new Set(
-      records()
+      visibleRecords()
         .filter((r) => !category || r.command.menuCategory === category)
         .map((r) => r.command.menuSection),
     ),
@@ -78,7 +81,7 @@ function pages({
   prefix = ".",
   limit = 3200,
 } = {}) {
-  const rows = records()
+  const rows = visibleRecords()
     .filter(
       (r) =>
         (!category || r.command.menuCategory === category) &&
@@ -117,6 +120,7 @@ module.exports = {
   prime,
   diagnostics,
   records,
+  visibleRecords,
   resolve,
   normalize,
   categories,
