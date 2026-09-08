@@ -66,10 +66,13 @@ function formatLine(command, prefix = ".") {
 function visibleRecords() {
   return records().filter((r) => r.command?.hidden !== true);
 }
-function sections(category) {
+function menuRecords(includeHidden = false) {
+  return includeHidden ? records() : visibleRecords();
+}
+function sections(category, { includeHidden = false } = {}) {
   return [
     ...new Set(
-      visibleRecords()
+      menuRecords(includeHidden)
         .filter((r) => !category || r.command.menuCategory === category)
         .map((r) => r.command.menuSection),
     ),
@@ -80,13 +83,16 @@ function pages({
   section = "",
   prefix = ".",
   limit = 3200,
+  includeHidden = false,
+  namePrefix = "",
 } = {}) {
-  const rows = visibleRecords()
+  const rows = menuRecords(includeHidden)
     .filter(
       (r) =>
         (!category || r.command.menuCategory === category) &&
         (!section ||
-          normalize(r.command.menuSection).includes(normalize(section))),
+          normalize(r.command.menuSection).includes(normalize(section))) &&
+        (!namePrefix || r.name.startsWith(namePrefix)),
     )
     .sort(
       (a, b) =>
@@ -121,6 +127,7 @@ module.exports = {
   diagnostics,
   records,
   visibleRecords,
+  menuRecords,
   resolve,
   normalize,
   categories,
