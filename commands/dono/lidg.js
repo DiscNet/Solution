@@ -1,119 +1,127 @@
 // Menu: Dono - Grupos | Comando: lidg
-// commands/lidg.js
 const config = require("../../config/config");
 const { sendInteractiveMessage } = require("gifted-btns");
+const { createStatusQuoted } = require("../../functions/statusCard");
+const {
+  newsletterContext,
+  fetchGroups,
+  resolveGroup,
+  groupStats,
+  groupNumber,
+  ensureOwner,
+  readableError,
+} = require("../../functions/ownerGroupManager");
 
 module.exports = {
   permissions: { owner: true },
   name: "lidg",
-  description: "𝑶𝒃𝒕𝒆𝒎 𝒐 𝑳𝑰𝑫 𝒅𝒆 𝒖𝒎 𝒈𝒓𝒖𝒑𝒐 𝒑𝒆𝒍𝒐 𝒏ú𝒎𝒆𝒓𝒐 𝒏𝒂 𝒍𝒊𝒔𝒕𝒂",
-  async execute(conn, msg, args, from, axiosInstance) {
+  aliases: ["idgrupo"],
+  description: "Obtém o ID de um grupo por posição, nome ou ID",
+  usage: "lidg número|nome|id@g.us",
+  menuCategory: "Dono",
+  menuSection: "Grupos",
+
+  async execute(conn, msg, args = [], from) {
+    const quoted = createStatusQuoted(msg);
     try {
-      const prefix = config.prefix || ".";
-
-      // Verificar se é o dono
-      const senderJid = msg.key.participant || msg.key.remoteJid;
-      const donoLid = config.ownerLid || `${config.ownerNumber}@s.whatsapp.net`;
-
-      if (senderJid !== donoLid && !senderJid.includes(config.ownerNumber)) {
-        await conn.sendMessage(from, {
-          text: "❌ *ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!*"
-        }, { quoted: msg });
-        return;
+      if (!ensureOwner(msg)) {
+        return conn.sendMessage(from, {
+          text: "❌ Apenas o dono pode usar este comando.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      if (!args[0]) {
-        await conn.sendMessage(from, {
-          text: `❌ *ғᴏʀɴᴇçᴀ ᴏ ɴúᴍᴇʀᴏ ᴅᴏ ɢʀᴜᴘᴏ ɴᴀ ʟɪsᴛᴀ!*\n\n📌 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}lidg 1\n\n📌 *ᴜsᴇ ${prefix}listg para ver a lista.*`
-        }, { quoted: msg });
-        return;
+      const query = args.join(" ").trim();
+      if (!query) {
+        return conn.sendMessage(from, {
+          text: `❌ Informe a posição, o nome ou o ID do grupo.\n\nEx.: ${config.prefix || "."}lidg 1\nEx.: ${config.prefix || "."}lidg Meu Grupo\nEx.: ${config.prefix || "."}lidg 120363000000000000@g.us`,
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      const numero = parseInt(args[0]);
-
-      if (isNaN(numero) || numero < 1) {
-        await conn.sendMessage(from, {
-          text: "❌ *ɴúᴍᴇʀᴏ ɪɴᴠáʟɪᴅᴏ!* ᴅɪɢɪᴛᴇ ᴜᴍ ɴúᴍᴇʀᴏ ᴘᴏsɪᴛɪᴠᴏ."
-        }, { quoted: msg });
-        return;
+      const groups = await fetchGroups(conn);
+      if (!groups.length) {
+        return conn.sendMessage(from, {
+          text: "📭 O bot não participa de nenhum grupo.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      await conn.sendMessage(from, { text: "⏳ *ʙᴜsᴄᴀɴᴅᴏ ɢʀᴜᴘᴏ...*" }, { quoted: msg });
-
-      // Buscar todos os grupos
-      const groups = await conn.groupFetchAllParticipating();
-      const groupList = Object.values(groups);
-
-      if (groupList.length === 0) {
-        await conn.sendMessage(from, {
-          text: "❌ *ᴏ ʙᴏᴛ ɴãᴏ ᴇsᴛá ᴇᴍ ɴᴇɴʜᴜᴍ ɢʀᴜᴘᴏ!*"
-        }, { quoted: msg });
-        return;
+      const resolved = resolveGroup(groups, query);
+      if (!resolved.group) {
+        if (resolved.reason === "ambiguous") {
+          const rows = resolved.matches.slice(0, 10).map((group) => {
+            const index = groups.findIndex((item) => item.id === group.id) + 1;
+            return `${index}. ${group.subject || "Sem nome"} — ${group.id}`;
+          });
+          return conn.sendMessage(from, {
+            text: `🔎 Encontrei mais de um grupo. Use o número da lista:\n\n${rows.join("\n")}`,
+            contextInfo: newsletterContext(),
+          }, { quoted });
+        }
+        return conn.sendMessage(from, {
+          text: `❌ Grupo não encontrado. Use ${config.prefix || "."}listg para ver a lista atual.`,
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      if (numero > groupList.length) {
-        await conn.sendMessage(from, {
-          text: `❌ *ɢʀᴜᴘᴏ ɴãᴏ ᴇɴᴄᴏɴᴛʀᴀᴅᴏ!*\n\n📊 *ᴛᴏᴛᴀʟ ᴅᴇ ɢʀᴜᴘᴏs:* ${groupList.length}\n📌 *ᴅɪɢɪᴛᴇ ᴜᴍ ɴúᴍᴇʀᴏ ᴇɴᴛʀᴇ 1 ᴇ ${groupList.length}.*`
-        }, { quoted: msg });
-        return;
-      }
+      const group = resolved.group;
+      let metadata = group;
+      try {
+        metadata = await conn.groupMetadata(group.id);
+      } catch (_) {}
 
-      const grupo = groupList[numero - 1];
-      const groupId = grupo.id;
-      const groupName = grupo.subject || "Sem nome";
-      const groupLid = groupId.split('@')[0];
-      const memberCount = grupo.participants ? grupo.participants.length : 0;
+      const stats = groupStats(metadata, conn);
+      const index = groups.findIndex((item) => item.id === group.id) + 1;
+      const creation = Number(metadata?.creation);
+      const createdAt = Number.isFinite(creation) && creation > 0
+        ? new Date(creation * 1000).toLocaleDateString("pt-BR")
+        : "indisponível";
 
-      const dataAtual = new Date().toLocaleDateString("pt-BR");
-      const horaAtual = new Date().toLocaleTimeString("pt-BR");
+      const text = [
+        "🔎 *INFORMAÇÕES DO GRUPO*",
+        "",
+        `#️⃣ Posição: *${index}*`,
+        `📛 Nome: *${metadata?.subject || group.subject || "Sem nome"}*`,
+        `🆔 ID completo: \`${group.id}\``,
+        `🔢 ID numérico: \`${groupNumber(group.id)}\``,
+        `👥 Membros: *${stats.members}*`,
+        `👮 Administradores: *${stats.admins}*`,
+        `🤖 Bot: *${stats.botAdmin ? "administrador" : "membro"}*`,
+        `🔒 Mensagens: *${stats.closed ? "somente admins" : "todos"}*`,
+        `🛠️ Edição: *${stats.restricted ? "somente admins" : "todos"}*`,
+        `📅 Criado em: *${createdAt}*`,
+        "",
+        `⚙️ Gerenciar: ${config.prefix || "."}gerenciar ${group.id}`,
+      ].join("\n");
 
-      const texto = `
-╭════════════════════════╮
-     🔍 *𝑳𝑰𝑫 𝑫𝑶 𝑮𝑹𝑼𝑷𝑶* 🔍
-╰════════════════════════╯
-━━━━━━━━━━━━━━━━━━━━━━━━
-
-📛 *ɴᴏᴍᴇ:* ${groupName}
-🆔 *ʟɪᴅ:* \`${groupLid}\`
-👥 *ᴍᴇᴍʙʀᴏs:* ${memberCount}
-📅 *ᴅᴀᴛᴀ:* ${dataAtual}
-⏰ *ʜᴏʀᴀ:* ${horaAtual}
-
-━━━━━━━━━━━━━━━━━━━━━━
-📌 *ᴄᴏᴍᴀɴᴅᴏs úᴛᴇɪs:*
-${prefix}sair ${groupLid}
-━━━━━━━━━━━━━━━━━━━━━━
-      `;
-
-      // Enviar mensagem com botão de cópia usando sendInteractiveMessage
-      await sendInteractiveMessage(conn, from, {
-        text: texto,
-        footer: "ᴄʟɪǫᴜᴇ ɴᴏ ʙᴏᴛãᴏ ᴀʙᴀɪxᴏ ᴘᴀʀᴀ ᴄᴏᴘɪᴀʀ ᴏ ʟɪᴅ",
+      return sendInteractiveMessage(conn, from, {
+        text,
+        footer: `${config.botName || "GrimmJow-WA"} · lidg`,
+        contextInfo: newsletterContext(),
         interactiveButtons: [
           {
             name: "cta_copy",
             buttonParamsJson: JSON.stringify({
-              display_text: "📋 ᴄᴏᴘɪᴀʀ ʟɪᴅ",
-              copy_code: groupLid
-            })
+              display_text: "📋 Copiar ID",
+              copy_code: group.id,
+            }),
           },
-        ]
-      });
-
-      await conn.sendMessage(from, { react: { text: "📋", key: msg.key } });
-
+          {
+            name: "quick_reply",
+            buttonParamsJson: JSON.stringify({
+              display_text: "⚙️ Gerenciar",
+              id: `${config.prefix || "."}gerenciar ${group.id}`,
+            }),
+          },
+        ],
+      }, { quoted });
     } catch (error) {
-      console.error("Erro no lidg:", error);
-      await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ʙᴜsᴄᴀʀ ʟɪᴅ!* ᴛᴇɴᴛᴇ ɴᴏᴠᴀᴍᴇɴᴛᴇ."
-      }, { quoted: msg });
+      console.error("[LIDG]", error);
+      return conn.sendMessage(from, {
+        text: readableError(error, "consultar o grupo"),
+        contextInfo: newsletterContext(),
+      }, { quoted });
     }
-  }
+  },
 };
-
-Object.assign(module.exports, {
-  "menuCategory": "Dono",
-  "menuSection": "Grupos",
-  "usage": "lidg número do grupo",
-  "description": "Uso: .lidg número do grupo"
-});
