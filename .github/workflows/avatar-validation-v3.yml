@@ -1,0 +1,19 @@
+name: avatar-validation-v3
+
+on:
+  push:
+    branches:
+      - fix/avatar-command-v3
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: npm
+      - run: npm ci
+      - run: node --test tests/avatar.test.js
+      - run: node -e "const c=require('./commands/outros/avatar'); if(c.name!=='avatar'||typeof c.execute!=='function') process.exit(1); console.log('avatar load OK')"
