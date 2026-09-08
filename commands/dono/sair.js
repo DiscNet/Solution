@@ -1,58 +1,61 @@
 // Menu: Dono - Grupos | Comando: sair
-// commands/sair.js
 const config = require("../../config/config");
+const { createStatusQuoted } = require("../../functions/statusCard");
+const {
+  newsletterContext,
+  normalizeGroupId,
+  ensureOwner,
+  readableError,
+} = require("../../functions/ownerGroupManager");
 
 module.exports = {
   permissions: { owner: true },
   name: "sair",
-  description: "𝑭𝒂𝒛 𝒐 𝒃𝒐𝒕 𝒔𝒂𝒊𝒓 𝒅𝒆 𝒖𝒎 𝒈𝒓𝒖𝒑𝒐 (𝑫𝒐𝒏𝒐)",
-  async execute(conn, msg, args, from, axiosInstance) {
+  aliases: ["sairgrupo"],
+  description: "Faz o bot sair de um grupo pelo ID",
+  usage: "sair id@g.us",
+  menuCategory: "Dono",
+  menuSection: "Grupos",
+
+  async execute(conn, msg, args = [], from) {
+    const quoted = createStatusQuoted(msg);
     try {
-      const prefix = config.prefix || ".";
-
-      const senderJid = msg.key.participant || msg.key.remoteJid;
-      const donoLid = config.ownerLid || `${config.ownerNumber}@s.whatsapp.net`;
-
-      if (senderJid !== donoLid && !senderJid.includes(config.ownerNumber)) {
-        await conn.sendMessage(from, {
-          text: "❌ *ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!*"
-        }, { quoted: msg });
-        return;
+      if (!ensureOwner(msg)) {
+        return conn.sendMessage(from, {
+          text: "❌ Apenas o dono pode usar este comando.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      if (!args[0]) {
-        await conn.sendMessage(from, {
-          text: `❌ *ғᴏʀɴᴇçᴀ ᴏ ʟɪᴅ ᴅᴏ ɢʀᴜᴘᴏ!*\n\n📌 *ᴇxᴇᴍᴘʟᴏ:* ${prefix}sair 55123456789`
-        }, { quoted: msg });
-        return;
+      const groupId = normalizeGroupId(args[0]);
+      if (!groupId) {
+        return conn.sendMessage(from, {
+          text: `❌ Informe o ID do grupo.\nEx.: ${config.prefix || "."}sair 120363000000000000@g.us`,
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      const grupoLid = args[0].replace(/\D/g, '');
-      const groupJid = `${grupoLid}@g.us`;
-
-      await conn.sendMessage(from, { text: `⏳ *ᴛᴇɴᴛᴀɴᴅᴏ sᴀɪʀ ᴅᴏ ɢʀᴜᴘᴏ ${grupoLid}...*` }, { quoted: msg });
-
+      let metadata;
       try {
-        await conn.groupLeave(groupJid);
-        await conn.sendMessage(from, {
-          text: `✅ *ʙᴏᴛ sᴀɪᴜ ᴅᴏ ɢʀᴜᴘᴏ!*\n\n🆔 ʟɪᴅ: ${grupoLid}`
-        }, { quoted: msg });
-      } catch (err) {
-        await conn.sendMessage(from, {
-          text: `❌ *ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ sᴀɪʀ!*\n\nᴠᴇʀɪғɪǫᴜᴇ sᴇ ᴏ ʟɪᴅ ᴇsᴛá ᴄᴏʀʀᴇᴛᴏ.`
-        }, { quoted: msg });
+        metadata = await conn.groupMetadata(groupId);
+      } catch (error) {
+        return conn.sendMessage(from, {
+          text: "❌ O bot não participa desse grupo ou o ID está incorreto.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
+      await conn.groupLeave(groupId);
+      return conn.sendMessage(from, {
+        text: `🚪 O bot saiu de *${metadata?.subject || "grupo"}*.\n🆔 \`${groupId}\``,
+        contextInfo: newsletterContext(),
+      }, { quoted });
     } catch (error) {
-      console.error("Erro no sair:", error);
-      await conn.sendMessage(from, { text: "❌ *ᴇʀʀᴏ ᴀᴏ sᴀɪʀ ᴅᴏ ɢʀᴜᴘᴏ!*" });
+      console.error("[SAIR]", error);
+      return conn.sendMessage(from, {
+        text: readableError(error, "sair do grupo"),
+        contextInfo: newsletterContext(),
+      }, { quoted });
     }
-  }
+  },
 };
-
-Object.assign(module.exports, {
-  "menuCategory": "Dono",
-  "menuSection": "Grupos",
-  "usage": "sair [id do grupo]",
-  "description": "Uso: .sair [id do grupo]"
-});
