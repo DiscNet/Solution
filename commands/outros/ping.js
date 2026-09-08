@@ -114,9 +114,7 @@ function contextInfo() {
 }
 
 function buildReport({
-  whatsappLatency,
   processingMs,
-  totalMs,
   metrics,
   commandCount,
   prefix,
@@ -133,15 +131,10 @@ function buildReport({
     ? "indisponível"
     : `${metrics.eventLoop.toFixed(1)}%`;
 
-  const whatsappText = whatsappLatency == null ? "medindo..." : formatMs(whatsappLatency);
-  const totalText = totalMs == null ? "medindo..." : formatMs(totalMs);
-
   return [
     "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
     `├̬⌑ؔ͟ ⎾🏓⏌ 𝙿𝚒𝚗𝚐 / 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚊𝚖𝚎𝚗𝚝𝚘: *${formatMs(processingMs)}*`,
     `├̬⌑ؔ͟ ⎾📶⏌ 𝚂𝚝𝚊𝚝𝚞𝚜: *${latencyStatus(processingMs)}*`,
-    `├̬⌑ؔ͟ ⎾📨⏌ 𝙴𝚗𝚟𝚒𝚘 𝚆𝙰: *${whatsappText}*`,
-    `├̬⌑ؔ͟ ⎾⏲️⏌ 𝚃𝚎𝚖𝚙𝚘 𝚝𝚘𝚝𝚊𝚕: *${totalText}*`,
     "├̬⌑ؔ͟ ⎾🖥️⏌ ── 𝚂𝙸𝚂𝚃𝙴𝙼𝙰 ──",
     `├̬⌑ؔ͟ ⎾⏱️⏌ 𝚄𝚙𝚝𝚒𝚖𝚎 𝚋𝚘𝚝: *${formatDuration(metrics.processUptime)}*`,
     `├̬⌑ؔ͟ ⎾🧠⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚘 𝚁𝚂𝚂: *${formatBytes(metrics.rss)}*`,
@@ -164,26 +157,12 @@ function buildReport({
     "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
     "",
     "> 🏓 *Ping = tempo real de processamento interno do bot.*",
-    "> 📨 *Envio WA = tempo do envio pelo Baileys/WhatsApp.*",
   ].join("\n");
-}
-
-async function editReport(conn, from, key, text) {
-  if (!key?.id) return null;
-  try {
-    return await conn.sendMessage(from, {
-      text,
-      edit: key,
-      contextInfo: contextInfo(),
-    });
-  } catch (_) {
-    return null;
-  }
 }
 
 module.exports = {
   name: "ping",
-  description: "mostra processamento real do bot, envio do WhatsApp e métricas do sistema",
+  description: "mostra processamento real do bot e métricas do sistema",
   menuCategory: "Utilidades",
   menuSection: "Estatísticas",
   usage: "ping",
@@ -202,12 +181,8 @@ module.exports = {
       const now = new Date();
       const processingMs = elapsedMs(commandStart);
 
-      // O ping principal já está pronto antes do primeiro envio: é o tempo de
-      // processamento interno do bot. Nenhuma rede externa é necessária.
-      const initialReport = buildReport({
-        whatsappLatency: null,
+      const report = buildReport({
         processingMs,
-        totalMs: null,
         metrics,
         commandCount,
         prefix,
@@ -217,39 +192,22 @@ module.exports = {
         now,
       });
 
-      // O envio do relatório continua sendo medido como informação secundária.
-      const sendStart = process.hrtime.bigint();
-      const sent = await conn.sendMessage(from, {
-        text: initialReport,
+      // Exatamente UM envio no fluxo normal: sem mensagem temporária, sem
+      // edição e sem reação separada. Todas as métricas são calculadas antes.
+      await conn.sendMessage(from, {
+        text: report,
         contextInfo: contextInfo(),
       }, { quoted });
-      const whatsappLatency = elapsedMs(sendStart);
-      const totalMs = elapsedMs(commandStart);
-
-      const finalMetrics = getRuntimeMetrics();
-      const finalReport = buildReport({
-        whatsappLatency,
-        processingMs,
-        totalMs,
-        metrics: finalMetrics,
-        commandCount,
-        prefix,
-        botName,
-        owner,
-        requester,
-        now: new Date(),
-      });
-
-      await Promise.allSettled([
-        editReport(conn, from, sent?.key, finalReport),
-        conn.sendMessage(from, { react: { text: "🏓", key: msg.key } }),
-      ]);
     } catch (error) {
       console.error("[PING] Erro:", error);
-      await conn.sendMessage(from, {
-        text: `❌ *Erro ao medir o ping.*\n${String(error?.message || "Falha desconhecida").slice(0, 180)}`,
-        contextInfo: contextInfo(),
-      }, { quoted });
+      // Só tenta informar erro se o envio principal falhar antes de entregar
+      // qualquer relatório ao usuário.
+      try {
+        await conn.sendMessage(from, {
+          text: `❌ *Erro ao medir o ping.*\n${String(error?.message || "Falha desconhecida").slice(0, 180)}`,
+          contextInfo: contextInfo(),
+        }, { quoted });
+      } catch (_) {}
     }
   },
 };
