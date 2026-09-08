@@ -221,8 +221,8 @@ function createMenu(name, category, aliases = []) {
     aliases,
     menuCategory: "Menus",
     menuSection: "Navegação",
-    usage: `${name} [seção] [página]`,
-    description: `Uso: .${name} [seção] [página]`,
+    usage: `${name} [seção]`,
+    description: `Uso: .${name} [seção]`,
     async execute(conn, msg, args = [], from) {
       try {
         const prefix = config.prefix || ".";
@@ -250,15 +250,12 @@ function createMenu(name, category, aliases = []) {
           chosen = catalog.categories[catalog.normalize(params.shift())];
         }
 
-        let page = 1;
-        if (/^\d+$/.test(params.at(-1) || "")) page = Number(params.pop());
         const section = params.join(" ");
-        const singleMessage = name === "menugeral" && !chosen;
         const parts = catalog.pages({
           category: chosen,
           section,
           prefix,
-          limit: singleMessage ? 60000 : 3200,
+          limit: 60000,
         });
 
         if (!parts.length) {
@@ -270,45 +267,10 @@ function createMenu(name, category, aliases = []) {
           });
         }
 
-        if (
-          !singleMessage &&
-          (!Number.isSafeInteger(page) || page < 1 || page > parts.length)
-        ) {
-          return sendStyledMenu(conn, msg, from, {
-            name,
-            title: chosen || "Todos os comandos",
-            body: `╭─┄─💎〔 𝙿𝙰́𝙶𝙸𝙽𝙰 〕\n├̬⌑ؔ͟ 「🧊」Informe uma página de 1 a ${parts.length}.\n╰─┄─💎`,
-          });
-        }
-
-        if (singleMessage) {
-          return sendStyledMenu(conn, msg, from, {
-            name,
-            title: "Todos os comandos",
-            body: decoratePage(parts.join("\n")),
-          });
-        }
-
-        const base =
-          name === "menu"
-            ? `${prefix}menu ${args[0]}`
-            : name === "menugeral" && chosen
-              ? `${prefix}menugeral ${catalog.normalize(chosen)}`
-              : `${prefix}${name}`;
-        const next =
-          page < parts.length
-            ? `Próxima: ${base}${section ? " " + section : ""} ${page + 1}`
-            : parts.length > 1
-              ? `Página atual: ${page}/${parts.length}`
-              : "";
-
         return sendStyledMenu(conn, msg, from, {
           name,
           title: chosen || "Todos os comandos",
-          body: decoratePage(parts[page - 1]),
-          page,
-          pages: parts.length,
-          next,
+          body: decoratePage(parts.join("\n")),
         });
       } catch (error) {
         console.error(`Erro no ${name}:`, error);

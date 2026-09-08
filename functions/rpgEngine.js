@@ -127,7 +127,7 @@ function normalizeUser(user, id, pushName = "Aventureiro") {
   return user;
 }
 
-function senderId(msg, from) { return msg?.key?.participantAlt || msg?.key?.participant || msg?.key?.remoteJidAlt || msg?.key?.remoteJid || from; }
+function senderId(msg, from) { return msg?.key?.participant || msg?.key?.participantAlt || msg?.key?.remoteJid || msg?.key?.remoteJidAlt || from; }
 function pushName(msg) { return String(msg?.pushName || "Aventureiro").replace(/[\r\n]+/g, " ").slice(0, 60); }
 function contextInfoOf(msg) { return msg?.message?.extendedTextMessage?.contextInfo || msg?.message?.imageMessage?.contextInfo || msg?.message?.videoMessage?.contextInfo || msg?.message?.documentMessage?.contextInfo || {}; }
 function targetId(msg) { const ctx = contextInfoOf(msg); const mentioned = Array.isArray(ctx?.mentionedJid) ? ctx.mentionedJid[0] : null; return mentioned || ctx?.participant || null; }
