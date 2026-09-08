@@ -13,7 +13,7 @@ const expected = [
   "ocr", "qrcode", "lerqr", "traduzir", "corrigir", "tts", "transcrever", "hash",
   "moeda", "clima", "encurtar", "expandirurl", "printsite", "statussite", "dns", "whois", "ip", "horario", "feriado",
   "arquivo", "img2pdf", "pdf2img", "unirpdf", "dividirpdf", "comprimirpdf",
-  "calc", "lembrete", "enquete", "sorteio", "escolher", "cronometro", "idade", "data", "anotacao", "minhasnotas", "favorito",
+  "calc", "lembrete", "enquete", "sorteioopcoes", "escolher", "cronometro", "idade", "data", "anotacao", "minhasnotas", "favorito",
 ];
 
 test("utility suite exposes all requested commands with menu metadata", () => {

@@ -101,11 +101,16 @@ function reset() {
   botAdmin = true;
 }
 test.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
-test("all 424 commands load, carry metadata and appear exactly once in paginated menus", () => {
+test("1000+ commands load with metadata while generated families stay out of menu payloads", () => {
   const d = catalog.diagnostics();
   assert.equal(d.errors.length, 0);
   assert.equal(d.collisions.length, 0);
-  assert.equal(d.records.length, 424);
+  assert.ok(d.records.length >= 1000, `catalog too small: ${d.records.length}`);
+
+  const visible = d.records.filter((r) => r.command.hidden !== true);
+  const hidden = d.records.filter((r) => r.command.hidden === true);
+  assert.ok(hidden.length >= 1000, `generated catalog too small: ${hidden.length}`);
+
   const pages = catalog.pages();
   const text = pages.join("\n");
   for (const r of d.records) {
@@ -114,9 +119,18 @@ test("all 424 commands load, carry metadata and appear exactly once in paginated
       r.name,
     );
     assert.ok(r.command.description.length <= 120, r.name);
+  }
+  for (const r of visible) {
     assert.equal(
       text.split("\n").filter((l) => l.startsWith("." + r.name + " | ")).length,
       1,
+      r.name,
+    );
+  }
+  for (const r of hidden) {
+    assert.equal(
+      text.split("\n").filter((l) => l.startsWith("." + r.name + " | ")).length,
+      0,
       r.name,
     );
   }
@@ -128,6 +142,7 @@ test("all 424 commands load, carry metadata and appear exactly once in paginated
       .includes(".pets | Uso: .pets [equipar nome|desequipar]"),
   );
   assert.equal(catalog.resolve("figurinha").name, "s");
+  assert.equal(catalog.resolve("conv-comprimento-km-m").name, "conv-comprimento-km-m");
 });
 test("all added owner/group commands deny unauthorized callers without mutations", async () => {
   reset();

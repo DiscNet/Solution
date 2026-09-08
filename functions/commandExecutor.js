@@ -4,6 +4,7 @@ const runtimeLogger = require("./runtimeLogger");
 const modLog = require("./modLog");
 const ui = require("./ui");
 const policy = require("./adminPolicy");
+const rpgIdentity = require("./rpgIdentity");
 
 function senderFromMessage(msg) {
   return msg?.key?.participantAlt || msg?.key?.participant || msg?.key?.remoteJidAlt || msg?.key?.remoteJid || "";
@@ -37,6 +38,14 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
       await ui.reply(conn, msg, denial, { from });
       return true;
     }
+
+    // Compatibilidade Baileys 7: comandos RPG antigos persistem o jogador
+    // pela chave participant. Quando participant/participantAlt alternam entre
+    // LID e número, reapontamos participant para a identidade já registrada.
+    if (command.menuCategory === "RPG") {
+      rpgIdentity.normalizeMessageIdentity(msg, from);
+    }
+
     const result = await command.execute(conn, msg, args, from, axiosInstance, requestedName || name);
     if (result === false) { policy.record(name, "denied", performance.now() - started); return true; }
     policy.record(name, "ok", performance.now() - started);
@@ -93,4 +102,3 @@ module.exports = {
   executeCommand,
   senderFromMessage
 };
-
