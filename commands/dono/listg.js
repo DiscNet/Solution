@@ -1,127 +1,118 @@
 // Menu: Dono - Grupos | Comando: listg
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/dono/listg.js
 const config = require("../../config/config");
 const { sendInteractiveMessage } = require("gifted-btns");
+const { createStatusQuoted } = require("../../functions/statusCard");
+const {
+  newsletterContext,
+  fetchGroups,
+  groupStats,
+  ensureOwner,
+  readableError,
+} = require("../../functions/ownerGroupManager");
+
+const PAGE_SIZE = 40;
+const ROWS_PER_SECTION = 10;
+
+function sectionsFor(groups, startIndex, prefix, conn) {
+  const sections = [];
+  for (let i = 0; i < groups.length; i += ROWS_PER_SECTION) {
+    const slice = groups.slice(i, i + ROWS_PER_SECTION);
+    sections.push({
+      title: `📋 Grupos ${startIndex + i + 1}-${startIndex + i + slice.length}`,
+      rows: slice.map((group, localIndex) => {
+        const index = startIndex + i + localIndex + 1;
+        const stats = groupStats(group, conn);
+        return {
+          id: `${prefix}gerenciar ${group.id}`,
+          title: `${index}. ${String(group.subject || "Sem nome").slice(0, 70)}`,
+          description: `👥 ${stats.members} · ${stats.botAdmin ? "👮 Bot ADM" : "👤 Bot membro"} · ${stats.closed ? "🔒" : "🔓"}`,
+        };
+      }),
+    });
+  }
+  return sections;
+}
 
 module.exports = {
   permissions: { owner: true },
   name: "listg",
-  description: "𝑳𝒊𝒔𝒕𝒂 𝒕𝒐𝒅𝒐𝒔 𝒐𝒔 𝒈𝒓𝒖𝒑𝒐𝒔 𝒒𝒖𝒆 𝒐 𝒃𝒐𝒕 𝒆𝒔𝒕𝒂́",
-  async execute(conn, msg, args, from, axiosInstance) {
+  aliases: ["listagrupos"],
+  description: "Lista os grupos em que o bot participa",
+  usage: "listg [página]",
+  menuCategory: "Dono",
+  menuSection: "Grupos",
+
+  async execute(conn, msg, args = [], from) {
+    const quoted = createStatusQuoted(msg);
     try {
+      if (!ensureOwner(msg)) {
+        return conn.sendMessage(from, {
+          text: "❌ Apenas o dono pode usar este comando.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
+      }
+
+      const groups = await fetchGroups(conn);
+      if (!groups.length) {
+        return conn.sendMessage(from, {
+          text: "📭 O bot não participa de nenhum grupo.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
+      }
+
+      const pages = Math.ceil(groups.length / PAGE_SIZE);
+      const requestedPage = args[0] == null ? 1 : Number(args[0]);
+      if (!Number.isInteger(requestedPage) || requestedPage < 1 || requestedPage > pages) {
+        return conn.sendMessage(from, {
+          text: `❌ Página inválida. Use ${config.prefix || "."}listg 1 até ${pages}.`,
+          contextInfo: newsletterContext(),
+        }, { quoted });
+      }
+
       const prefix = config.prefix || ".";
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const ownerNumber = config.ownerNumber;
-      const ownerLid = config.ownerLid;
+      const start = (requestedPage - 1) * PAGE_SIZE;
+      const pageGroups = groups.slice(start, start + PAGE_SIZE);
+      const interactiveButtons = [
+        {
+          name: "single_select",
+          buttonParamsJson: JSON.stringify({
+            title: "📋 Selecionar grupo",
+            sections: sectionsFor(pageGroups, start, prefix, conn),
+          }),
+        },
+      ];
 
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      const senderJid = msg.key.participant || msg.key.remoteJid;
-      const senderClean = senderJid.replace(/[^0-9]/g, "");
-      const ownerClean = ownerNumber ? ownerNumber.replace(/[^0-9]/g, "") : "";
-      const isOwner = senderClean === ownerClean || (ownerLid && senderJid === ownerLid);
-
-      if (!isOwner) {
-        return await conn.sendMessage(from, {
-          text: "❌ ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ.",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
+      if (requestedPage > 1) {
+        interactiveButtons.push({
+          name: "quick_reply",
+          buttonParamsJson: JSON.stringify({
+            display_text: "⬅️ Anterior",
+            id: `${prefix}listg ${requestedPage - 1}`,
+          }),
+        });
+      }
+      if (requestedPage < pages) {
+        interactiveButtons.push({
+          name: "quick_reply",
+          buttonParamsJson: JSON.stringify({
+            display_text: "Próxima ➡️",
+            id: `${prefix}listg ${requestedPage + 1}`,
+          }),
         });
       }
 
-      await conn.sendMessage(from, { react: { text: "📋", key: msg.key } });
-
-      const groups = await conn.groupFetchAllParticipating();
-      const groupList = Object.values(groups);
-
-      if (groupList.length === 0) {
-        return await conn.sendMessage(from, {
-          text: "❌ ɴᴇɴʜᴜᴍ ɢʀᴜᴘᴏ.",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, { quoted: msg });
-      }
-
-      const botJid = conn.user.id.split(":")[0] + "@s.whatsapp.net";
-      const GRUPO_OFICIAL_ID = "120363428783733638@g.us";
-
-      const grupoOficial = groupList.find(g => g.id === GRUPO_OFICIAL_ID);
-      const outrosGrupos = groupList.filter(g => g.id !== GRUPO_OFICIAL_ID);
-
-      const makeRow = (group, isOficial = false) => {
-        const name = group.subject || "sᴇᴍ ɴᴏᴍᴇ";
-        const members = group.participants?.length || 0;
-        const isBotAdmin = group.participants?.some(p => p.id === botJid && p.admin) || false;
-        const adminStatus = isBotAdmin ? "👮 ᴀᴅᴍ" : "👤 ᴍᴇᴍʙʀᴏ";
-        const desc = `👥 ${members} · ${adminStatus}`;
-        const lid = group.id.split("@")[0]; // 🔥 Pega só o número
-
-        return {
-          id: `${prefix}gerenciar ${lid}@g.us`, // 🔥 Formato: .gerenciar-120363XXXXX
-          title: `   ${isOficial ? "⭐ " : "• "}${name}`,
-          description: desc
-        };
-      };
-
-      const sections = [];
-
-      if (grupoOficial) {
-        sections.push({
-          title: "⭐ ɢʀᴜᴘᴏ ᴏғɪᴄɪᴀʟ",
-          rows: [makeRow(grupoOficial, true)]
-        });
-      } else {
-        sections.push({
-          title: "⭐ ɢʀᴜᴘᴏ ᴏғɪᴄɪᴀʟ",
-          rows: [{
-            id: `${prefix}menu`,
-            title: "   ⚠️ ʙᴏᴛ ɴᴀ̃ᴏ ᴇsᴛᴀ́ ɴᴏ ɢʀᴜᴘᴏ ᴏғɪᴄɪᴀʟ",
-            description: "ᴀᴅɪᴄɪᴏɴᴇ ᴏ ʙᴏᴛ ᴀᴏ ɢʀᴜᴘᴏ ᴏғɪᴄɪᴀʟ"
-          }]
-        });
-      }
-
-      if (outrosGrupos.length > 0) {
-        sections.push({
-          title: `📋 ᴛᴏᴅᴏs ᴏs ɢʀᴜᴘᴏs (${outrosGrupos.length})`,
-          rows: outrosGrupos.map(g => makeRow(g))
-        });
-      }
-
-      await sendInteractiveMessage(conn, from, {
-        text: `📋 *ʟɪsᴛᴀ ᴅᴇ ɢʀᴜᴘᴏs*\n📊 ᴛᴏᴛᴀʟ: ${groupList.length}\n\n📌 sᴇʟᴇᴄɪᴏɴᴇ ᴜᴍ ɢʀᴜᴘᴏ ᴘᴀʀᴀ ɢᴇʀᴇɴᴄɪᴀʀ:`,
-        footer: "ʟᴜᴋᴀᴍᴏᴅᴢᴢ · ʟɪsᴛɢ",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } },
-        interactiveButtons: [
-          {
-            name: "single_select",
-            buttonParamsJson: JSON.stringify({
-              title: "📋 ɢʀᴜᴘᴏs",
-              sections: sections
-            })
-          }
-        ]
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
-
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
+      return sendInteractiveMessage(conn, from, {
+        text: `📋 *GRUPOS DO BOT*\n\n📊 Total: *${groups.length}*\n📄 Página: *${requestedPage}/${pages}*\n\nSelecione um grupo para abrir o gerenciamento.`,
+        footer: `${config.botName || "GrimmJow-WA"} · listg`,
+        contextInfo: newsletterContext(),
+        interactiveButtons,
+      }, { quoted });
     } catch (error) {
-      console.error("ʟɪsᴛɢ:", error);
-      await conn.sendMessage(from, {
-        text: "❌ ᴇʀʀᴏ.",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
+      console.error("[LISTG]", error);
+      return conn.sendMessage(from, {
+        text: readableError(error, "listar os grupos"),
+        contextInfo: newsletterContext(),
+      }, { quoted });
     }
-  }
+  },
 };
-
-Object.assign(module.exports, {
-  "menuCategory": "Dono",
-  "menuSection": "Grupos",
-  "description": "Lista todos os grupos que o bot está"
-});
