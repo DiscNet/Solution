@@ -1,0 +1,35 @@
+name: Validate Akinator owner cleanup
+
+on:
+  push:
+    branches:
+      - fix/akinator-owner-cleanup
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/akinator-owner-cleanup
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.22.2'
+          cache: npm
+      - run: npm ci --omit=dev
+      - name: Run complete test suite
+        run: npm test
+      - name: Validate command registry
+        run: |
+          node - <<'NODE'
+          const path = require('path');
+          const { loadCommandModules, buildCommandRegistry } = require('./functions/commandRegistry');
+          const loaded = loadCommandModules(path.join(process.cwd(), 'commands'), { clearCache: true });
+          const built = buildCommandRegistry(loaded.records);
+          if (loaded.errors.length) throw new Error(loaded.errors.map(x => `${x.file}: ${x.error.message}`).join('\n'));
+          if (built.collisions.length) throw new Error(JSON.stringify(built.collisions));
+          if (loaded.records.length !== 424) throw new Error(`Expected 424 commands, got ${loaded.records.length}`);
+          if (!built.registry.akinator || built.registry.aki !== built.registry.akinator) throw new Error('Akinator registry missing');
+          console.log('OK: 424 commands, no collisions');
+          NODE
