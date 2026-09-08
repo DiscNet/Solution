@@ -1,141 +1,235 @@
 // Menu: Utilidades - Estatísticas | Comando: ping
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/ping.js
-const config = require("../../config/config");
 const os = require("os");
-const fs = require("fs");
-const path = require("path");
-const axios = require("axios");
+const { performance } = require("perf_hooks");
+const config = require("../../config/config");
+const { createStatusQuoted } = require("../../functions/statusCard");
 
-const UPTIME_FILE = path.join(__dirname, "..", "..", "database", "uptime.json");
+const NEWSLETTER = {
+  newsletterJid: "120363426698503859@newsletter",
+  newsletterName: "LukaModzz",
+  serverMessageId: 116,
+};
 
-function getBotStartTime() {
+function elapsedMs(startNs) {
+  return Number(process.hrtime.bigint() - startNs) / 1e6;
+}
+
+function formatMs(value) {
+  const ms = Number(value) || 0;
+  if (ms < 1) return `${ms.toFixed(2)} ms`;
+  if (ms < 100) return `${ms.toFixed(1)} ms`;
+  return `${Math.round(ms)} ms`;
+}
+
+function formatBytes(bytes) {
+  let value = Math.max(0, Number(bytes) || 0);
+  const units = ["B", "KB", "MB", "GB", "TB"];
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  const decimals = unit >= 3 ? 2 : unit >= 2 ? 1 : 0;
+  return `${value.toFixed(decimals)} ${units[unit]}`;
+}
+
+function formatDuration(totalSeconds) {
+  let seconds = Math.max(0, Math.floor(Number(totalSeconds) || 0));
+  const days = Math.floor(seconds / 86400);
+  seconds %= 86400;
+  const hours = Math.floor(seconds / 3600);
+  seconds %= 3600;
+  const minutes = Math.floor(seconds / 60);
+  seconds %= 60;
+
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours || days) parts.push(`${hours}h`);
+  if (minutes || hours || days) parts.push(`${minutes}m`);
+  parts.push(`${seconds}s`);
+  return parts.join(" ");
+}
+
+function latencyStatus(ms) {
+  if (ms < 120) return "🟢 Excelente";
+  if (ms < 250) return "🟢 Ótimo";
+  if (ms < 500) return "🟡 Normal";
+  if (ms < 1000) return "🟠 Alto";
+  return "🔴 Lento";
+}
+
+function getCommandCount() {
   try {
-    if (fs.existsSync(UPTIME_FILE)) {
-      const data = JSON.parse(fs.readFileSync(UPTIME_FILE, "utf8"));
-      return data.startTime || Date.now();
+    const catalog = require("../../functions/menuCatalog");
+    const diagnostics = catalog.diagnostics();
+    return Array.isArray(diagnostics?.records) ? diagnostics.records.length : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function getRuntimeMetrics() {
+  const memory = process.memoryUsage();
+  const totalRam = os.totalmem();
+  const freeRam = os.freemem();
+  const usedRam = Math.max(0, totalRam - freeRam);
+  const ramPercent = totalRam > 0 ? (usedRam / totalRam) * 100 : 0;
+  const cpus = os.cpus() || [];
+  const cpuUsage = process.cpuUsage();
+  const cpuTime = (cpuUsage.user + cpuUsage.system) / 1e6;
+
+  let eventLoop = null;
+  try {
+    const elu = performance.eventLoopUtilization();
+    eventLoop = Number.isFinite(elu?.utilization) ? elu.utilization * 100 : null;
+  } catch (_) {}
+
+  return {
+    rss: memory.rss,
+    heapUsed: memory.heapUsed,
+    heapTotal: memory.heapTotal,
+    external: memory.external,
+    usedRam,
+    totalRam,
+    ramPercent,
+    cpuModel: cpus[0]?.model?.trim() || "Desconhecido",
+    cpuCores: cpus.length || 1,
+    load1m: Number(os.loadavg?.()[0]) || 0,
+    cpuTime,
+    eventLoop,
+    processUptime: process.uptime(),
+    systemUptime: os.uptime(),
+    platform: `${os.platform()} ${os.arch()}`,
+    node: process.version,
+    pid: process.pid,
+  };
+}
+
+function contextInfo() {
+  return {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: NEWSLETTER,
+  };
+}
+
+async function removeMessage(conn, from, key) {
+  if (!key?.id) return;
+  try {
+    await conn.sendMessage(from, { delete: key });
+  } catch (_) {}
+}
+
+async function publishReport(conn, from, probe, text, quoted) {
+  if (probe?.key) {
+    try {
+      return await conn.sendMessage(from, {
+        text,
+        edit: probe.key,
+        contextInfo: contextInfo(),
+      });
+    } catch (_) {
+      const sent = await conn.sendMessage(from, {
+        text,
+        contextInfo: contextInfo(),
+      }, { quoted });
+      await removeMessage(conn, from, probe.key);
+      return sent;
     }
-  } catch (e) {}
-  const startTime = Date.now();
-  const dir = path.dirname(UPTIME_FILE);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  fs.writeFileSync(UPTIME_FILE, JSON.stringify({ startTime }));
-  return startTime;
-}
+  }
 
-const BOT_START_TIME = getBotStartTime();
-
-function getUptime() {
-  const uptime = Date.now() - BOT_START_TIME;
-  const segundos = Math.floor(uptime / 1000);
-  const minutos = Math.floor(segundos / 60);
-  const horas = Math.floor(minutos / 60);
-  const dias = Math.floor(horas / 24);
-
-  if (dias > 0) return `${dias}d ${horas % 24}h ${minutos % 60}m`;
-  if (horas > 0) return `${horas}h ${minutos % 60}m ${segundos % 60}s`;
-  if (minutos > 0) return `${minutos}m ${segundos % 60}s`;
-  return `${segundos}s`;
-}
-
-function getMemoryUsage() {
-  const used = process.memoryUsage();
-  return `${Math.round(used.heapUsed / 1024 / 1024)}MB`;
-}
-
-function getPlatform() {
-  return os.platform() === "android" ? "Termux/Android" : os.platform();
+  return conn.sendMessage(from, {
+    text,
+    contextInfo: contextInfo(),
+  }, { quoted });
 }
 
 module.exports = {
   name: "ping",
-  description: "ᴍᴏsᴛʀᴀ ᴀ ʟᴀᴛêɴᴄɪᴀ ᴅᴏ ʙᴏᴛ",
+  description: "mostra latência real do WhatsApp e métricas do bot",
+  menuCategory: "Utilidades",
+  menuSection: "Estatísticas",
+  usage: "ping",
+
   async execute(conn, msg, args, from) {
+    const commandStart = process.hrtime.bigint();
+    const quoted = createStatusQuoted(msg);
+
     try {
+      // Esta é a medição principal: tempo real que o sendMessage() do Baileys
+      // leva para concluir o envio da mensagem pelo canal atual do WhatsApp.
+      const sendStart = process.hrtime.bigint();
+      const probe = await conn.sendMessage(from, {
+        text: "🏓 *Medindo latência real...*",
+      }, { quoted });
+      const whatsappLatency = elapsedMs(sendStart);
+
+      const metrics = getRuntimeMetrics();
+      const processingMs = elapsedMs(commandStart);
+      const commandCount = getCommandCount();
       const prefix = config.prefix || ".";
+      const botName = config.botName || "GrimmJow-WA";
       const owner = config.ownerName || "LukaModzz";
-      const name = config.botName || "LukaModzz BOT";
-      const version = config.botVersion || "7.0.0-rc9";
+      const requester = msg?.pushName || "Usuário";
+      const now = new Date();
 
-      let pushName = "Usuário";
-      try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
+      const heapPercent = metrics.heapTotal > 0
+        ? (metrics.heapUsed / metrics.heapTotal) * 100
+        : 0;
 
-      const start = Date.now();
-      await axios.get("https://api.github.com/zen", { timeout: 5000 }).catch(() => {});
-      const pingMs = Date.now() - start;
+      const eventLoopText = metrics.eventLoop == null
+        ? "indisponível"
+        : `${metrics.eventLoop.toFixed(1)}%`;
 
-      // 🔥 Pega só os 2 primeiros dígitos
-      const pingDisplay = String(pingMs).slice(0, 2);
+      const report = [
+        "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
+        `├̬⌑ؔ͟ ⎾🏓⏌ 𝙻𝚊𝚝ê𝚗𝚌𝚒𝚊 𝚆𝙰: *${formatMs(whatsappLatency)}*`,
+        `├̬⌑ؔ͟ ⎾📶⏌ 𝚂𝚝𝚊𝚝𝚞𝚜: *${latencyStatus(whatsappLatency)}*`,
+        `├̬⌑ؔ͟ ⎾⚡⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚊𝚖𝚎𝚗𝚝𝚘: *${formatMs(processingMs)}*`,
+        "├̬⌑ؔ͟ ⎾🖥️⏌ ── 𝚂𝙸𝚂𝚃𝙴𝙼𝙰 ──",
+        `├̬⌑ؔ͟ ⎾⏱️⏌ 𝚄𝚙𝚝𝚒𝚖𝚎 𝚋𝚘𝚝: *${formatDuration(metrics.processUptime)}*`,
+        `├̬⌑ؔ͟ ⎾🧠⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚘 𝚁𝚂𝚂: *${formatBytes(metrics.rss)}*`,
+        `├̬⌑ؔ͟ ⎾📦⏌ 𝙷𝚎𝚊𝚙: *${formatBytes(metrics.heapUsed)} / ${formatBytes(metrics.heapTotal)} (${heapPercent.toFixed(1)}%)*`,
+        `├̬⌑ؔ͟ ⎾💾⏌ 𝚁𝙰𝙼 𝚊𝚖𝚋𝚒𝚎𝚗𝚝𝚎: *${formatBytes(metrics.usedRam)} / ${formatBytes(metrics.totalRam)} (${metrics.ramPercent.toFixed(1)}%)*`,
+        `├̬⌑ؔ͟ ⎾⚙️⏌ 𝙲𝙿𝚄: *${metrics.cpuCores} cores • load ${metrics.load1m.toFixed(2)}*`,
+        `├̬⌑ؔ͟ ⎾🔁⏌ 𝙴𝚟𝚎𝚗𝚝 𝚕𝚘𝚘𝚙: *${eventLoopText}*`,
+        `├̬⌑ؔ͟ ⎾🧮⏌ 𝚃𝚎𝚖𝚙𝚘 𝙲𝙿𝚄: *${metrics.cpuTime.toFixed(2)}s*`,
+        `├̬⌑ؔ͟ ⎾🐧⏌ 𝙿𝚕𝚊𝚝𝚊𝚏𝚘𝚛𝚖𝚊: *${metrics.platform}*`,
+        `├̬⌑ؔ͟ ⎾🟩⏌ 𝙽𝚘𝚍𝚎: *${metrics.node}*`,
+        `├̬⌑ؔ͟ ⎾🆔⏌ 𝙿𝙸𝙳: *${metrics.pid}*`,
+        "├̬⌑ؔ͟ ⎾🤖⏌ ── 𝙱𝙾𝚃 ──",
+        `├̬⌑ؔ͟ ⎾🪐⏌ 𝙱𝚘𝚝: *${botName}*`,
+        `├̬⌑ؔ͟ ⎾👤⏌ 𝙳𝚎𝚟: *${owner}*`,
+        `├̬⌑ؔ͟ ⎾⌨️⏌ 𝙿𝚛𝚎𝚏𝚒𝚡𝚘: *${prefix}*`,
+        ...(commandCount == null ? [] : [`├̬⌑ؔ͟ ⎾📚⏌ 𝙲𝚘𝚖𝚊𝚗𝚍𝚘𝚜: *${commandCount}*`]),
+        `├̬⌑ؔ͟ ⎾🙋⏌ 𝚂𝚘𝚕𝚒𝚌𝚒𝚝𝚊𝚍𝚘: *${requester}*`,
+        `├̬⌑ؔ͟ ⎾🕒⏌ 𝙷𝚘𝚛𝚊: *${now.toLocaleTimeString("pt-BR")}*`,
+        `├̬⌑ؔ͟ ⎾📅⏌ 𝙳𝚊𝚝𝚊: *${now.toLocaleDateString("pt-BR")}*`,
+        "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
+        "",
+        "> 🏓 *Latência WA = tempo real do envio pelo Baileys/WhatsApp.*",
+      ].join("\n");
 
-      const uptime = getUptime();
-      const memory = getMemoryUsage();
-      const platform = getPlatform();
-      const dataAtual = new Date().toLocaleDateString("pt-BR");
-      const horaAtual = new Date().toLocaleTimeString("pt-BR");
+      await publishReport(conn, from, probe, report, quoted);
 
-      let statusPing;
-      if (pingMs < 300) statusPing = "❀ *Ótimo*";
-      else if (pingMs < 800) statusPing = "❀ *Médio*";
-      else statusPing = "❀ *Lento*";
-
-      const pingText = `
-╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙿𝚒𝚗𝚐: ${pingDisplay}ms ${statusPing}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝚄𝚙𝚝𝚒𝚖𝚎: ${uptime}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙿𝚕𝚊𝚝𝚊𝚏𝚘𝚛𝚖𝚊: ${platform}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝚁𝙰𝙼: ${memory}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙱𝚘𝚝: ${name}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙳𝚎𝚟: ${owner}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙷𝚘𝚛𝚊: ${horaAtual}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙳𝚊𝚝𝚊: ${dataAtual}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙿𝚛𝚎𝚏𝚒𝚡𝚘: ${prefix}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝚅𝚎𝚛𝚜𝚊̃𝚘: ${version}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝚂𝚘𝚕𝚒𝚌𝚒𝚝𝚊𝚍𝚘: ${pushName}
-├̬⌑ؔ͟ ⎾🪐⏌͟ˉ̵͟͞𝙲𝚘𝚖𝚊𝚗𝚍𝚘𝚜: ${Object.keys(require.cache).filter(k => k.includes("commands")).length}
-╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯
-
-> 🪐 *ᴅɪɢɪᴛᴇ .ᴍᴇɴᴜ ᴘᴀʀᴀ ᴠᴇʀ ᴏs ᴄᴏᴍᴀɴᴅᴏs!*
-`;
-
+      try {
+        await conn.sendMessage(from, { react: { text: "🏓", key: msg.key } });
+      } catch (_) {}
+    } catch (error) {
+      console.error("[PING] Erro:", error);
       await conn.sendMessage(from, {
-        text: pingText,
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: "LukaModzz",
-            serverMessageId: 116
-          }
-        }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
-
-      await conn.sendMessage(from, { react: { text: "🪐", key: msg.key } });
-
-    } catch (err) {
-      console.error(err);
-      await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄᴀʟᴄᴜʟᴀʀ ᴘɪɴɢ!*",
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: "LukaModzz",
-            serverMessageId: 116
-          }
-        }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
+        text: `❌ *Erro ao medir o ping real.*\n${String(error?.message || "Falha desconhecida").slice(0, 180)}`,
+        contextInfo: contextInfo(),
+      }, { quoted });
     }
-  }
+  },
 };
 
-Object.assign(module.exports, {
-  "menuCategory": "Utilidades",
-  "menuSection": "Estatísticas",
-  "description": "mostra a latência do bot"
-});
+module.exports._internals = {
+  elapsedMs,
+  formatMs,
+  formatBytes,
+  formatDuration,
+  latencyStatus,
+  getRuntimeMetrics,
+};
