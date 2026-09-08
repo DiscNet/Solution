@@ -51,10 +51,10 @@ function formatDuration(totalSeconds) {
 }
 
 function latencyStatus(ms) {
-  if (ms < 120) return "🟢 Excelente";
-  if (ms < 250) return "🟢 Ótimo";
-  if (ms < 500) return "🟡 Normal";
-  if (ms < 1000) return "🟠 Alto";
+  if (ms < 10) return "🟢 Excelente";
+  if (ms < 30) return "🟢 Ótimo";
+  if (ms < 80) return "🟡 Normal";
+  if (ms < 200) return "🟠 Alto";
   return "🔴 Lento";
 }
 
@@ -133,15 +133,14 @@ function buildReport({
     ? "indisponível"
     : `${metrics.eventLoop.toFixed(1)}%`;
 
-  const latencyText = whatsappLatency == null ? "medindo..." : formatMs(whatsappLatency);
-  const statusText = whatsappLatency == null ? "⏳ Calculando..." : latencyStatus(whatsappLatency);
+  const whatsappText = whatsappLatency == null ? "medindo..." : formatMs(whatsappLatency);
   const totalText = totalMs == null ? "medindo..." : formatMs(totalMs);
 
   return [
     "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
-    `├̬⌑ؔ͟ ⎾🏓⏌ 𝙻𝚊𝚝ê𝚗𝚌𝚒𝚊 𝚆𝙰: *${latencyText}*`,
-    `├̬⌑ؔ͟ ⎾📶⏌ 𝚂𝚝𝚊𝚝𝚞𝚜: *${statusText}*`,
-    `├̬⌑ؔ͟ ⎾⚡⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚊𝚖𝚎𝚗𝚝𝚘: *${formatMs(processingMs)}*`,
+    `├̬⌑ؔ͟ ⎾🏓⏌ 𝙿𝚒𝚗𝚐 / 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚊𝚖𝚎𝚗𝚝𝚘: *${formatMs(processingMs)}*`,
+    `├̬⌑ؔ͟ ⎾📶⏌ 𝚂𝚝𝚊𝚝𝚞𝚜: *${latencyStatus(processingMs)}*`,
+    `├̬⌑ؔ͟ ⎾📨⏌ 𝙴𝚗𝚟𝚒𝚘 𝚆𝙰: *${whatsappText}*`,
     `├̬⌑ؔ͟ ⎾⏲️⏌ 𝚃𝚎𝚖𝚙𝚘 𝚝𝚘𝚝𝚊𝚕: *${totalText}*`,
     "├̬⌑ؔ͟ ⎾🖥️⏌ ── 𝚂𝙸𝚂𝚃𝙴𝙼𝙰 ──",
     `├̬⌑ؔ͟ ⎾⏱️⏌ 𝚄𝚙𝚝𝚒𝚖𝚎 𝚋𝚘𝚝: *${formatDuration(metrics.processUptime)}*`,
@@ -164,7 +163,8 @@ function buildReport({
     `├̬⌑ؔ͟ ⎾📅⏌ 𝙳𝚊𝚝𝚊: *${now.toLocaleDateString("pt-BR")}*`,
     "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
     "",
-    "> 🏓 *Latência WA = tempo real do envio pelo Baileys/WhatsApp.*",
+    "> 🏓 *Ping = tempo real de processamento interno do bot.*",
+    "> 📨 *Envio WA = tempo do envio pelo Baileys/WhatsApp.*",
   ].join("\n");
 }
 
@@ -183,7 +183,7 @@ async function editReport(conn, from, key, text) {
 
 module.exports = {
   name: "ping",
-  description: "mostra latência real do WhatsApp e métricas do bot",
+  description: "mostra processamento real do bot, envio do WhatsApp e métricas do sistema",
   menuCategory: "Utilidades",
   menuSection: "Estatísticas",
   usage: "ping",
@@ -193,9 +193,6 @@ module.exports = {
     const quoted = createStatusQuoted(msg);
 
     try {
-      // Tudo abaixo é local e leva poucos ms. Assim, a PRIMEIRA mensagem já
-      // contém o relatório inteiro; somente a latência atual ainda está sendo
-      // medida pelo próprio envio dessa mensagem.
       const metrics = getRuntimeMetrics();
       const commandCount = getCommandCount();
       const prefix = config.prefix || ".";
@@ -205,6 +202,8 @@ module.exports = {
       const now = new Date();
       const processingMs = elapsedMs(commandStart);
 
+      // O ping principal já está pronto antes do primeiro envio: é o tempo de
+      // processamento interno do bot. Nenhuma rede externa é necessária.
       const initialReport = buildReport({
         whatsappLatency: null,
         processingMs,
@@ -218,9 +217,7 @@ module.exports = {
         now,
       });
 
-      // O envio do relatório completo funciona como a própria sonda de ping.
-      // Isso evita uma mensagem intermediária pobre e faz o usuário receber
-      // todas as informações já no primeiro retorno visível.
+      // O envio do relatório continua sendo medido como informação secundária.
       const sendStart = process.hrtime.bigint();
       const sent = await conn.sendMessage(from, {
         text: initialReport,
@@ -243,8 +240,6 @@ module.exports = {
         now: new Date(),
       });
 
-      // Atualiza a MESMA mensagem com o valor exato. A reação roda em paralelo
-      // para não acrescentar atraso perceptível ao relatório.
       await Promise.allSettled([
         editReport(conn, from, sent?.key, finalReport),
         conn.sendMessage(from, { react: { text: "🏓", key: msg.key } }),
@@ -252,7 +247,7 @@ module.exports = {
     } catch (error) {
       console.error("[PING] Erro:", error);
       await conn.sendMessage(from, {
-        text: `❌ *Erro ao medir o ping real.*\n${String(error?.message || "Falha desconhecida").slice(0, 180)}`,
+        text: `❌ *Erro ao medir o ping.*\n${String(error?.message || "Falha desconhecida").slice(0, 180)}`,
         contextInfo: contextInfo(),
       }, { quoted });
     }
