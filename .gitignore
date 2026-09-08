@@ -6,5 +6,6 @@ node_modules/
 temp/
 config/runtime.json
 
-# auth_info/ NÃO é ignorado: quando você adicionar a sessão local,
-# ela poderá ser enviada junto no deploy inicial do Railway.
+# Sessão do WhatsApp contém credenciais e chaves privadas.
+# Use AUTH_INFO_B64 ou um volume persistente no Railway.
+auth_info/
