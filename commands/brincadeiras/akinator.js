@@ -10,6 +10,8 @@ const { sendInteractiveMessage } = require("gifted-btns");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 
+// As sessoes sao indexadas pelo token da partida. Isso permite validar
+// explicitamente quem iniciou o jogo antes de aceitar qualquer botao.
 const sessions = new Map();
 const SESSION_TTL = 20 * 60 * 1000;
 
@@ -41,20 +43,67 @@ function normalize(value) {
     .replace(/\s+/g, "");
 }
 
-function senderId(msg, from) {
-  return (
-    msg?.key?.participantAlt ||
-    msg?.key?.participant ||
-    msg?.key?.remoteJidAlt ||
-    msg?.key?.remoteJid ||
-    msg?.sender ||
-    from ||
-    "unknown"
+function normalizeIdentity(value) {
+  return String(value || "").trim().toLowerCase();
+}
+
+function isGroupJid(value) {
+  return /@g\.us$/i.test(String(value || ""));
+}
+
+function actorIds(msg, from) {
+  const values = [
+    msg?.key?.participant,
+    msg?.key?.participantAlt,
+    msg?.participant,
+    msg?.participantAlt,
+    msg?.sender,
+  ];
+
+  // Em PV o remoteJid representa o proprio usuario. Em grupos ele representa
+  // o grupo inteiro e nunca deve ser usado como identidade do jogador.
+  if (!isGroupJid(from)) {
+    values.push(msg?.key?.remoteJid, msg?.key?.remoteJidAlt, from);
+  }
+
+  return new Set(
+    values
+      .map(normalizeIdentity)
+      .filter((value) => value && !isGroupJid(value)),
   );
 }
 
-function sessionKey(msg, from) {
-  return `${from}:${senderId(msg, from)}`;
+function sameActor(expected, current) {
+  if (!expected?.size || !current?.size) return false;
+  for (const id of current) {
+    if (expected.has(id)) return true;
+  }
+  return false;
+}
+
+function findOwnedSession(msg, from) {
+  const current = actorIds(msg, from);
+  for (const session of sessions.values()) {
+    if (session.chat === from && sameActor(session.ownerIds, current)) return session;
+  }
+  return null;
+}
+
+function resolveSession(msg, from, suppliedToken) {
+  const token = String(suppliedToken || "").trim();
+  const current = actorIds(msg, from);
+
+  if (token) {
+    const session = sessions.get(token);
+    if (!session) return { error: "stale" };
+    if (session.chat !== from || !sameActor(session.ownerIds, current)) {
+      return { error: "foreign", session };
+    }
+    return { session };
+  }
+
+  const session = findOwnedSession(msg, from);
+  return session ? { session } : { error: "missing" };
 }
 
 function newClient() {
@@ -124,6 +173,41 @@ function safePhoto(photo) {
   return null;
 }
 
+function sentMessageKey(sent) {
+  return sent?.key || sent?.message?.key || sent?.msg?.key || null;
+}
+
+function sameMessageKey(a, b) {
+  if (!a || !b) return false;
+  return a.id && b.id && a.id === b.id && (a.remoteJid || "") === (b.remoteJid || "");
+}
+
+async function deleteMessageSafe(conn, from, key) {
+  if (!key?.id) return false;
+  try {
+    await conn.sendMessage(from, { delete: key });
+    return true;
+  } catch (error) {
+    console.warn("[AKINATOR] Não foi possível apagar mensagem antiga:", error.message);
+    return false;
+  }
+}
+
+async function rotateMessage(session, conn, from, sent) {
+  const previous = session.messageKey || null;
+  const next = sentMessageKey(sent);
+
+  // Primeiro registramos a nova mensagem. So depois apagamos a anterior.
+  // Assim, se o envio novo falhar, a pergunta atual permanece visivel.
+  session.messageKey = next || null;
+
+  if (previous && !sameMessageKey(previous, next)) {
+    await deleteMessageSafe(conn, from, previous);
+  }
+
+  return next;
+}
+
 async function sendInteractiveSafe(conn, from, msg, content, fallbackText) {
   try {
     return await sendInteractiveMessage(conn, from, content, { quoted: createStatusQuoted(msg) });
@@ -151,11 +235,14 @@ async function sendQuestion(conn, msg, from, session) {
   const prefix = config.prefix || ".";
   const fallback = `${text}\n\nResponda com:\n${prefix}akinator sim\n${prefix}akinator nao\n${prefix}akinator nsei\n${prefix}akinator provavelmente\n${prefix}akinator provavelmentenao\n\n${prefix}akinator voltar | ${prefix}akinator parar`;
 
-  await sendInteractiveSafe(conn, from, msg, {
+  const sent = await sendInteractiveSafe(conn, from, msg, {
     text,
     footer: "Akinator • escolha uma resposta",
     interactiveButtons: questionButtons(session),
   }, fallback);
+
+  await rotateMessage(session, conn, from, sent);
+  return sent;
 }
 
 async function sendGuess(conn, msg, from, session) {
@@ -177,36 +264,62 @@ async function sendGuess(conn, msg, from, session) {
   const fallback = `${text}\n\n${prefix}akinator acertou\n${prefix}akinator errou`;
   const photo = safePhoto(guess.pictureUrl);
 
-  await sendInteractiveSafe(conn, from, msg, {
+  const sent = await sendInteractiveSafe(conn, from, msg, {
     ...(photo ? { image: { url: photo } } : {}),
     text,
     footer: "Akinator • confirme o palpite",
     interactiveButtons: guessButtons(session),
   }, fallback);
+
+  await rotateMessage(session, conn, from, sent);
+  return sent;
 }
 
 async function reply(conn, msg, from, text) {
   return conn.sendMessage(from, { text }, { quoted: createStatusQuoted(msg) });
 }
 
-function validateToken(session, supplied) {
-  return !supplied || supplied === session.token;
+async function temporaryReply(conn, msg, from, text, ttl = 6000) {
+  const sent = await reply(conn, msg, from, text);
+  const key = sentMessageKey(sent);
+  if (key) {
+    const timer = setTimeout(() => deleteMessageSafe(conn, from, key), ttl);
+    timer.unref?.();
+  }
+  return sent;
 }
 
-async function startGame(conn, msg, from, key) {
-  const old = sessions.get(key);
-  if (old?.busy) return reply(conn, msg, from, "🧞 Aguarde a ação anterior terminar.");
+async function finishSession(conn, msg, from, session, text) {
+  const previous = session?.messageKey || null;
+  if (session?.token) sessions.delete(session.token);
+  const sent = await reply(conn, msg, from, text);
+  if (previous) await deleteMessageSafe(conn, from, previous);
+  return sent;
+}
+
+async function startGame(conn, msg, from) {
+  const old = findOwnedSession(msg, from);
+  if (old?.busy) return temporaryReply(conn, msg, from, "🧞 Aguarde a ação anterior terminar.");
 
   const aki = newClient();
+  const token = crypto.randomBytes(4).toString("hex");
   const session = {
     aki,
-    token: crypto.randomBytes(4).toString("hex"),
+    token,
+    chat: from,
+    ownerIds: actorIds(msg, from),
     phase: "question",
     busy: true,
     createdAt: Date.now(),
     touchedAt: Date.now(),
+    // Se havia uma partida antiga deste mesmo jogador, a primeira pergunta
+    // nova substitui a interface antiga e a remove do WhatsApp.
+    messageKey: old?.messageKey || null,
+    conn,
   };
-  sessions.set(key, session);
+
+  if (old) sessions.delete(old.token);
+  sessions.set(token, session);
 
   try {
     await aki.start();
@@ -214,25 +327,42 @@ async function startGame(conn, msg, from, key) {
     session.touchedAt = Date.now();
     await sendQuestion(conn, msg, from, session);
   } catch (error) {
-    sessions.delete(key);
+    sessions.delete(token);
+    if (old) sessions.set(old.token, old);
     console.error("[AKINATOR] Falha ao iniciar:", error);
     await reply(conn, msg, from, "❌ O Akinator não respondeu agora. Tente iniciar outra partida daqui a pouco.");
   }
 }
 
-async function withSession(conn, msg, from, key, action, suppliedToken, handler) {
-  const session = sessions.get(key);
-  if (!session) {
-    return reply(conn, msg, from, `🧞 Você não tem uma partida ativa. Use ${(config.prefix || ".")}akinator para começar.`);
+async function getSessionOrWarn(conn, msg, from, suppliedToken) {
+  const resolved = resolveSession(msg, from, suppliedToken);
+  if (resolved.session && !resolved.error) return resolved.session;
+
+  if (resolved.error === "foreign") {
+    await temporaryReply(conn, msg, from, "🚫 Só a pessoa que iniciou esta partida pode responder ao Akinator.");
+    return null;
   }
-  if (!validateToken(session, suppliedToken)) {
-    return reply(conn, msg, from, "⚠️ Esse botão pertence a uma partida antiga do Akinator.");
+
+  if (resolved.error === "stale") {
+    await temporaryReply(conn, msg, from, "⚠️ Esse botão pertence a uma pergunta antiga do Akinator.");
+    return null;
   }
+
+  await temporaryReply(conn, msg, from, `🧞 Você não tem uma partida ativa. Use ${(config.prefix || ".")}akinator para começar.`);
+  return null;
+}
+
+async function withSession(conn, msg, from, action, suppliedToken, handler) {
+  const session = await getSessionOrWarn(conn, msg, from, suppliedToken);
+  if (!session) return;
+
   if (Date.now() - session.touchedAt > SESSION_TTL) {
-    sessions.delete(key);
-    return reply(conn, msg, from, `⌛ Sua partida expirou. Use ${(config.prefix || ".")}akinator para começar outra.`);
+    sessions.delete(session.token);
+    await deleteMessageSafe(conn, from, session.messageKey);
+    return temporaryReply(conn, msg, from, `⌛ Sua partida expirou. Use ${(config.prefix || ".")}akinator para começar outra.`);
   }
-  if (session.busy) return reply(conn, msg, from, "🧞 Aguarde a resposta do Akinator antes de clicar novamente.");
+
+  if (session.busy) return temporaryReply(conn, msg, from, "🧞 Aguarde a resposta do Akinator antes de clicar novamente.");
 
   session.busy = true;
   session.touchedAt = Date.now();
@@ -240,23 +370,22 @@ async function withSession(conn, msg, from, key, action, suppliedToken, handler)
     await handler(session);
   } catch (error) {
     console.error(`[AKINATOR] Erro em ${action}:`, error);
-    await reply(conn, msg, from, "❌ Não consegui concluir essa jogada. Sua partida continua ativa; tente novamente.");
+    await temporaryReply(conn, msg, from, "❌ Não consegui concluir essa jogada. Sua partida continua ativa; tente novamente.");
   } finally {
-    if (sessions.get(key) === session) {
+    if (sessions.get(session.token) === session) {
       session.busy = false;
       session.touchedAt = Date.now();
     }
   }
 }
 
-async function continueAfterWrongGuess(conn, msg, from, key, session) {
+async function continueAfterWrongGuess(conn, msg, from, session) {
   try {
     await session.aki.continue();
     session.phase = "question";
     if (session.aki.won && session.aki.winResult) return sendGuess(conn, msg, from, session);
     if (session.aki.ko) {
-      sessions.delete(key);
-      return reply(conn, msg, from, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
+      return finishSession(conn, msg, from, session, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
     }
     return sendQuestion(conn, msg, from, session);
   } catch (error) {
@@ -265,15 +394,19 @@ async function continueAfterWrongGuess(conn, msg, from, key, session) {
     await replacement.start();
     session.aki = replacement;
     session.phase = "question";
-    await reply(conn, msg, from, "🧞 Meu palpite estava errado. O Akinator bloqueou a continuação dessa sessão, então iniciei uma nova rodada automaticamente.");
     return sendQuestion(conn, msg, from, session);
   }
 }
 
 const cleanup = setInterval(() => {
   const now = Date.now();
-  for (const [key, session] of sessions.entries()) {
-    if (now - session.touchedAt > SESSION_TTL) sessions.delete(key);
+  for (const [token, session] of sessions.entries()) {
+    if (now - session.touchedAt > SESSION_TTL) {
+      sessions.delete(token);
+      if (session.conn && session.messageKey) {
+        deleteMessageSafe(session.conn, session.chat, session.messageKey).catch(() => {});
+      }
+    }
   }
 }, 60_000);
 cleanup.unref?.();
@@ -286,37 +419,33 @@ module.exports = {
   menuSection: "Jogos",
   usage: "akinator [sim|nao|nsei|provavelmente|provavelmentenao|voltar|parar]",
   async execute(conn, msg, args, from) {
-    const key = sessionKey(msg, from);
     const action = normalize(args[0] || "");
     const token = String(args[1] || "").trim();
 
     if (!action || ["iniciar", "start", "novo", "novojogo"].includes(action)) {
-      return startGame(conn, msg, from, key);
+      return startGame(conn, msg, from);
     }
 
     if (["parar", "encerrar", "cancelar", "stop"].includes(action)) {
-      const session = sessions.get(key);
-      if (session && !validateToken(session, token)) {
-        return reply(conn, msg, from, "⚠️ Esse botão pertence a uma partida antiga do Akinator.");
-      }
-      sessions.delete(key);
-      return reply(conn, msg, from, "🧞 Partida do Akinator encerrada.");
+      const session = await getSessionOrWarn(conn, msg, from, token);
+      if (!session) return;
+      return finishSession(conn, msg, from, session, "🧞 Partida do Akinator encerrada.");
     }
 
     if (["status", "pergunta"].includes(action)) {
-      return withSession(conn, msg, from, key, action, token, async (session) => {
+      return withSession(conn, msg, from, action, token, async (session) => {
         if (session.phase === "guess" || session.aki.won) await sendGuess(conn, msg, from, session);
         else await sendQuestion(conn, msg, from, session);
       });
     }
 
     if (["voltar", "back"].includes(action)) {
-      return withSession(conn, msg, from, key, action, token, async (session) => {
+      return withSession(conn, msg, from, action, token, async (session) => {
         if (session.phase === "guess" || session.aki.won) {
-          return reply(conn, msg, from, "🧞 Primeiro diga se o meu palpite está certo ou errado.");
+          return temporaryReply(conn, msg, from, "🧞 Primeiro diga se o meu palpite está certo ou errado.");
         }
         if (Number(session.aki.step || 0) <= 0) {
-          return reply(conn, msg, from, "↩️ Você já está na primeira pergunta.");
+          return temporaryReply(conn, msg, from, "↩️ Você já está na primeira pergunta.");
         }
         await session.aki.back();
         await sendQuestion(conn, msg, from, session);
@@ -324,41 +453,43 @@ module.exports = {
     }
 
     if (["acertou", "certo", "acertei", "simacertou"].includes(action)) {
-      return withSession(conn, msg, from, key, action, token, async (session) => {
+      return withSession(conn, msg, from, action, token, async (session) => {
         if (!(session.phase === "guess" || session.aki.won)) {
-          return reply(conn, msg, from, "🧞 Ainda não fiz nenhum palpite.");
+          return temporaryReply(conn, msg, from, "🧞 Ainda não fiz nenhum palpite.");
         }
         const name = session.aki.winResult?.name || "seu personagem";
-        try { await session.aki.submitWin(); } catch (error) { console.warn("[AKINATOR] Falha ao confirmar palpite:", error.message); }
-        sessions.delete(key);
-        await reply(conn, msg, from, `🎉 *Acertei!*\n\nEra *${name}*. Obrigado por jogar Akinator!`);
+        try {
+          await session.aki.submitWin();
+        } catch (error) {
+          console.warn("[AKINATOR] Falha ao confirmar palpite:", error.message);
+        }
+        await finishSession(conn, msg, from, session, `🎉 *Acertei!*\n\nEra *${name}*. Obrigado por jogar Akinator!`);
       });
     }
 
     if (["errou", "errado", "naoerrou"].includes(action)) {
-      return withSession(conn, msg, from, key, action, token, async (session) => {
+      return withSession(conn, msg, from, action, token, async (session) => {
         if (!(session.phase === "guess" || session.aki.won)) {
-          return reply(conn, msg, from, "🧞 Ainda não fiz nenhum palpite.");
+          return temporaryReply(conn, msg, from, "🧞 Ainda não fiz nenhum palpite.");
         }
-        await continueAfterWrongGuess(conn, msg, from, key, session);
+        await continueAfterWrongGuess(conn, msg, from, session);
       });
     }
 
     const answer = ANSWERS.get(action);
     if (answer !== undefined) {
-      return withSession(conn, msg, from, key, action, token, async (session) => {
+      return withSession(conn, msg, from, action, token, async (session) => {
         if (session.phase === "guess" || session.aki.won) return sendGuess(conn, msg, from, session);
         const result = await session.aki.answer(answer);
         if (result?.won || session.aki.won) return sendGuess(conn, msg, from, session);
         if (result?.ko || session.aki.ko) {
-          sessions.delete(key);
-          return reply(conn, msg, from, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
+          return finishSession(conn, msg, from, session, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
         }
         await sendQuestion(conn, msg, from, session);
       });
     }
 
-    return reply(
+    return temporaryReply(
       conn,
       msg,
       from,
@@ -368,3 +499,11 @@ module.exports = {
 };
 
 module.exports._sessions = sessions;
+module.exports._internals = {
+  actorIds,
+  sameActor,
+  resolveSession,
+  sentMessageKey,
+  rotateMessage,
+  deleteMessageSafe,
+};
