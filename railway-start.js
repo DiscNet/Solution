@@ -8,20 +8,6 @@ const configuredAuthDir = process.env.AUTH_DIR
       ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'auth_info')
       : repoAuthDir);
 
-function copyDirContents(source, destination) {
-  if (!fs.existsSync(source)) return;
-  fs.mkdirSync(destination, { recursive: true });
-  for (const entry of fs.readdirSync(source, { withFileTypes: true })) {
-    const src = path.join(source, entry.name);
-    const dst = path.join(destination, entry.name);
-    if (entry.isDirectory()) {
-      copyDirContents(src, dst);
-    } else if (entry.isFile()) {
-      fs.copyFileSync(src, dst);
-    }
-  }
-}
-
 function isDirEmpty(dir) {
   return !fs.existsSync(dir) || fs.readdirSync(dir).length === 0;
 }
@@ -66,28 +52,18 @@ function restoreAuthFromEnv(destination) {
 }
 
 function prepareAuthDirectory() {
-  // Execução local sem volume.
+  // Execução local: a sessão continua em ./auth_info, mas a pasta é ignorada pelo Git.
   if (configuredAuthDir === repoAuthDir) {
     fs.mkdirSync(repoAuthDir, { recursive: true });
     if (isDirEmpty(repoAuthDir)) restoreAuthFromEnv(repoAuthDir);
     return;
   }
 
-  // Railway/volume persistente.
+  // Railway/servidor: guarda a sessão fora do checkout do repositório.
   fs.mkdirSync(configuredAuthDir, { recursive: true });
+  if (isDirEmpty(configuredAuthDir)) restoreAuthFromEnv(configuredAuthDir);
 
-  if (isDirEmpty(configuredAuthDir)) {
-    // 1) usa auth_info enviado pelo GitHub como seed do primeiro deploy;
-    // 2) se ele não existir, aceita AUTH_INFO_B64 como alternativa.
-    if (fs.existsSync(repoAuthDir) && !isDirEmpty(repoAuthDir)) {
-      copyDirContents(repoAuthDir, configuredAuthDir);
-      console.log('✅ auth_info inicial copiado para o volume persistente.');
-    } else {
-      restoreAuthFromEnv(configuredAuthDir);
-    }
-  }
-
-  // O código antigo continua usando ./auth_info, mas o conteúdo fica no volume.
+  // O restante do bot pode continuar usando ./auth_info sem conhecer o volume.
   try {
     if (fs.existsSync(repoAuthDir)) {
       fs.rmSync(repoAuthDir, { recursive: true, force: true });
@@ -138,15 +114,14 @@ async function boot() {
 
   const credsPath = path.join(repoAuthDir, 'creds.json');
   if (!fs.existsSync(credsPath)) {
-    console.error('❌ Nenhuma sessão do WhatsApp foi encontrada.');
-    console.error('Envie a pasta auth_info para o GitHub ou defina AUTH_INFO_B64 no Railway.');
+    console.error('❌ Nenhuma sessão privada do WhatsApp foi encontrada.');
+    console.error('Use um volume persistente (AUTH_DIR/RAILWAY_VOLUME_MOUNT_PATH) ou AUTH_INFO_B64.');
+    console.error('Não envie auth_info para o GitHub.');
     console.error(`Diretório de autenticação usado: ${configuredAuthDir}`);
     process.exit(1);
   }
 
   // Evita 405/client_too_old causado por revisão Web embutida desatualizada.
-  // A atualização é feita uma vez no boot e depois periodicamente; makeWASocket
-  // usa DEFAULT_CONNECTION_CONFIG no momento em que cria cada novo socket.
   await refreshWhatsAppWebVersion();
 
   const versionRefreshTimer = setInterval(() => {
