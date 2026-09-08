@@ -28,9 +28,9 @@ function resolveRegisteredKey(msg, from = "", users = null) {
   return candidates(msg, from).find((jid) => source[jid]) || null;
 }
 
-function normalizeMessageIdentity(msg, from = "") {
+function normalizeMessageIdentity(msg, from = "", users = null) {
   if (!msg?.key) return null;
-  const registered = resolveRegisteredKey(msg, from);
+  const registered = resolveRegisteredKey(msg, from, users);
   if (!registered) return null;
 
   // Os módulos antigos do RPG usam exclusivamente msg.key.participant.
