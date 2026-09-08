@@ -1,6 +1,11 @@
 // Menu: Brincadeiras - Jogos | Comando: akinator
 const crypto = require("crypto");
-const Akinator = require("silent-akinator-pro");
+const {
+  AkinatorClient,
+  Languages,
+  Themes,
+  Answers,
+} = require("akinator-client");
 const { sendInteractiveMessage } = require("gifted-btns");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
@@ -9,24 +14,22 @@ const sessions = new Map();
 const SESSION_TTL = 20 * 60 * 1000;
 
 const ANSWERS = new Map([
-  ["sim", "y"],
-  ["s", "y"],
-  ["yes", "y"],
-  ["nao", "n"],
-  ["não", "n"],
-  ["n", "n"],
-  ["nsei", "idk"],
-  ["naosei", "idk"],
-  ["não-sei", "idk"],
-  ["idk", "idk"],
-  ["provavelmente", "p"],
-  ["provavel", "p"],
-  ["prov", "p"],
-  ["p", "p"],
-  ["provavelmentenao", "pn"],
-  ["provavelmente-nao", "pn"],
-  ["provavelmentenão", "pn"],
-  ["pn", "pn"],
+  ["sim", Answers.Yes],
+  ["s", Answers.Yes],
+  ["yes", Answers.Yes],
+  ["nao", Answers.No],
+  ["não", Answers.No],
+  ["n", Answers.No],
+  ["nsei", Answers.IDontKnow],
+  ["naosei", Answers.IDontKnow],
+  ["idk", Answers.IDontKnow],
+  ["provavelmente", Answers.Probably],
+  ["provavel", Answers.Probably],
+  ["prov", Answers.Probably],
+  ["p", Answers.Probably],
+  ["provavelmentenao", Answers.ProbablyNot],
+  ["provavelmente-nao", Answers.ProbablyNot],
+  ["pn", Answers.ProbablyNot],
 ]);
 
 function normalize(value) {
@@ -52,6 +55,16 @@ function senderId(msg, from) {
 
 function sessionKey(msg, from) {
   return `${from}:${senderId(msg, from)}`;
+}
+
+function newClient() {
+  return new AkinatorClient({
+    language: Languages.Portuguese,
+    theme: Themes.Character,
+    childMode: true,
+    retries: 3,
+    scraperApiKey: process.env.AKINATOR_SCRAPER_API_KEY || undefined,
+  });
 }
 
 function buttonId(action, token) {
@@ -146,7 +159,7 @@ async function sendQuestion(conn, msg, from, session) {
 }
 
 async function sendGuess(conn, msg, from, session) {
-  const guess = session.aki.guess || {};
+  const guess = session.aki.winResult || {};
   session.phase = "guess";
   session.touchedAt = Date.now();
 
@@ -162,7 +175,7 @@ async function sendGuess(conn, msg, from, session) {
 
   const prefix = config.prefix || ".";
   const fallback = `${text}\n\n${prefix}akinator acertou\n${prefix}akinator errou`;
-  const photo = safePhoto(guess.photo);
+  const photo = safePhoto(guess.pictureUrl);
 
   await sendInteractiveSafe(conn, from, msg, {
     ...(photo ? { image: { url: photo } } : {}),
@@ -184,7 +197,7 @@ async function startGame(conn, msg, from, key) {
   const old = sessions.get(key);
   if (old?.busy) return reply(conn, msg, from, "🧞 Aguarde a ação anterior terminar.");
 
-  const aki = new Akinator({ region: "pt", childMode: true });
+  const aki = newClient();
   const session = {
     aki,
     token: crypto.randomBytes(4).toString("hex"),
@@ -236,6 +249,27 @@ async function withSession(conn, msg, from, key, action, suppliedToken, handler)
   }
 }
 
+async function continueAfterWrongGuess(conn, msg, from, key, session) {
+  try {
+    await session.aki.continue();
+    session.phase = "question";
+    if (session.aki.won && session.aki.winResult) return sendGuess(conn, msg, from, session);
+    if (session.aki.ko) {
+      sessions.delete(key);
+      return reply(conn, msg, from, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
+    }
+    return sendQuestion(conn, msg, from, session);
+  } catch (error) {
+    console.warn("[AKINATOR] continue() bloqueado pelo serviço; iniciando nova rodada:", error.message);
+    const replacement = newClient();
+    await replacement.start();
+    session.aki = replacement;
+    session.phase = "question";
+    await reply(conn, msg, from, "🧞 Meu palpite estava errado. O Akinator bloqueou a continuação dessa sessão, então iniciei uma nova rodada automaticamente.");
+    return sendQuestion(conn, msg, from, session);
+  }
+}
+
 const cleanup = setInterval(() => {
   const now = Date.now();
   for (const [key, session] of sessions.entries()) {
@@ -253,8 +287,7 @@ module.exports = {
   usage: "akinator [sim|nao|nsei|provavelmente|provavelmentenao|voltar|parar]",
   async execute(conn, msg, args, from) {
     const key = sessionKey(msg, from);
-    const rawAction = String(args[0] || "");
-    const action = normalize(rawAction);
+    const action = normalize(args[0] || "");
     const token = String(args[1] || "").trim();
 
     if (!action || ["iniciar", "start", "novo", "novojogo"].includes(action)) {
@@ -272,14 +305,14 @@ module.exports = {
 
     if (["status", "pergunta"].includes(action)) {
       return withSession(conn, msg, from, key, action, token, async (session) => {
-        if (session.phase === "guess" || session.aki.guessed) await sendGuess(conn, msg, from, session);
+        if (session.phase === "guess" || session.aki.won) await sendGuess(conn, msg, from, session);
         else await sendQuestion(conn, msg, from, session);
       });
     }
 
     if (["voltar", "back"].includes(action)) {
       return withSession(conn, msg, from, key, action, token, async (session) => {
-        if (session.phase === "guess" || session.aki.guessed) {
+        if (session.phase === "guess" || session.aki.won) {
           return reply(conn, msg, from, "🧞 Primeiro diga se o meu palpite está certo ou errado.");
         }
         if (Number(session.aki.step || 0) <= 0) {
@@ -292,11 +325,11 @@ module.exports = {
 
     if (["acertou", "certo", "acertei", "simacertou"].includes(action)) {
       return withSession(conn, msg, from, key, action, token, async (session) => {
-        if (!(session.phase === "guess" || session.aki.guessed)) {
+        if (!(session.phase === "guess" || session.aki.won)) {
           return reply(conn, msg, from, "🧞 Ainda não fiz nenhum palpite.");
         }
-        const name = session.aki.guess?.name || "seu personagem";
-        try { await session.aki.choice(); } catch (error) { console.warn("[AKINATOR] Falha ao confirmar choice:", error.message); }
+        const name = session.aki.winResult?.name || "seu personagem";
+        try { await session.aki.submitWin(); } catch (error) { console.warn("[AKINATOR] Falha ao confirmar palpite:", error.message); }
         sessions.delete(key);
         await reply(conn, msg, from, `🎉 *Acertei!*\n\nEra *${name}*. Obrigado por jogar Akinator!`);
       });
@@ -304,31 +337,20 @@ module.exports = {
 
     if (["errou", "errado", "naoerrou"].includes(action)) {
       return withSession(conn, msg, from, key, action, token, async (session) => {
-        if (!(session.phase === "guess" || session.aki.guessed)) {
+        if (!(session.phase === "guess" || session.aki.won)) {
           return reply(conn, msg, from, "🧞 Ainda não fiz nenhum palpite.");
         }
-        const result = await session.aki.exclude();
-        session.phase = "question";
-        if (session.aki.guessed && session.aki.guess) return sendGuess(conn, msg, from, session);
-        if (session.aki.finished && !session.aki.guessed) {
-          sessions.delete(key);
-          return reply(conn, msg, from, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
-        }
-        if (result?.question || session.aki.question) return sendQuestion(conn, msg, from, session);
-        sessions.delete(key);
-        return reply(conn, msg, from, "🏆 Você venceu! O Akinator não encontrou outro palpite.");
+        await continueAfterWrongGuess(conn, msg, from, key, session);
       });
     }
 
     const answer = ANSWERS.get(action);
-    if (answer) {
+    if (answer !== undefined) {
       return withSession(conn, msg, from, key, action, token, async (session) => {
-        if (session.phase === "guess" || session.aki.guessed) {
-          return sendGuess(conn, msg, from, session);
-        }
-        await session.aki.answer(answer);
-        if (session.aki.guessed && session.aki.guess) return sendGuess(conn, msg, from, session);
-        if (session.aki.finished) {
+        if (session.phase === "guess" || session.aki.won) return sendGuess(conn, msg, from, session);
+        const result = await session.aki.answer(answer);
+        if (result?.won || session.aki.won) return sendGuess(conn, msg, from, session);
+        if (result?.ko || session.aki.ko) {
           sessions.delete(key);
           return reply(conn, msg, from, "🏆 Você venceu! O Akinator não conseguiu descobrir seu personagem.");
         }
