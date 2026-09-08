@@ -15,6 +15,7 @@ const axios = require("axios");
 const { createStatusQuoted } = require("../functions/statusCard");
 const { executeCommand } = require("../functions/commandExecutor");
 const runtimeLogger = require("../functions/runtimeLogger");
+const { extractMessageText } = require("../functions/messageText");
 const { registerConnectionEvents } = require("../events/connection");
 const { createReconnectController } = require("../events/reconnect");
 const { registerMessagesEvent } = require("../events/messages");
@@ -140,13 +141,7 @@ function logMensagem(tipo, dados) {
 // ==============================================
 
 function getMessageText(msg) {
-  if (msg.message?.conversation) return msg.message.conversation;
-  if (msg.message?.extendedTextMessage?.text) return msg.message.extendedTextMessage.text;
-  if (msg.message?.imageMessage?.caption) return msg.message.imageMessage.caption;
-  if (msg.message?.videoMessage?.caption) return msg.message.videoMessage.caption;
-  if (msg.message?.documentMessage?.caption) return msg.message.documentMessage.caption;
-  if (msg.message?.audioMessage?.caption) return msg.message.audioMessage.caption;
-  return "";
+  return extractMessageText(msg);
 }
 
 function hasMedia(msg) {

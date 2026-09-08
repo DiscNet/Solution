@@ -101,11 +101,11 @@ function reset() {
   botAdmin = true;
 }
 test.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
-test("all 423 commands load, carry metadata and appear exactly once in paginated menus", () => {
+test("all 424 commands load, carry metadata and appear exactly once in paginated menus", () => {
   const d = catalog.diagnostics();
   assert.equal(d.errors.length, 0);
   assert.equal(d.collisions.length, 0);
-  assert.equal(d.records.length, 423);
+  assert.equal(d.records.length, 424);
   const pages = catalog.pages();
   const text = pages.join("\n");
   for (const r of d.records) {
