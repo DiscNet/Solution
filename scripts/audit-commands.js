@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.join(__dirname, "..", "commands");
+const MIN_COMMANDS = Number(process.env.MIN_COMMANDS || 1000);
 
 function walk(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
@@ -44,7 +45,12 @@ for (const file of walk(ROOT)) {
     for (const command of expand(exported)) {
       const name = normalizeName(command?.name);
       if (!name) continue;
-      records.push({ file: path.relative(path.join(__dirname, ".."), file), name, aliases: collectAliases(command) });
+      records.push({
+        file: path.relative(path.join(__dirname, ".."), file),
+        name,
+        aliases: collectAliases(command),
+        hidden: command?.hidden === true,
+      });
     }
   } catch (error) {
     loadErrors.push({ file: path.relative(path.join(__dirname, ".."), file), error: error.message });
@@ -72,12 +78,19 @@ for (const record of records) {
   }
 }
 
+const hiddenCount = records.filter((record) => record.hidden).length;
+const belowTarget = Number.isFinite(MIN_COMMANDS) && MIN_COMMANDS > 0 && records.length < MIN_COMMANDS;
+
 console.log(`Commands: ${records.length}`);
+console.log(`Visible commands: ${records.length - hiddenCount}`);
+console.log(`Hidden/generated commands: ${hiddenCount}`);
+console.log(`Minimum target: ${MIN_COMMANDS}`);
 console.log(`Canonical duplicates: ${duplicateNames.length}`);
 for (const [name, first, second] of duplicateNames) console.log(`DUPLICATE_NAME ${name}: ${first} <> ${second}`);
 console.log(`Alias collisions: ${aliasCollisions.length}`);
 for (const item of aliasCollisions) console.log(`ALIAS_COLLISION ${item.alias}: ${item.first} <> ${item.second} (first=${item.firstType})`);
 console.log(`Load errors: ${loadErrors.length}`);
 for (const item of loadErrors) console.log(`LOAD_ERROR ${item.file}: ${item.error}`);
+if (belowTarget) console.log(`COMMAND_TARGET_MISSED ${records.length}/${MIN_COMMANDS}`);
 
-if (duplicateNames.length || aliasCollisions.length || loadErrors.length) process.exitCode = 1;
+if (duplicateNames.length || aliasCollisions.length || loadErrors.length || belowTarget) process.exitCode = 1;
