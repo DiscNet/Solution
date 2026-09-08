@@ -12,6 +12,14 @@ function unique(values = []) {
   return [...new Set(values.filter(Boolean).map((value) => String(value).trim()).filter(Boolean))];
 }
 
+function normalizeUserCandidate(value) {
+  const raw = String(value || "").trim();
+  if (!raw) return null;
+  if (/^\d+(?::\d+)?@(s\.whatsapp\.net|lid)$/i.test(raw)) return raw;
+  if (/^\+?\d{8,15}$/.test(raw)) return `${digits(raw)}@s.whatsapp.net`;
+  return raw;
+}
+
 function messageContext(msg) {
   const message = unwrapMessage(msg);
   for (const value of Object.values(message || {})) {
@@ -23,10 +31,13 @@ function messageContext(msg) {
 function userInputJid(value) {
   const raw = String(value || "").trim();
   if (!raw) return null;
-  if (/^[^@\s]+@(s\.whatsapp\.net|lid)$/i.test(raw)) return raw;
+  if (/^\d+(?::\d+)?@(s\.whatsapp\.net|lid)$/i.test(raw)) return raw;
 
-  const number = digits(raw);
-  if (number.length < 5 || number.length > 20) return null;
+  const printable = raw.replace(/^@/, "");
+  if (!/^\+?[\d\s().-]+$/.test(printable)) return null;
+
+  const number = digits(printable);
+  if (number.length < 8 || number.length > 15) return null;
   return `${number}@s.whatsapp.net`;
 }
 
@@ -42,20 +53,26 @@ function requestedTarget(msg, args, from) {
   }
 
   const context = messageContext(msg);
-  const mentions = unique(context?.mentionedJid);
+  const mentions = unique(context?.mentionedJid).map(normalizeUserCandidate).filter(Boolean);
   if (mentions.length) {
     return { type: "user", candidates: mentions, source: "mention" };
   }
 
   if (context?.quotedMessage) {
-    const quoted = unique([context?.participantAlt, context?.participant]);
+    const quoted = unique([context?.participantAlt, context?.participant])
+      .map(normalizeUserCandidate)
+      .filter(Boolean);
     if (quoted.length) {
       return { type: "user", candidates: quoted, source: "quoted" };
     }
   }
 
   if (["eu", "me", "meu", "my"].includes(lower)) {
-    return { type: "user", candidates: senderCandidates(msg), source: "self" };
+    return {
+      type: "user",
+      candidates: senderCandidates(msg).map(normalizeUserCandidate).filter(Boolean),
+      source: "self",
+    };
   }
 
   if (first) {
@@ -66,17 +83,13 @@ function requestedTarget(msg, args, from) {
 
   return {
     type: "user",
-    candidates: senderCandidates(msg),
+    candidates: senderCandidates(msg).map(normalizeUserCandidate).filter(Boolean),
     source: "self",
   };
 }
 
-function phoneJid(values = []) {
-  return unique(values).find((jid) => jid.endsWith("@s.whatsapp.net")) || null;
-}
-
 function preferredCandidates(values = []) {
-  const all = unique(values);
+  const all = unique(values.map(normalizeUserCandidate).filter(Boolean));
   return [
     ...all.filter((jid) => jid.endsWith("@s.whatsapp.net")),
     ...all.filter((jid) => jid.endsWith("@lid")),
@@ -84,12 +97,21 @@ function preferredCandidates(values = []) {
   ];
 }
 
+function phoneJid(values = []) {
+  return preferredCandidates(values).find((jid) => jid.endsWith("@s.whatsapp.net")) || null;
+}
+
 async function resolveUserCandidates(conn, metadata, initial = []) {
-  let candidates = unique(initial);
+  let candidates = preferredCandidates(initial);
 
   if (metadata) {
     const participant = findParticipant(metadata, candidates);
-    if (participant) candidates = unique([...candidates, ...participantValues(participant)]);
+    if (participant) {
+      candidates = preferredCandidates([
+        ...candidates,
+        ...participantValues(participant).map(normalizeUserCandidate),
+      ]);
+    }
   }
 
   const phone = phoneJid(candidates);
@@ -99,11 +121,11 @@ async function resolveUserCandidates(conn, metadata, initial = []) {
       try {
         const result = await conn.onWhatsApp(query);
         for (const item of Array.isArray(result) ? result : []) {
-          candidates = unique([
+          candidates = preferredCandidates([
             ...candidates,
-            item?.jid,
-            item?.lid,
-            item?.phoneNumber,
+            normalizeUserCandidate(item?.jid),
+            normalizeUserCandidate(item?.lid),
+            normalizeUserCandidate(item?.phoneNumber),
           ]);
         }
         if (result?.length) break;
@@ -115,7 +137,12 @@ async function resolveUserCandidates(conn, metadata, initial = []) {
 
   if (metadata) {
     const participant = findParticipant(metadata, candidates);
-    if (participant) candidates = unique([...candidates, ...participantValues(participant)]);
+    if (participant) {
+      candidates = preferredCandidates([
+        ...candidates,
+        ...participantValues(participant).map(normalizeUserCandidate),
+      ]);
+    }
   }
 
   return preferredCandidates(candidates);
@@ -151,6 +178,16 @@ async function safeName(conn, candidates, fallback) {
   return fallback;
 }
 
+function sourceLabel(source) {
+  return {
+    self: "Seu perfil",
+    mention: "Usuário marcado",
+    quoted: "Mensagem respondida",
+    number: "Número informado",
+    group: "Grupo atual",
+  }[source] || "WhatsApp";
+}
+
 function frame(lines) {
   return [
     "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
@@ -171,13 +208,15 @@ function errorText(code, prefix = ".") {
     return frame([
       "⎾🧊⏌ *𝙰𝚅𝙰𝚃𝙰𝚁*",
       "⎾❌⏌ Número ou alvo inválido.",
-      `⎾💎⏌ Use: *${prefix}avatar @usuário* ou responda uma mensagem.`,
+      `⎾🔹⏌ *${prefix}avatar* — seu avatar`,
+      `⎾🔹⏌ *${prefix}avatar @usuário* — usuário marcado`,
+      `⎾💎⏌ Também funciona respondendo uma mensagem.`,
     ]);
   }
   return frame([
     "⎾🧊⏌ *𝙰𝚅𝙰𝚃𝙰𝚁*",
     "⎾❌⏌ A foto de perfil não está disponível para o bot.",
-    "⎾🔹⏌ A conta pode estar sem foto ou a privacidade do WhatsApp pode impedir o acesso.",
+    "⎾🔒⏌ A conta pode estar sem foto ou a privacidade do WhatsApp pode impedir o acesso.",
   ]);
 }
 
@@ -229,6 +268,7 @@ const command = {
           "⎾🧊⏌ *𝙰𝚅𝙰𝚃𝙰𝚁 𝙳𝙾 𝙶𝚁𝚄𝙿𝙾*",
           `⎾👥⏌ 𝙶𝚛𝚞𝚙𝚘: *${subject}*`,
           ...(members !== null ? [`⎾🔹⏌ 𝙼𝚎𝚖𝚋𝚛𝚘𝚜: *${members}*`] : []),
+          `⎾🔷⏌ 𝙰𝚕𝚟𝚘: *${sourceLabel(target.source)}*`,
           `⎾💎⏌ 𝚀𝚞𝚊𝚕𝚒𝚍𝚊𝚍𝚎: *${picture.quality}*`,
         ]);
 
@@ -245,19 +285,20 @@ const command = {
 
       const phone = phoneJid(candidates);
       const mentionNumber = phone ? digits(phone.split("@")[0]) : "";
-      let fallbackName = target.source === "self" && msg?.pushName
+      const fallbackName = target.source === "self" && msg?.pushName
         ? String(msg.pushName).trim()
         : (mentionNumber ? `@${mentionNumber}` : "Usuário do WhatsApp");
       const name = await safeName(conn, candidates, fallbackName);
       const mentionJid = mentionNumber ? phone : null;
 
       const lines = [
-        "⎾🧊⏌ *𝙰𝚅𝙰𝚃𝙰𝚁*",
+        "⎾🧊⏌ *𝙰𝚅𝙰𝚃𝙰𝚁 𝙳𝙴 𝙿𝙴𝚁𝙵𝙸𝙻*",
         `⎾👤⏌ 𝙿𝚎𝚛𝚏𝚒𝚕: *${name}*`,
       ];
       if (mentionNumber && name !== `@${mentionNumber}`) {
         lines.push(`⎾🔹⏌ 𝙲𝚘𝚗𝚝𝚊𝚝𝚘: *@${mentionNumber}*`);
       }
+      lines.push(`⎾🔷⏌ 𝙰𝚕𝚟𝚘: *${sourceLabel(target.source)}*`);
       lines.push(`⎾💎⏌ 𝚀𝚞𝚊𝚕𝚒𝚍𝚊𝚍𝚎: *${picture.quality}*`);
 
       const payload = {
@@ -286,12 +327,14 @@ const command = {
 
 command._internals = {
   messageContext,
+  normalizeUserCandidate,
   userInputJid,
   requestedTarget,
   preferredCandidates,
   resolveUserCandidates,
   findProfilePicture,
   phoneJid,
+  sourceLabel,
 };
 
 module.exports = command;
