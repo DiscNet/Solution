@@ -47,8 +47,9 @@ test("ping measures an actual WhatsApp send and turns the probe into the report"
   assert.match(calls[0].content.text, /Medindo latência real/i);
   assert.deepEqual(calls[1].content.edit, probeKey);
   assert.match(calls[1].content.text, /Latê|Latência|ncia/);
-  assert.match(calls[1].content.text, /Processamento/);
-  assert.match(calls[1].content.text, /Uptime/);
-  assert.match(calls[1].content.text, /Heap/);
+  assert.match(calls[1].content.text, /⚡/);
+  assert.match(calls[1].content.text, /⏱️/);
+  assert.match(calls[1].content.text, /📦/);
+  assert.match(calls[1].content.text, /tempo real do envio/i);
   assert.ok(calls.some((call) => call.content?.react?.text === "🏓"));
 });
