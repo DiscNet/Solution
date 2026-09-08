@@ -8,6 +8,7 @@ const {
 } = require("akinator-client");
 const { sendInteractiveMessage } = require("gifted-btns");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { unwrapMessage } = require("../../functions/messageText");
 const config = require("../../config/config");
 
 // As sessoes sao indexadas pelo token da partida. Isso permite validar
@@ -179,26 +180,79 @@ function sentMessageKey(sent) {
 
 function sameMessageKey(a, b) {
   if (!a || !b) return false;
-  return a.id && b.id && a.id === b.id && (a.remoteJid || "") === (b.remoteJid || "");
+  return Boolean(a.id && b.id && a.id === b.id && (a.remoteJid || "") === (b.remoteJid || ""));
+}
+
+function interactionSourceKey(msg, from) {
+  const message = unwrapMessage(msg);
+  const context =
+    message?.interactiveResponseMessage?.contextInfo ||
+    message?.buttonsResponseMessage?.contextInfo ||
+    message?.templateButtonReplyMessage?.contextInfo ||
+    message?.listResponseMessage?.contextInfo ||
+    null;
+
+  const id = String(context?.stanzaId || "").trim();
+  if (!id) return null;
+
+  const key = { remoteJid: from, fromMe: true, id };
+  if (isGroupJid(from) && context?.participant) key.participant = context.participant;
+  return key;
+}
+
+function normalizedDeleteKey(conn, from, key) {
+  const id = String(key?.id || "").trim();
+  if (!id) return null;
+
+  const normalized = {
+    ...key,
+    remoteJid: key?.remoteJid || from,
+    fromMe: true,
+    id,
+  };
+
+  if (isGroupJid(from) && !normalized.participant && conn?.user?.id) {
+    normalized.participant = conn.user.id;
+  }
+
+  return normalized;
 }
 
 async function deleteMessageSafe(conn, from, key) {
-  if (!key?.id) return false;
+  const normalized = normalizedDeleteKey(conn, from, key);
+  if (!normalized) return false;
+
   try {
-    await conn.sendMessage(from, { delete: key });
+    await conn.sendMessage(from, { delete: normalized });
     return true;
-  } catch (error) {
-    console.warn("[AKINATOR] Não foi possível apagar mensagem antiga:", error.message);
-    return false;
+  } catch (firstError) {
+    const minimal = { remoteJid: from, fromMe: true, id: normalized.id };
+    try {
+      await conn.sendMessage(from, { delete: minimal });
+      return true;
+    } catch (secondError) {
+      console.warn(
+        "[AKINATOR] Não foi possível apagar mensagem antiga:",
+        secondError.message || firstError.message,
+      );
+      return false;
+    }
   }
+}
+
+async function consumeCurrentPrompt(conn, msg, from, session) {
+  const source = interactionSourceKey(msg, from);
+  const key = source || session?.messageKey || null;
+  if (!key) return false;
+
+  const deleted = await deleteMessageSafe(conn, from, key);
+  if (deleted && session) session.messageKey = null;
+  return deleted;
 }
 
 async function rotateMessage(session, conn, from, sent) {
   const previous = session.messageKey || null;
   const next = sentMessageKey(sent);
-
-  // Primeiro registramos a nova mensagem. So depois apagamos a anterior.
-  // Assim, se o envio novo falhar, a pergunta atual permanece visivel.
   session.messageKey = next || null;
 
   if (previous && !sameMessageKey(previous, next)) {
@@ -290,11 +344,14 @@ async function temporaryReply(conn, msg, from, text, ttl = 6000) {
 }
 
 async function finishSession(conn, msg, from, session, text) {
-  const previous = session?.messageKey || null;
   if (session?.token) sessions.delete(session.token);
-  const sent = await reply(conn, msg, from, text);
+
+  const source = interactionSourceKey(msg, from);
+  const previous = source || session?.messageKey || null;
+  if (session) session.messageKey = null;
   if (previous) await deleteMessageSafe(conn, from, previous);
-  return sent;
+
+  return reply(conn, msg, from, text);
 }
 
 async function startGame(conn, msg, from) {
@@ -358,7 +415,7 @@ async function withSession(conn, msg, from, action, suppliedToken, handler) {
 
   if (Date.now() - session.touchedAt > SESSION_TTL) {
     sessions.delete(session.token);
-    await deleteMessageSafe(conn, from, session.messageKey);
+    await consumeCurrentPrompt(conn, msg, from, session);
     return temporaryReply(conn, msg, from, `⌛ Sua partida expirou. Use ${(config.prefix || ".")}akinator para começar outra.`);
   }
 
@@ -366,11 +423,24 @@ async function withSession(conn, msg, from, action, suppliedToken, handler) {
 
   session.busy = true;
   session.touchedAt = Date.now();
+  let oldPromptDeleted = false;
   try {
+    oldPromptDeleted = await consumeCurrentPrompt(conn, msg, from, session);
     await handler(session);
   } catch (error) {
     console.error(`[AKINATOR] Erro em ${action}:`, error);
-    await temporaryReply(conn, msg, from, "❌ Não consegui concluir essa jogada. Sua partida continua ativa; tente novamente.");
+
+    if (sessions.get(session.token) === session && oldPromptDeleted) {
+      try {
+        if (session.phase === "guess" || session.aki.won) await sendGuess(conn, msg, from, session);
+        else await sendQuestion(conn, msg, from, session);
+      } catch (restoreError) {
+        console.error("[AKINATOR] Falha ao restaurar interface:", restoreError);
+        await temporaryReply(conn, msg, from, "❌ Não consegui concluir essa jogada. Use .akinator status para recuperar a partida.");
+      }
+    } else {
+      await temporaryReply(conn, msg, from, "❌ Não consegui concluir essa jogada. Sua partida continua ativa; tente novamente.");
+    }
   } finally {
     if (sessions.get(session.token) === session) {
       session.busy = false;
@@ -506,4 +576,7 @@ module.exports._internals = {
   sentMessageKey,
   rotateMessage,
   deleteMessageSafe,
+  interactionSourceKey,
+  normalizedDeleteKey,
+  consumeCurrentPrompt,
 };

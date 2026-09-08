@@ -112,3 +112,87 @@ test("Akinator rotates interface messages and deletes the previous question", as
   assert.equal(deleted.length, 1);
   assert.deepEqual(deleted[0].key, oldKey);
 });
+
+
+test("Akinator deletes the exact clicked prompt before processing the answer", async () => {
+  const command = require("../commands/brincadeiras/akinator");
+  const group = "120363000000000000@g.us";
+  const alice = "5511999999999@s.whatsapp.net";
+  const token = "cafebabe";
+  const order = [];
+
+  command._sessions.clear();
+  command._sessions.set(token, {
+    token,
+    chat: group,
+    ownerIds: new Set([alice]),
+    phase: "question",
+    busy: false,
+    touchedAt: Date.now(),
+    messageKey: { remoteJid: group, fromMe: true, id: "stored-question" },
+    aki: {
+      step: 0,
+      progression: 10,
+      question: "Pergunta antiga",
+      won: false,
+      ko: false,
+      async answer() {
+        order.push("answer");
+        this.step = 1;
+        this.question = "Pergunta nova";
+        this.progression = 20;
+        return { question: this.question, won: false, ko: false };
+      },
+    },
+  });
+
+  let n = 0;
+  const conn = {
+    user: { id: "5511000000000@s.whatsapp.net" },
+    async sendMessage(from, content) {
+      if (content.delete) order.push(`delete:${content.delete.id}`);
+      else order.push("send");
+      n += 1;
+      return { key: { remoteJid: from, fromMe: true, id: `out-${n}` } };
+    },
+  };
+
+  const msg = {
+    key: { remoteJid: group, participant: alice, id: "click-1" },
+    message: {
+      interactiveResponseMessage: {
+        contextInfo: {
+          stanzaId: "exact-question-from-click",
+          participant: "5511000000000@s.whatsapp.net",
+        },
+        nativeFlowResponseMessage: {
+          paramsJson: JSON.stringify({ id: `.akinator sim ${token}` }),
+        },
+      },
+    },
+  };
+
+  await command.execute(conn, msg, ["sim", token], group);
+
+  assert.equal(order[0], "delete:exact-question-from-click");
+  assert.equal(order[1], "answer");
+  assert.ok(order.includes("send"), "a new question/fallback must be sent after the answer");
+
+  command._sessions.clear();
+});
+
+test("Akinator extracts the original prompt key from interactive context", () => {
+  const command = require("../commands/brincadeiras/akinator");
+  const group = "120363000000000000@g.us";
+  const key = command._internals.interactionSourceKey({
+    message: {
+      interactiveResponseMessage: {
+        contextInfo: { stanzaId: "original-prompt", participant: "bot@s.whatsapp.net" },
+      },
+    },
+  }, group);
+
+  assert.equal(key.id, "original-prompt");
+  assert.equal(key.remoteJid, group);
+  assert.equal(key.fromMe, true);
+});
