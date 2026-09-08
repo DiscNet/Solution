@@ -6,7 +6,7 @@ const { createStatusQuoted } = require("../../functions/statusCard");
 
 const NEWSLETTER = {
   newsletterJid: "120363426698503859@newsletter",
-  newsletterName: "LukaModzz",
+  newsletterName: config.botName || "GrimmJow-WA",
   serverMessageId: 116,
 };
 
