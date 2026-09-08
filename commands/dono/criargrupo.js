@@ -1,125 +1,106 @@
 // Menu: Dono - Grupos | Comando: criargrupo
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/dono/criargrupo.js
-const config = require("../../config/config");
 const fs = require("fs");
 const path = require("path");
+const config = require("../../config/config");
+const { createStatusQuoted } = require("../../functions/statusCard");
+const {
+  newsletterContext,
+  ensureOwner,
+  readableError,
+} = require("../../functions/ownerGroupManager");
 
 module.exports = {
   permissions: { owner: true },
   name: "criargrupo",
-  description: "𝑪𝒓𝒊𝒂 𝒖𝒎 𝒈𝒓𝒖𝒑𝒐 𝒄𝒐𝒎 𝒏𝒐𝒎𝒆 𝒆 𝒇𝒐𝒕𝒐 𝒑𝒆𝒓𝒔𝒐𝒏𝒂𝒍𝒊𝒛𝒂𝒅𝒂",
+  aliases: ["novogrupo"],
+  description: "Cria um novo grupo e adiciona o dono",
+  usage: "criargrupo nome do grupo",
+  menuCategory: "Dono",
+  menuSection: "Grupos",
 
-  async execute(conn, msg, args, from, axiosInstance) {
+  async execute(conn, msg, args = [], from) {
+    const quoted = createStatusQuoted(msg);
     try {
-      const owner = config.ownerName || "LukaModzz";
-      const ownerNumber = config.ownerNumber || "5563992003562";
-      const ownerLid = config.ownerLid || null;
-
-      let pushName = "Usuário";
-      try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
-
-      const sender = msg.key.participant || from;
-      const senderClean = sender.replace(/[^0-9]/g, "");
-      const ownerClean = ownerNumber.replace(/[^0-9]/g, "");
-
-      const isOwnerByNumber = senderClean === ownerClean;
-      const isOwnerByLid = ownerLid && sender === ownerLid;
-      const isOwner = isOwnerByNumber || isOwnerByLid;
-
-      if (!isOwner) {
+      if (!ensureOwner(msg)) {
         return conn.sendMessage(from, {
-          text: `❌ *ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴅᴏ ʙᴏᴛ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!*`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
+          text: "❌ Apenas o dono pode usar este comando.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
       }
 
-      const groupName = args.join(" ") || "Testes";
+      const groupName = args.join(" ").trim();
+      if (!groupName) {
+        return conn.sendMessage(from, {
+          text: `❌ Informe o nome do grupo.\nEx.: ${config.prefix || "."}criargrupo Grupo de testes`,
+          contextInfo: newsletterContext(),
+        }, { quoted });
+      }
+      if (groupName.length > 100) {
+        return conn.sendMessage(from, {
+          text: "❌ O nome do grupo deve ter no máximo 100 caracteres.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
+      }
 
-      await conn.sendMessage(from, { react: { text: "⚙️", key: msg.key } });
+      const ownerNumber = String(config.ownerNumber || "").replace(/\D/g, "");
+      if (ownerNumber.length < 8 || ownerNumber.length > 15) {
+        return conn.sendMessage(from, {
+          text: "❌ ownerNumber está ausente ou inválido no config.js.",
+          contextInfo: newsletterContext(),
+        }, { quoted });
+      }
 
-      // 🔥 Avisa que vai demorar um pouco
-      await conn.sendMessage(from, {
-        text: "⏳ *ᴄʀɪᴀɴᴅᴏ ɢʀᴜᴘᴏ...* ᴀɢᴜᴀʀᴅᴇ ᴀʟɢᴜɴs sᴇɢᴜɴᴅᴏs.",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
-      });
+      const group = await conn.groupCreate(groupName, [`${ownerNumber}@s.whatsapp.net`]);
+      const groupId = group?.id;
+      if (!groupId) throw new Error("groupCreate returned no group id");
 
-      // 🔥 Espera 5 segundos antes de tentar (evita rate limit)
-      await delay(5000);
-
-      const ownerJid = ownerClean + "@s.whatsapp.net";
-
-      // 🔥 Apenas UMA tentativa
-      const group = await conn.groupCreate(groupName, [ownerJid]);
-      const groupId = group.id;
-
-      console.log(`✅ Grupo criado: ${groupName} (${groupId})`);
-
-      // Aguarda o grupo ser registrado
-      await delay(3000);
-
-      // Define a foto do grupo
+      const warnings = [];
       const imgPath = path.join(__dirname, "..", "..", "imagens", "bot.jpg");
-
       if (fs.existsSync(imgPath)) {
         try {
-          await delay(2000);
-          const imageBuffer = fs.readFileSync(imgPath);
-          await conn.updateProfilePicture(groupId, imageBuffer);
-          console.log("✅ Foto do grupo definida!");
-        } catch (e) {
-          console.log("⚠️ Não foi possível definir a foto:", e.message);
+          await conn.updateProfilePicture(groupId, fs.readFileSync(imgPath));
+        } catch (error) {
+          warnings.push("não foi possível definir a foto");
+          console.warn("[CRIARGRUPO] foto:", error?.message || error);
         }
       }
 
-      // Gera link de convite
-      let inviteLink = "Não disponível";
+      let inviteLink = null;
       try {
-        await delay(2000);
         const inviteCode = await conn.groupInviteCode(groupId);
-        inviteLink = `https://chat.whatsapp.com/${inviteCode}`;
-      } catch (e) {}
-
-      // Mensagem no grupo
-      await conn.sendMessage(groupId, {
-        text: `🎉 *ɢʀᴜᴘᴏ ᴄʀɪᴀᴅᴏ ᴄᴏᴍ sᴜᴄᴇssᴏ!*\n\n📛 *ɴᴏᴍᴇ:* ${groupName}\n\n🪐 *ʟᴜᴋᴀᴍᴏᴅᴢᴢ ʙᴏᴛ*`
-      });
-
-      // Confirmação no chat atual
-      await conn.sendMessage(from, {
-        text: `✅ *ɢʀᴜᴘᴏ "${groupName}" ᴄʀɪᴀᴅᴏ!*\n\n🔗 *ʟɪɴᴋ:* ${inviteLink}\n🆔 *ɪᴅ:* \`${groupId}\`\n🖼️ *ғᴏᴛᴏ:* ${fs.existsSync(imgPath) ? '✅ Definida' : '❌ Não encontrada'}`,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
-
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
-    } catch (error) {
-      console.error("Erro criargrupo:", error);
-
-      let errorMsg = "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ɢʀᴜᴘᴏ!";
-      if (error.data === 429) {
-        errorMsg = "❌ *Limite de criação excedido!*\n\n⚠️ O WhatsApp limita a criação de grupos.\n⏳ Aguarde alguns minutos e tente novamente.";
+        if (inviteCode) inviteLink = `https://chat.whatsapp.com/${inviteCode}`;
+      } catch (error) {
+        warnings.push("não foi possível obter o link de convite");
+        console.warn("[CRIARGRUPO] link:", error?.message || error);
       }
 
-      await conn.sendMessage(from, {
-        text: errorMsg,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } }
-      }, { quoted: msg });
+      try {
+        await conn.sendMessage(groupId, {
+          text: `🎉 *Grupo criado com sucesso!*\n\n📛 ${groupName}\n🤖 ${config.botName || "GrimmJow-WA"}`,
+          contextInfo: newsletterContext(),
+        });
+      } catch (error) {
+        warnings.push("não foi possível enviar a mensagem inicial");
+      }
+
+      const lines = [
+        `✅ Grupo *${groupName}* criado.`,
+        `🆔 \`${groupId}\``,
+        inviteLink ? `🔗 ${inviteLink}` : "🔗 Link: indisponível",
+        `🖼️ Foto: ${fs.existsSync(imgPath) ? (warnings.includes("não foi possível definir a foto") ? "falhou" : "definida") : "arquivo bot.jpg não encontrado"}`,
+      ];
+      if (warnings.length) lines.push(`⚠️ Avisos: ${warnings.join("; ")}.`);
+
+      return conn.sendMessage(from, {
+        text: lines.join("\n"),
+        contextInfo: newsletterContext(),
+      }, { quoted });
+    } catch (error) {
+      console.error("[CRIARGRUPO]", error);
+      return conn.sendMessage(from, {
+        text: readableError(error, "criar o grupo"),
+        contextInfo: newsletterContext(),
+      }, { quoted });
     }
-  }
+  },
 };
-
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-Object.assign(module.exports, {
-  "menuCategory": "Dono",
-  "menuSection": "Grupos",
-  "usage": "criargrupo nome",
-  "description": "Uso: .criargrupo nome"
-});
