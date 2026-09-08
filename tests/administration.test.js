@@ -101,11 +101,11 @@ function reset() {
   botAdmin = true;
 }
 test.after(() => fs.rmSync(temporary, { recursive: true, force: true }));
-test("all 387 commands load, carry metadata and appear exactly once in paginated menus", () => {
+test("all 423 commands load, carry metadata and appear exactly once in paginated menus", () => {
   const d = catalog.diagnostics();
   assert.equal(d.errors.length, 0);
   assert.equal(d.collisions.length, 0);
-  assert.equal(d.records.length, 387);
+  assert.equal(d.records.length, 423);
   const pages = catalog.pages();
   const text = pages.join("\n");
   for (const r of d.records) {
@@ -506,8 +506,10 @@ test("menu navigation preserves all pages, sections, aliases and custom prefixes
   await run("menu", ["rpg", "pets"]);
   assert.match(messages[0].text, /RPG - Pets/);
   assert.match(messages[0].text, /Uso: .pets/);
-  await run("menugeral", ["9999"]);
-  assert.match(messages[0].text, /Informe uma página/);
+  await run("menugeral");
+  assert.ok(messages[0].image);
+  assert.match(messages[0].caption, /Todos os comandos/);
+  assert.doesNotMatch(messages[0].caption, /Página \d+\//);
   configLoader.salvarConfig({ prefix: "!" });
   await run("menuadm");
   assert.match(messages[0].text, /!advertir/);
