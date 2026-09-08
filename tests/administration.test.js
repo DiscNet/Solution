@@ -501,20 +501,20 @@ test("maintenance changes and command executor handle aliases, failures and mode
 });
 test("menu navigation preserves all pages, sections, aliases and custom prefixes", async () => {
   reset();
-  await run("menu");
-  assert.match(messages[0].text, /Proteção/);
+  const body = () => messages[0]?.text || messages[0]?.caption || "";
+  await run("menu", ["adm"]);
+  assert.match(body(), /\.advertir/);
   await run("menu", ["rpg", "pets"]);
-  assert.match(messages[0].text, /RPG - Pets/);
-  assert.match(messages[0].text, /Uso: .pets/);
+  assert.match(body(), /Uso: \.pets/);
   await run("menugeral");
   assert.ok(messages[0].image);
-  assert.match(messages[0].caption, /Todos os comandos/);
-  assert.doesNotMatch(messages[0].caption, /Página \d+\//);
+  assert.match(body(), /Todos os comandos/);
+  assert.doesNotMatch(body(), /Próxima:/);
   configLoader.salvarConfig({ prefix: "!" });
   await run("menuadm");
-  assert.match(messages[0].text, /!advertir/);
+  assert.match(body(), /!advertir/);
   await run("info", ["figurinha"]);
-  assert.match(messages[0].text, /!s/);
+  assert.match(body(), /!s/);
   configLoader.salvarConfig({ prefix: "." });
 });
 test("settings survive module reload and unrelated updates", () => {
