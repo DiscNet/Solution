@@ -17,11 +17,11 @@ test("ping helpers format real values without truncating latency", () => {
   assert.equal(formatMs(12.34), "12.3 ms");
   assert.equal(formatBytes(1024 * 1024), "1.0 MB");
   assert.equal(formatDuration(90061), "1d 1h 1m 1s");
-  assert.match(latencyStatus(80), /Excelente/);
-  assert.match(latencyStatus(1500), /Lento/);
+  assert.match(latencyStatus(5), /Excelente/);
+  assert.match(latencyStatus(250), /Lento/);
 });
 
-test("ping responds immediately with the full report and then fills the exact WA latency", async () => {
+test("ping uses processing time as the primary metric and keeps WA send time secondary", async () => {
   const calls = [];
   const from = "120363000000000000@g.us";
   const msg = {
@@ -44,20 +44,16 @@ test("ping responds immediately with the full report and then fills the exact WA
 
   await ping.execute(conn, msg, [], from);
 
-  // A primeira resposta visível já contém TODAS as métricas; só o valor do
-  // ping/tempo total fica como "medindo..." até o próprio envio ser concluído.
-  assert.match(calls[0].content.text, /medindo\.\.\./i);
-  assert.match(calls[0].content.text, /🏓/);
-  assert.match(calls[0].content.text, /⚡/);
-  assert.match(calls[0].content.text, /⏱️/);
-  assert.match(calls[0].content.text, /📦/);
-  assert.match(calls[0].content.text, /💾/);
-  assert.match(calls[0].content.text, /⚙️/);
-  assert.doesNotMatch(calls[0].content.text, /^🏓 \*Medindo latência real\.\.\.\*$/i);
+  const firstReport = calls[0].content.text;
+  assert.match(firstReport, /🏓/);
+  assert.match(firstReport, /📨/);
+  assert.match(firstReport, /Ping = tempo real de processamento interno/i);
+  assert.doesNotMatch(firstReport, /Ping[^\n]*medindo\.\.\./i);
+  assert.match(firstReport, /Envio[^\n]*medindo\.\.\./i);
 
   const editCall = calls.find((call) => call.content?.edit?.id === reportKey.id);
-  assert.ok(editCall, "the same report message must be edited with the measured latency");
-  assert.match(editCall.content.text, /tempo real do envio/i);
-  assert.doesNotMatch(editCall.content.text, /Latê[^\n]*medindo\.\.\./i);
+  assert.ok(editCall, "the same report message must be updated with the measured WA send time");
+  assert.match(editCall.content.text, /Envio WA = tempo do envio/i);
+  assert.doesNotMatch(editCall.content.text, /Envio[^\n]*medindo\.\.\./i);
   assert.ok(calls.some((call) => call.content?.react?.text === "🏓"));
 });
