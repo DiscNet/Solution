@@ -21,7 +21,7 @@ test("ping helpers format real values without truncating latency", () => {
   assert.match(latencyStatus(1500), /Lento/);
 });
 
-test("ping measures an actual WhatsApp send and turns the probe into the report", async () => {
+test("ping responds immediately with the full report and then fills the exact WA latency", async () => {
   const calls = [];
   const from = "120363000000000000@g.us";
   const msg = {
@@ -33,23 +33,31 @@ test("ping measures an actual WhatsApp send and turns the probe into the report"
     pushName: "Teste",
   };
 
-  const probeKey = { remoteJid: from, fromMe: true, id: "probe-1" };
+  const reportKey = { remoteJid: from, fromMe: true, id: "ping-report-1" };
   const conn = {
     async sendMessage(jid, content, options) {
       calls.push({ jid, content, options });
-      if (calls.length === 1) return { key: probeKey };
+      if (calls.length === 1) return { key: reportKey };
       return { key: { remoteJid: jid, fromMe: true, id: `out-${calls.length}` } };
     },
   };
 
   await ping.execute(conn, msg, [], from);
 
-  assert.match(calls[0].content.text, /Medindo latência real/i);
-  assert.deepEqual(calls[1].content.edit, probeKey);
-  assert.match(calls[1].content.text, /Latê|Latência|ncia/);
-  assert.match(calls[1].content.text, /⚡/);
-  assert.match(calls[1].content.text, /⏱️/);
-  assert.match(calls[1].content.text, /📦/);
-  assert.match(calls[1].content.text, /tempo real do envio/i);
+  // A primeira resposta visível já contém TODAS as métricas; só o valor do
+  // ping/tempo total fica como "medindo..." até o próprio envio ser concluído.
+  assert.match(calls[0].content.text, /medindo\.\.\./i);
+  assert.match(calls[0].content.text, /🏓/);
+  assert.match(calls[0].content.text, /⚡/);
+  assert.match(calls[0].content.text, /⏱️/);
+  assert.match(calls[0].content.text, /📦/);
+  assert.match(calls[0].content.text, /💾/);
+  assert.match(calls[0].content.text, /⚙️/);
+  assert.doesNotMatch(calls[0].content.text, /^🏓 \*Medindo latência real\.\.\.\*$/i);
+
+  const editCall = calls.find((call) => call.content?.edit?.id === reportKey.id);
+  assert.ok(editCall, "the same report message must be edited with the measured latency");
+  assert.match(editCall.content.text, /tempo real do envio/i);
+  assert.doesNotMatch(editCall.content.text, /Latê[^\n]*medindo\.\.\./i);
   assert.ok(calls.some((call) => call.content?.react?.text === "🏓"));
 });
