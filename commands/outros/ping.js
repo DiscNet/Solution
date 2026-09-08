@@ -113,35 +113,72 @@ function contextInfo() {
   };
 }
 
-async function removeMessage(conn, from, key) {
-  if (!key?.id) return;
-  try {
-    await conn.sendMessage(from, { delete: key });
-  } catch (_) {}
+function buildReport({
+  whatsappLatency,
+  processingMs,
+  totalMs,
+  metrics,
+  commandCount,
+  prefix,
+  botName,
+  owner,
+  requester,
+  now,
+}) {
+  const heapPercent = metrics.heapTotal > 0
+    ? (metrics.heapUsed / metrics.heapTotal) * 100
+    : 0;
+
+  const eventLoopText = metrics.eventLoop == null
+    ? "indisponível"
+    : `${metrics.eventLoop.toFixed(1)}%`;
+
+  const latencyText = whatsappLatency == null ? "medindo..." : formatMs(whatsappLatency);
+  const statusText = whatsappLatency == null ? "⏳ Calculando..." : latencyStatus(whatsappLatency);
+  const totalText = totalMs == null ? "medindo..." : formatMs(totalMs);
+
+  return [
+    "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
+    `├̬⌑ؔ͟ ⎾🏓⏌ 𝙻𝚊𝚝ê𝚗𝚌𝚒𝚊 𝚆𝙰: *${latencyText}*`,
+    `├̬⌑ؔ͟ ⎾📶⏌ 𝚂𝚝𝚊𝚝𝚞𝚜: *${statusText}*`,
+    `├̬⌑ؔ͟ ⎾⚡⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚊𝚖𝚎𝚗𝚝𝚘: *${formatMs(processingMs)}*`,
+    `├̬⌑ؔ͟ ⎾⏲️⏌ 𝚃𝚎𝚖𝚙𝚘 𝚝𝚘𝚝𝚊𝚕: *${totalText}*`,
+    "├̬⌑ؔ͟ ⎾🖥️⏌ ── 𝚂𝙸𝚂𝚃𝙴𝙼𝙰 ──",
+    `├̬⌑ؔ͟ ⎾⏱️⏌ 𝚄𝚙𝚝𝚒𝚖𝚎 𝚋𝚘𝚝: *${formatDuration(metrics.processUptime)}*`,
+    `├̬⌑ؔ͟ ⎾🧠⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚘 𝚁𝚂𝚂: *${formatBytes(metrics.rss)}*`,
+    `├̬⌑ؔ͟ ⎾📦⏌ 𝙷𝚎𝚊𝚙: *${formatBytes(metrics.heapUsed)} / ${formatBytes(metrics.heapTotal)} (${heapPercent.toFixed(1)}%)*`,
+    `├̬⌑ؔ͟ ⎾💾⏌ 𝚁𝙰𝙼 𝚊𝚖𝚋𝚒𝚎𝚗𝚝𝚎: *${formatBytes(metrics.usedRam)} / ${formatBytes(metrics.totalRam)} (${metrics.ramPercent.toFixed(1)}%)*`,
+    `├̬⌑ؔ͟ ⎾⚙️⏌ 𝙲𝙿𝚄: *${metrics.cpuCores} cores • load ${metrics.load1m.toFixed(2)}*`,
+    `├̬⌑ؔ͟ ⎾🔁⏌ 𝙴𝚟𝚎𝚗𝚝 𝚕𝚘𝚘𝚙: *${eventLoopText}*`,
+    `├̬⌑ؔ͟ ⎾🧮⏌ 𝚃𝚎𝚖𝚙𝚘 𝙲𝙿𝚄: *${metrics.cpuTime.toFixed(2)}s*`,
+    `├̬⌑ؔ͟ ⎾🐧⏌ 𝙿𝚕𝚊𝚝𝚊𝚏𝚘𝚛𝚖𝚊: *${metrics.platform}*`,
+    `├̬⌑ؔ͟ ⎾🟩⏌ 𝙽𝚘𝚍𝚎: *${metrics.node}*`,
+    `├̬⌑ؔ͟ ⎾🆔⏌ 𝙿𝙸𝙳: *${metrics.pid}*`,
+    "├̬⌑ؔ͟ ⎾🤖⏌ ── 𝙱𝙾𝚃 ──",
+    `├̬⌑ؔ͟ ⎾🪐⏌ 𝙱𝚘𝚝: *${botName}*`,
+    `├̬⌑ؔ͟ ⎾👤⏌ 𝙳𝚎𝚟: *${owner}*`,
+    `├̬⌑ؔ͟ ⎾⌨️⏌ 𝙿𝚛𝚎𝚏𝚒𝚡𝚘: *${prefix}*`,
+    ...(commandCount == null ? [] : [`├̬⌑ؔ͟ ⎾📚⏌ 𝙲𝚘𝚖𝚊𝚗𝚍𝚘𝚜: *${commandCount}*`]),
+    `├̬⌑ؔ͟ ⎾🙋⏌ 𝚂𝚘𝚕𝚒𝚌𝚒𝚝𝚊𝚍𝚘: *${requester}*`,
+    `├̬⌑ؔ͟ ⎾🕒⏌ 𝙷𝚘𝚛𝚊: *${now.toLocaleTimeString("pt-BR")}*`,
+    `├̬⌑ؔ͟ ⎾📅⏌ 𝙳𝚊𝚝𝚊: *${now.toLocaleDateString("pt-BR")}*`,
+    "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
+    "",
+    "> 🏓 *Latência WA = tempo real do envio pelo Baileys/WhatsApp.*",
+  ].join("\n");
 }
 
-async function publishReport(conn, from, probe, text, quoted) {
-  if (probe?.key) {
-    try {
-      return await conn.sendMessage(from, {
-        text,
-        edit: probe.key,
-        contextInfo: contextInfo(),
-      });
-    } catch (_) {
-      const sent = await conn.sendMessage(from, {
-        text,
-        contextInfo: contextInfo(),
-      }, { quoted });
-      await removeMessage(conn, from, probe.key);
-      return sent;
-    }
+async function editReport(conn, from, key, text) {
+  if (!key?.id) return null;
+  try {
+    return await conn.sendMessage(from, {
+      text,
+      edit: key,
+      contextInfo: contextInfo(),
+    });
+  } catch (_) {
+    return null;
   }
-
-  return conn.sendMessage(from, {
-    text,
-    contextInfo: contextInfo(),
-  }, { quoted });
 }
 
 module.exports = {
@@ -156,65 +193,62 @@ module.exports = {
     const quoted = createStatusQuoted(msg);
 
     try {
-      // Esta é a medição principal: tempo real que o sendMessage() do Baileys
-      // leva para concluir o envio da mensagem pelo canal atual do WhatsApp.
-      const sendStart = process.hrtime.bigint();
-      const probe = await conn.sendMessage(from, {
-        text: "🏓 *Medindo latência real...*",
-      }, { quoted });
-      const whatsappLatency = elapsedMs(sendStart);
-
+      // Tudo abaixo é local e leva poucos ms. Assim, a PRIMEIRA mensagem já
+      // contém o relatório inteiro; somente a latência atual ainda está sendo
+      // medida pelo próprio envio dessa mensagem.
       const metrics = getRuntimeMetrics();
-      const processingMs = elapsedMs(commandStart);
       const commandCount = getCommandCount();
       const prefix = config.prefix || ".";
       const botName = config.botName || "GrimmJow-WA";
       const owner = config.ownerName || "LukaModzz";
       const requester = msg?.pushName || "Usuário";
       const now = new Date();
+      const processingMs = elapsedMs(commandStart);
 
-      const heapPercent = metrics.heapTotal > 0
-        ? (metrics.heapUsed / metrics.heapTotal) * 100
-        : 0;
+      const initialReport = buildReport({
+        whatsappLatency: null,
+        processingMs,
+        totalMs: null,
+        metrics,
+        commandCount,
+        prefix,
+        botName,
+        owner,
+        requester,
+        now,
+      });
 
-      const eventLoopText = metrics.eventLoop == null
-        ? "indisponível"
-        : `${metrics.eventLoop.toFixed(1)}%`;
+      // O envio do relatório completo funciona como a própria sonda de ping.
+      // Isso evita uma mensagem intermediária pobre e faz o usuário receber
+      // todas as informações já no primeiro retorno visível.
+      const sendStart = process.hrtime.bigint();
+      const sent = await conn.sendMessage(from, {
+        text: initialReport,
+        contextInfo: contextInfo(),
+      }, { quoted });
+      const whatsappLatency = elapsedMs(sendStart);
+      const totalMs = elapsedMs(commandStart);
 
-      const report = [
-        "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
-        `├̬⌑ؔ͟ ⎾🏓⏌ 𝙻𝚊𝚝ê𝚗𝚌𝚒𝚊 𝚆𝙰: *${formatMs(whatsappLatency)}*`,
-        `├̬⌑ؔ͟ ⎾📶⏌ 𝚂𝚝𝚊𝚝𝚞𝚜: *${latencyStatus(whatsappLatency)}*`,
-        `├̬⌑ؔ͟ ⎾⚡⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚊𝚖𝚎𝚗𝚝𝚘: *${formatMs(processingMs)}*`,
-        "├̬⌑ؔ͟ ⎾🖥️⏌ ── 𝚂𝙸𝚂𝚃𝙴𝙼𝙰 ──",
-        `├̬⌑ؔ͟ ⎾⏱️⏌ 𝚄𝚙𝚝𝚒𝚖𝚎 𝚋𝚘𝚝: *${formatDuration(metrics.processUptime)}*`,
-        `├̬⌑ؔ͟ ⎾🧠⏌ 𝙿𝚛𝚘𝚌𝚎𝚜𝚜𝚘 𝚁𝚂𝚂: *${formatBytes(metrics.rss)}*`,
-        `├̬⌑ؔ͟ ⎾📦⏌ 𝙷𝚎𝚊𝚙: *${formatBytes(metrics.heapUsed)} / ${formatBytes(metrics.heapTotal)} (${heapPercent.toFixed(1)}%)*`,
-        `├̬⌑ؔ͟ ⎾💾⏌ 𝚁𝙰𝙼 𝚊𝚖𝚋𝚒𝚎𝚗𝚝𝚎: *${formatBytes(metrics.usedRam)} / ${formatBytes(metrics.totalRam)} (${metrics.ramPercent.toFixed(1)}%)*`,
-        `├̬⌑ؔ͟ ⎾⚙️⏌ 𝙲𝙿𝚄: *${metrics.cpuCores} cores • load ${metrics.load1m.toFixed(2)}*`,
-        `├̬⌑ؔ͟ ⎾🔁⏌ 𝙴𝚟𝚎𝚗𝚝 𝚕𝚘𝚘𝚙: *${eventLoopText}*`,
-        `├̬⌑ؔ͟ ⎾🧮⏌ 𝚃𝚎𝚖𝚙𝚘 𝙲𝙿𝚄: *${metrics.cpuTime.toFixed(2)}s*`,
-        `├̬⌑ؔ͟ ⎾🐧⏌ 𝙿𝚕𝚊𝚝𝚊𝚏𝚘𝚛𝚖𝚊: *${metrics.platform}*`,
-        `├̬⌑ؔ͟ ⎾🟩⏌ 𝙽𝚘𝚍𝚎: *${metrics.node}*`,
-        `├̬⌑ؔ͟ ⎾🆔⏌ 𝙿𝙸𝙳: *${metrics.pid}*`,
-        "├̬⌑ؔ͟ ⎾🤖⏌ ── 𝙱𝙾𝚃 ──",
-        `├̬⌑ؔ͟ ⎾🪐⏌ 𝙱𝚘𝚝: *${botName}*`,
-        `├̬⌑ؔ͟ ⎾👤⏌ 𝙳𝚎𝚟: *${owner}*`,
-        `├̬⌑ؔ͟ ⎾⌨️⏌ 𝙿𝚛𝚎𝚏𝚒𝚡𝚘: *${prefix}*`,
-        ...(commandCount == null ? [] : [`├̬⌑ؔ͟ ⎾📚⏌ 𝙲𝚘𝚖𝚊𝚗𝚍𝚘𝚜: *${commandCount}*`]),
-        `├̬⌑ؔ͟ ⎾🙋⏌ 𝚂𝚘𝚕𝚒𝚌𝚒𝚝𝚊𝚍𝚘: *${requester}*`,
-        `├̬⌑ؔ͟ ⎾🕒⏌ 𝙷𝚘𝚛𝚊: *${now.toLocaleTimeString("pt-BR")}*`,
-        `├̬⌑ؔ͟ ⎾📅⏌ 𝙳𝚊𝚝𝚊: *${now.toLocaleDateString("pt-BR")}*`,
-        "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
-        "",
-        "> 🏓 *Latência WA = tempo real do envio pelo Baileys/WhatsApp.*",
-      ].join("\n");
+      const finalMetrics = getRuntimeMetrics();
+      const finalReport = buildReport({
+        whatsappLatency,
+        processingMs,
+        totalMs,
+        metrics: finalMetrics,
+        commandCount,
+        prefix,
+        botName,
+        owner,
+        requester,
+        now: new Date(),
+      });
 
-      await publishReport(conn, from, probe, report, quoted);
-
-      try {
-        await conn.sendMessage(from, { react: { text: "🏓", key: msg.key } });
-      } catch (_) {}
+      // Atualiza a MESMA mensagem com o valor exato. A reação roda em paralelo
+      // para não acrescentar atraso perceptível ao relatório.
+      await Promise.allSettled([
+        editReport(conn, from, sent?.key, finalReport),
+        conn.sendMessage(from, { react: { text: "🏓", key: msg.key } }),
+      ]);
     } catch (error) {
       console.error("[PING] Erro:", error);
       await conn.sendMessage(from, {
@@ -232,4 +266,5 @@ module.exports._internals = {
   formatDuration,
   latencyStatus,
   getRuntimeMetrics,
+  buildReport,
 };
