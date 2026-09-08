@@ -1,102 +1,89 @@
 // Menu: Dono - Grupos | Comando: nuke
-// commands/nuke.js
 const config = require("../../config/config");
+const h = require("../../functions/adminHelpers");
+const {
+  participantIdentity,
+  isProtectedParticipant,
+  newsletterContext,
+  readableError,
+} = require("../../functions/ownerGroupManager");
 
-module.exports = {
-  permissions: { owner: true },
+module.exports = h.factory({
   name: "nuke",
-  description: "💥 ᴅᴇsᴛʀóɪ ᴏ ɢʀᴜᴘᴏ (ᴛʀᴏᴄᴀ ɴᴏᴍᴇ, ᴅᴇsᴄʀɪçãᴏ, ɪᴍᴀɢᴇᴍ ᴇ ʀᴇᴍᴏᴠᴇ ᴛᴏᴅᴏs)",
-  async execute(conn, msg, args, from, axiosInstance) {
+  permissions: { owner: true, group: true, botAdmin: true },
+  menuCategory: "Dono",
+  menuSection: "Grupos",
+  description: "Reseta o grupo e remove membros após confirmação",
+  usage: "nuke confirmar [novo nome]",
+}, async ({ conn, msg, args, from, permission }) => {
+  if (String(args[0] || "").toLowerCase() !== "confirmar") {
+    return [
+      "⚠️ *AÇÃO DESTRUTIVA*",
+      "Este comando remove membros, limpa descrição/foto e troca o nome do grupo.",
+      "",
+      `Para continuar: ${config.prefix || "."}nuke confirmar [novo nome]`,
+    ].join("\n");
+  }
+
+  const newName = args.slice(1).join(" ").trim() || "Grupo resetado";
+  h.need(newName.length <= 100, "O novo nome deve ter no máximo 100 caracteres.");
+
+  const metadata = permission.metadata || await conn.groupMetadata(from);
+  const participants = Array.isArray(metadata?.participants) ? metadata.participants : [];
+  const removable = participants.filter((participant) =>
+    participant?.admin !== "superadmin" &&
+    !isProtectedParticipant(participant, conn),
+  );
+
+  const failures = [];
+  let removed = 0;
+
+  for (let i = 0; i < removable.length; i += 50) {
+    const batch = removable.slice(i, i + 50);
+    const ids = batch.map(participantIdentity).filter(Boolean);
+    if (!ids.length) continue;
     try {
-      // ========== VERIFICAÇÕES ==========
-      const sender = msg.key.participant || msg.key.remoteJid;
-      const isGroup = from.endsWith("@g.us");
-
-      if (!isGroup) {
-        return conn.sendMessage(from, { text: "❌ *ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ só ғᴜɴᴄɪᴏɴᴀ ᴇᴍ ɢʀᴜᴘᴏs!*" });
+      const result = await conn.groupParticipantsUpdate(from, ids, "remove");
+      if (Array.isArray(result) && result.length) {
+        removed += result.filter((item) => [200, 201].includes(Number(item?.status))).length;
+        const failed = result.filter((item) => ![200, 201].includes(Number(item?.status)));
+        if (failed.length) failures.push(`${failed.length} remoções recusadas`);
+      } else {
+        removed += ids.length;
       }
-
-      // Verificar se é o dono do bot (usando ownerLid)
-      const DONO_LID = config.ownerLid || null;
-
-      if (!DONO_LID) {
-        return conn.sendMessage(from, {
-          text: `❌ *ᴏᴡɴᴇʀʟɪᴅ ɴãᴏ ᴄᴏɴғɪɢᴜʀᴀᴅᴏ!*\n\n⚠️ ᴄᴏɴғɪɢᴜʀᴇ ᴏ ᴏᴡɴᴇʀʟɪᴅ ɴᴏ ᴀʀǫᴜɪᴠᴏ ᴄᴏɴғɪɢ/config.js`
-        });
-      }
-
-      // Comparar o sender com o ownerLid (removendo @s.whatsapp.net se necessário)
-      const senderLid = sender.includes('@lid') ? sender : sender.split('@')[0] + '@lid';
-
-      if (sender !== DONO_LID && senderLid !== DONO_LID) {
-        // Tentar comparar apenas o número
-        const senderNumber = sender.split('@')[0];
-        const donoNumber = DONO_LID.split('@')[0];
-
-        if (senderNumber !== donoNumber) {
-          return conn.sendMessage(from, {
-            text: `❌ *ᴀᴘᴇɴᴀs ᴏ ᴅᴏɴᴏ ᴅᴏ ʙᴏᴛ ᴘᴏᴅᴇ ᴜsᴀʀ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ!*\n\n⚠️ sᴇᴜ ɪᴅ: ${sender}\n👑 ᴅᴏɴᴏ ʟɪᴅ: ${DONO_LID}`
-          });
-        }
-      }
-
-      // ========== EXECUTAR NUKE DIRETO (SEM CONFIRMAÇÃO) ==========
-
-      // 1. PEGAR METADADOS DO GRUPO
-      const groupMetadata = await conn.groupMetadata(from);
-      const participants = groupMetadata.participants;
-
-      // 2. TROCAR NOME E DESCRIÇÃO (RÁPIDO)
-      await conn.groupUpdateSubject(from, "Burocracia");
-      await conn.groupUpdateDescription(from, "");
-
-      // 3. REMOVER IMAGEM (SE TIVER)
-      try {
-        await conn.updateProfilePicture(from, null);
-      } catch (e) {}
-
-      // 4. REMOVER TODOS OS MEMBROS (RÁPIDO)
-      const participantIds = participants.map(p => p.id);
-
-      // Filtrar para não remover o bot e o dono
-      const botId = conn.user.id.split(':')[0] + '@s.whatsapp.net';
-
-      const toRemove = participantIds.filter(id =>
-        id !== botId &&
-        id !== DONO_LID &&
-        id !== sender
-      );
-
-      // Remover em lote (máximo 500 por vez)
-      const batchSize = 500;
-      let removidos = 0;
-
-      for (let i = 0; i < toRemove.length; i += batchSize) {
-        const batch = toRemove.slice(i, i + batchSize);
-        try {
-          await conn.groupParticipantsUpdate(from, batch, "remove");
-          removidos += batch.length;
-        } catch (e) {
-          console.error("Erro ao remover lote:", e);
-        }
-      }
-
-      // 5. MENSAGEM FINAL
-      await conn.sendMessage(from, {
-        text: `ᴛᴇʀᴍᴏɴᴜᴄʟᴇᴀʀ`
-      });
-
     } catch (error) {
-      console.error("Erro no nuke:", error);
-      await conn.sendMessage(from, {
-        text: `❌ *ᴇʀʀᴏ ᴀᴏ ᴇxᴇᴄᴜᴛᴀʀ ɴᴜᴋᴇ:*\n\n${error.message || "Erro desconhecido"}`
-      });
+      failures.push(readableError(error, `remover ${ids.length} membro(s)`).replace(/^❌\s*/, ""));
     }
   }
-};
 
-Object.assign(module.exports, {
-  "menuCategory": "Dono",
-  "menuSection": "Grupos",
-  "description": "💥 destrói o grupo (troca nome, descrição, imagem e remove todos)"
+  try {
+    await conn.groupUpdateSubject(from, newName);
+  } catch (error) {
+    failures.push("não foi possível alterar o nome");
+  }
+
+  try {
+    await conn.groupUpdateDescription(from, "");
+  } catch (error) {
+    failures.push("não foi possível limpar a descrição");
+  }
+
+  try {
+    await conn.removeProfilePicture(from);
+  } catch (_) {
+    // Grupo sem foto ou permissão específica: não impede o restante do reset.
+  }
+
+  const report = [
+    "🧹 *RESET DO GRUPO CONCLUÍDO*",
+    `📛 Nome: *${newName}*`,
+    `👥 Removidos: *${removed}/${removable.length}*`,
+    "🛡️ Bot, dono e criador do grupo foram preservados.",
+    failures.length ? `⚠️ Pendências: ${failures.join("; ")}.` : "✅ Todas as etapas obrigatórias foram concluídas.",
+  ].join("\n");
+
+  await conn.sendMessage(from, {
+    text: report,
+    contextInfo: newsletterContext(),
+  }, { quoted: msg });
 });
