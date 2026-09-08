@@ -15,8 +15,8 @@ jobs:
           node-version: '22.22.2'
           cache: npm
       - run: npm ci --omit=dev
-      - name: Validate utility suite
-        run: node --test tests/utilities.test.js
+      - name: Run complete test suite
+        run: npm test
       - name: Validate complete command registry
         run: |
           node - <<'NODE'
