@@ -8,16 +8,16 @@ const config = require("../../config/config");
 const { dimensions } = require("../outros/conversoes");
 
 const labels = {
-  comprimento: "Comprimento",
-  massa: "Massa",
+  comprimento: "Medidas e distâncias",
+  massa: "Peso",
   area: "Área",
-  volume: "Volume",
+  volume: "Litros e volume",
   velocidade: "Velocidade",
   tempo: "Tempo",
-  dados: "Dados",
+  dados: "Internet e armazenamento",
   energia: "Energia",
   pressao: "Pressão",
-  angulo: "Ângulo",
+  angulo: "Ângulos",
 };
 
 function countFor(dimension) {
@@ -63,17 +63,17 @@ async function sendMenu(conn, msg, from, title, body) {
 
 function indexBody(prefix) {
   const lines = [
-    "╭─〔 🧊 ᴜᴛɪʟɪᴅᴀᴅᴇs 〕",
-    "│ ᴄᴏɴᴠᴇʀsᴏ̃ᴇs ᴅɪʀᴇᴛᴀs",
+    "╭─〔 🧊 ғᴇʀʀᴀᴍᴇɴᴛᴀs ᴅᴏ ᴅɪᴀ ᴀ ᴅɪᴀ 〕",
+    "│ ᴇsᴄᴏʟʜᴀ ᴏ ǫᴜᴇ ᴠᴏᴄᴇ̂ ǫᴜᴇʀ ᴄᴏɴᴠᴇʀᴛᴇʀ",
   ];
   for (const dimension of Object.keys(dimensions)) {
     lines.push(
-      `├̬⌑ؔ͟ 「🧊」${prefix}menuconv${dimension} | ${labels[dimension]} • ${countFor(dimension)} comandos`,
+      `├̬⌑ؔ͟ 「🧊」${prefix}menuconv${dimension} | ${labels[dimension]} • ${countFor(dimension)} opções`,
     );
   }
   lines.push("╰─");
   lines.push("");
-  lines.push(`╭─┄─🧊〔 𝙰𝙹𝚄𝙳𝙰 〕\n├̬⌑ؔ͟ 「🧊」${prefix}conversor <valor> <origem> <destino>\n├̬⌑ؔ͟ 「🧊」${prefix}unidades [categoria]\n╰─┄─🧊`);
+  lines.push(`╭─┄─🧊〔 𝙰𝚃𝙰𝙻𝙷𝙾 𝚁𝙰́𝙿𝙸𝙳𝙾 〕\n├̬⌑ؔ͟ 「🧊」${prefix}conversor 10 km m\n├̬⌑ؔ͟ 「🧊」${prefix}unidades — veja as unidades disponíveis\n╰─┄─🧊`);
   return lines.join("\n");
 }
 
@@ -86,7 +86,7 @@ function makeDimensionMenu(dimension) {
     menuCategory: "Menus",
     menuSection: "Conversões",
     usage: `menuconv${dimension}`,
-    description: `Lista ${count} conversões diretas de ${label.toLowerCase()}`,
+    description: `Abre ${count} opções de ${label.toLowerCase()}`,
     async execute(conn, msg, args = [], from) {
       const prefix = config.prefix || ".";
       const parts = catalog.pages({
@@ -98,7 +98,7 @@ function makeDimensionMenu(dimension) {
         namePrefix: `conv-${dimension}-`,
       });
       const body = decoratePage(parts.join("\n"));
-      return sendMenu(conn, msg, from, `Conversões - ${label}`, body);
+      return sendMenu(conn, msg, from, label, body);
     },
   };
 }
@@ -110,13 +110,13 @@ const commands = [
     menuCategory: "Menus",
     menuSection: "Conversões",
     usage: "menuconversoes",
-    description: "Abre os menus com todas as 1.054 conversões diretas",
+    description: "Abre os conversores de medidas, peso, tempo, internet e mais",
     async execute(conn, msg, args = [], from) {
       return sendMenu(
         conn,
         msg,
         from,
-        "Conversões",
+        "Conversores do dia a dia",
         indexBody(config.prefix || "."),
       );
     },
