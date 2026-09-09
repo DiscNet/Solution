@@ -1,5 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const fs = require("fs");
+const path = require("path");
 
 const catalog = require("../functions/menuCatalog");
 const menuModule = require("../commands/menus/menuconversoes");
@@ -40,6 +42,24 @@ test("menugeral catalog exposes the dedicated conversion menus without dumping g
     assert.match(text, new RegExp(`\\.menuconv${dimension} \\|`));
   }
   assert.doesNotMatch(text, /\.conv-comprimento-km-m \|/);
+});
+
+test("main interactive menu links every converter submenu", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "menus", "menu.js"),
+    "utf8",
+  );
+  assert.match(source, /"menuconversoes"/);
+  for (const dimension of Object.keys(dimensions)) {
+    assert.match(source, new RegExp(`"menuconv${dimension}"`), dimension);
+  }
+});
+
+test("conversion menu labels stay simple for everyday users", () => {
+  assert.equal(menuModule.labels.comprimento, "Medidas e distâncias");
+  assert.equal(menuModule.labels.massa, "Peso");
+  assert.equal(menuModule.labels.dados, "Internet e armazenamento");
+  assert.equal(menuModule.labels.volume, "Litros e volume");
 });
 
 test("conversion menu commands preserve normal menu metadata", () => {
