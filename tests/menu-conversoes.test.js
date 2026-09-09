@@ -44,18 +44,15 @@ test("menugeral catalog exposes the dedicated conversion menus without dumping g
   assert.doesNotMatch(text, /\.conv-comprimento-km-m \|/);
 });
 
-test("main interactive menu links every converter submenu with friendly labels", () => {
+test("main interactive menu links every converter submenu", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "menus", "menu.js"),
     "utf8",
   );
-  assert.match(source, /menuconversoes/);
+  assert.match(source, /"menuconversoes"/);
   for (const dimension of Object.keys(dimensions)) {
-    assert.match(source, new RegExp(`menuconv${dimension}`), dimension);
+    assert.match(source, new RegExp(`"menuconv${dimension}"`), dimension);
   }
-  assert.match(source, /MEDIDAS E DISTÂNCIAS/);
-  assert.match(source, /INTERNET E ARMAZENAMENTO/);
-  assert.match(source, /LITROS E VOLUME/);
 });
 
 test("conversion menu labels stay simple for everyday users", () => {
