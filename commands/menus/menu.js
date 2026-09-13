@@ -112,7 +112,7 @@ async function sendMainCatalog(conn, msg, from) {
                   makeRow(
                     "menualterar",
                     "   『🧊』𝗠𝗘𝗡𝗨 𝗔𝗟𝗧𝗘𝗥𝗔𝗗𝗢𝗥𝗘𝗦",
-                    "ᴀʟᴛᴇʀᴀᴄ̧ᴀ̃ᴏ ᴇ ᴄᴏɴᴠᴇʀsᴀ̃ᴏ ᴅᴇ ᴍɪ́ᴅɪᴀ",
+                    "ᴇғᴇɪᴛᴏs ᴇ ᴀʟᴛᴇʀᴀᴄ̧ᴏ̃ᴇs ᴅᴇ ᴍɪ́ᴅɪᴀ",
                     "🧊 MÍDIA",
                   ),
                   makeRow(
@@ -120,83 +120,6 @@ async function sendMainCatalog(conn, msg, from) {
                     "   『🧊』𝗠𝗘𝗡𝗨 𝗕𝗥𝗜𝗡𝗖𝗔𝗗𝗘𝗜𝗥𝗔𝗦",
                     "ᴊᴏɢᴏs • ᴀᴋɪɴᴀᴛᴏʀ • ᴄᴏᴍᴀɴᴅᴏs ᴅᴇ ᴅɪᴠᴇʀsᴀ̃ᴏ",
                     "🧊 JOGOS",
-                  ),
-                ],
-              },
-              {
-                title: "       》🧮 𝐌𝐄𝐃𝐈𝐃𝐀𝐒 𝐄 𝐂𝐎𝐍𝐕𝐄𝐑𝐒𝐎𝐑𝐄𝐒 🧮《",
-                highlight_label: "🧮 ÚTIL",
-                rows: [
-                  makeRow(
-                    "menuconversoes",
-                    "   『🧮』𝗧𝗢𝗗𝗢𝗦 𝗢𝗦 𝗖𝗢𝗡𝗩𝗘𝗥𝗦𝗢𝗥𝗘𝗦",
-                    "ᴇsᴄᴏʟʜᴀ ᴏ ǫᴜᴇ ǫᴜᴇʀ ᴄᴏɴᴠᴇʀᴛᴇʀ ᴇ ᴠᴇᴊᴀ ᴛᴏᴅᴀs ᴀs ᴏᴘᴄ̧ᴏ̃ᴇs",
-                    "🧮 GERAL",
-                  ),
-                  makeRow(
-                    "menuconvcomprimento",
-                    "   『📏』𝗠𝗘𝗗𝗜𝗗𝗔𝗦 𝗘 𝗗𝗜𝗦𝗧𝗔̂𝗡𝗖𝗜𝗔𝗦",
-                    "ᴍᴍ • ᴄᴍ • ᴍ • ᴋᴍ • ᴍɪʟʜᴀs ᴇ ᴏᴜᴛʀᴀs ᴍᴇᴅɪᴅᴀs",
-                    "📏 MEDIDAS",
-                  ),
-                  makeRow(
-                    "menuconvmassa",
-                    "   『⚖️』𝗣𝗘𝗦𝗢",
-                    "ɢ • ᴋɢ • ᴛᴏɴᴇʟᴀᴅᴀs • ʟɪʙʀᴀs ᴇ ᴏᴜᴛʀᴏs",
-                    "⚖️ PESO",
-                  ),
-                  makeRow(
-                    "menuconvarea",
-                    "   『📐』𝗔́𝗥𝗘𝗔",
-                    "ᴍ² • ᴋᴍ² • ʜᴇᴄᴛᴀʀᴇs • ᴀᴄʀᴇs ᴇ ᴏᴜᴛʀᴏs",
-                    "📐 ÁREA",
-                  ),
-                  makeRow(
-                    "menuconvvolume",
-                    "   『🥤』𝗟𝗜𝗧𝗥𝗢𝗦 𝗘 𝗩𝗢𝗟𝗨𝗠𝗘",
-                    "ᴍʟ • ʟɪᴛʀᴏs • ᴄᴏᴘᴏs • ɢᴀʟᴏ̃ᴇs ᴇ ᴏᴜᴛʀᴏs",
-                    "🥤 VOLUME",
-                  ),
-                  makeRow(
-                    "menuconvvelocidade",
-                    "   『🏎️』𝗩𝗘𝗟𝗢𝗖𝗜𝗗𝗔𝗗𝗘",
-                    "ᴋᴍ/ʜ • ᴍᴘʜ • ᴍ/s • ɴᴏ́s ᴇ ᴏᴜᴛʀᴏs",
-                    "🏎️ VELOCIDADE",
-                  ),
-                ],
-              },
-              {
-                title: "       》🧮 𝐌𝐀𝐈𝐒 𝐅𝐄𝐑𝐑𝐀𝐌𝐄𝐍𝐓𝐀𝐒 🧮《",
-                rows: [
-                  makeRow(
-                    "menuconvtempo",
-                    "   『⏱️』𝗧𝗘𝗠𝗣𝗢",
-                    "sᴇɢᴜɴᴅᴏs • ᴍɪɴᴜᴛᴏs • ʜᴏʀᴀs • ᴅɪᴀs • ᴀɴᴏs",
-                    "⏱️ TEMPO",
-                  ),
-                  makeRow(
-                    "menuconvdados",
-                    "   『💾』𝗜𝗡𝗧𝗘𝗥𝗡𝗘𝗧 𝗘 𝗔𝗥𝗠𝗔𝗭𝗘𝗡𝗔𝗠𝗘𝗡𝗧𝗢",
-                    "ʙʏᴛᴇs • ᴋʙ • ᴍʙ • ɢʙ • ᴛʙ ᴇ ᴏᴜᴛʀᴏs",
-                    "💾 DADOS",
-                  ),
-                  makeRow(
-                    "menuconvenergia",
-                    "   『⚡』𝗘𝗡𝗘𝗥𝗚𝗜𝗔",
-                    "ᴊᴏᴜʟᴇs • ᴄᴀʟᴏʀɪᴀs • ᴋᴡʜ ᴇ ᴏᴜᴛʀᴏs",
-                    "⚡ ENERGIA",
-                  ),
-                  makeRow(
-                    "menuconvpressao",
-                    "   『🌡️』𝗣𝗥𝗘𝗦𝗦𝗔̃𝗢",
-                    "ᴘsɪ • ʙᴀʀ • ᴀᴛᴍ • ᴘᴀ ᴇ ᴏᴜᴛʀᴏs",
-                    "🌡️ PRESSÃO",
-                  ),
-                  makeRow(
-                    "menuconvangulo",
-                    "   『📐』𝗔̂𝗡𝗚𝗨𝗟𝗢𝗦",
-                    "ɢʀᴀᴜs • ʀᴀᴅɪᴀɴᴏs • ᴠᴏʟᴛᴀs ᴇ ᴏᴜᴛʀᴏs",
-                    "📐 ÂNGULOS",
                   ),
                 ],
               },
