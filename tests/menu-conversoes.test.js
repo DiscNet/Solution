@@ -4,68 +4,34 @@ const fs = require("fs");
 const path = require("path");
 
 const catalog = require("../functions/menuCatalog");
-const menuModule = require("../commands/menus/menuconversoes");
-const { dimensions } = require("../commands/outros/conversoes");
 
-test("conversion menus expose every generated command by dimension", () => {
-  const expectedTotal = Object.keys(dimensions).reduce(
-    (sum, dimension) => sum + menuModule.countFor(dimension),
-    0,
-  );
-  assert.equal(expectedTotal, 1054);
-  assert.equal(menuModule.commands.length, Object.keys(dimensions).length + 1);
+const menuFile = path.join(
+  __dirname,
+  "..",
+  "commands",
+  "menus",
+  "menuconversoes.js",
+);
+const mainMenuFile = path.join(
+  __dirname,
+  "..",
+  "commands",
+  "menus",
+  "menu.js",
+);
 
-  let listed = 0;
-  for (const dimension of Object.keys(dimensions)) {
-    const pages = catalog.pages({
-      category: "Utilidades",
-      section: "Conversões",
-      includeHidden: true,
-      namePrefix: `conv-${dimension}-`,
-      limit: 50000,
-    });
-    const text = pages.join("\n");
-    const lines = text
-      .split("\n")
-      .filter((line) => line.startsWith(`.conv-${dimension}-`));
-    assert.equal(lines.length, menuModule.countFor(dimension), dimension);
-    assert.ok(pages.every((page) => page.length <= 50000), dimension);
-    listed += lines.length;
-  }
-  assert.equal(listed, 1054);
+test("legacy conversion menu stays removed", () => {
+  assert.equal(fs.existsSync(menuFile), false);
+
+  const source = fs.readFileSync(mainMenuFile, "utf8");
+  assert.doesNotMatch(source, /menuconversoes/i);
+  assert.doesNotMatch(source, /menuconv(?:comprimento|massa|volume|velocidade|tempo|dados|energia|pressao|angulo)/i);
 });
 
-test("menugeral catalog exposes the dedicated conversion menus without dumping generated commands", () => {
+test("catalog no longer exposes conversion menu entries", () => {
   const text = catalog.pages({ limit: 60000 }).join("\n");
-  assert.match(text, /\.menuconversoes \|/);
-  for (const dimension of Object.keys(dimensions)) {
-    assert.match(text, new RegExp(`\\.menuconv${dimension} \\|`));
-  }
-  assert.doesNotMatch(text, /\.conv-comprimento-km-m \|/);
-});
-
-test("main interactive menu links every converter submenu", () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "menus", "menu.js"),
-    "utf8",
-  );
-  assert.match(source, /"menuconversoes"/);
-  for (const dimension of Object.keys(dimensions)) {
-    assert.match(source, new RegExp(`"menuconv${dimension}"`), dimension);
-  }
-});
-
-test("conversion menu labels stay simple for everyday users", () => {
-  assert.equal(menuModule.labels.comprimento, "Medidas e distâncias");
-  assert.equal(menuModule.labels.massa, "Peso");
-  assert.equal(menuModule.labels.dados, "Internet e armazenamento");
-  assert.equal(menuModule.labels.volume, "Litros e volume");
-});
-
-test("conversion menu commands preserve normal menu metadata", () => {
-  for (const command of menuModule.commands) {
-    assert.equal(command.menuCategory, "Menus");
-    assert.equal(command.menuSection, "Conversões");
-    assert.ok(command.description.length <= 120, command.name);
-  }
+  assert.doesNotMatch(text, /\.menuconversoes\b/i);
+  assert.doesNotMatch(text, /\.menuconv(?:comprimento|massa|volume|velocidade|tempo|dados|energia|pressao|angulo)\b/i);
+  assert.doesNotMatch(text, /\.conversor\b/i);
+  assert.doesNotMatch(text, /\.unidades\b/i);
 });
