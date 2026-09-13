@@ -53,7 +53,7 @@ const commands = [
         const body = shown.map((group, i) => groupLine(group, i + 1)).join("\n\n");
         const extra = matches.length > shown.length ? `\n\n… e mais ${matches.length - shown.length} resultado(s).` : "";
         return send(conn, msg, from,
-          `🔎 *GRUPOS ENCONTRADOS* — ${matches.length}\n\n${body}${extra}\n\nUse *.infogrupo <ID>* para ver detalhes.`);
+          `🔎 *GRUPOS ENCONTRADOS* — ${matches.length}\n\n${body}${extra}\n\nUse *.consultargrupo <ID>* para ver detalhes.`);
       } catch (error) {
         console.error("[BUSCARGRUPO]", error);
         return send(conn, msg, from, readableError(error, "buscar os grupos"));
@@ -63,17 +63,17 @@ const commands = [
 
   {
     permissions: ownerOnly(),
-    name: "infogrupo",
+    name: "consultargrupo",
     aliases: ["groupinfo", "detalhesgrupo"],
     description: "Mostra detalhes de um grupo em que o bot participa",
-    usage: "infogrupo <nome|id|índice>",
+    usage: "consultargrupo <nome|id|índice>",
     menuCategory: "Dono",
     menuSection: "Grupos",
     async execute(conn, msg, args = [], from) {
       try {
         if (!ensureOwner(msg)) return send(conn, msg, from, "❌ Apenas o dono pode usar este comando.");
         const query = args.join(" ").trim();
-        if (!query) return send(conn, msg, from, "❌ Uso: .infogrupo <nome, ID ou número da .listg>");
+        if (!query) return send(conn, msg, from, "❌ Uso: .consultargrupo <nome, ID ou número da .listg>");
 
         const groups = await fetchGroups(conn);
         const resolved = resolveGroup(groups, query);
@@ -104,7 +104,7 @@ const commands = [
           `• Dono: ${owner}\n` +
           `• Criado em: ${created}`);
       } catch (error) {
-        console.error("[INFOGRUPO]", error);
+        console.error("[CONSULTARGRUPO]", error);
         return send(conn, msg, from, readableError(error, "consultar o grupo"));
       }
     },
