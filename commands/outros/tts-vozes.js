@@ -4,7 +4,7 @@ const fs = require("fs");
 const fsp = fs.promises;
 const path = require("path");
 const kit = require("../../functions/utilityKit");
-const { createStatusQuoted } = require("../../functions/statusCard");
+const { createStatusQuoted, forwardedNewsletterContext } = require("../../functions/statusCard");
 
 function chunks(text, max = 180) {
   const out = [];
@@ -23,28 +23,28 @@ const voices = [
   {
     name: "tts2",
     label: "Voz grave",
-    filter: "asetrate=36000,aresample=48000,atempo=1.333333"
+    filter: "aresample=48000,asetrate=38400,aresample=48000,atempo=1.25",
   },
   {
     name: "tts3",
     label: "Voz aguda",
-    filter: "asetrate=60000,aresample=48000,atempo=0.8"
+    filter: "aresample=48000,asetrate=60000,aresample=48000,atempo=0.8",
   },
   {
     name: "tts4",
     label: "Voz rápida",
-    filter: "atempo=1.2"
+    filter: "aresample=48000,atempo=1.25",
   },
   {
     name: "tts5",
     label: "Voz de rádio",
-    filter: "highpass=f=300,lowpass=f=3400,acompressor=threshold=-18dB:ratio=3:attack=20:release=120"
+    filter: "aresample=48000,highpass=f=300,lowpass=f=3400,acompressor=threshold=0.125:ratio=3:attack=20:release=200,volume=2dB",
   },
   {
     name: "tts6",
     label: "Voz robótica",
-    filter: "aecho=0.8:0.88:35:0.35,highpass=f=180,lowpass=f=5000"
-  }
+    filter: "aresample=48000,tremolo=f=30:d=0.75,aecho=0.8:0.7:25:0.35,highpass=f=200,lowpass=f=5000",
+  },
 ];
 
 async function googleTtsToFile(http, text, file) {
@@ -59,11 +59,11 @@ async function googleTtsToFile(http, text, file) {
         ie: "UTF-8",
         client: "tw-ob",
         tl: "pt-BR",
-        q: parts[i]
+        q: parts[i],
       },
       responseType: "arraybuffer",
       timeout: 15000,
-      headers: { "user-agent": "Mozilla/5.0" }
+      headers: { "user-agent": "Mozilla/5.0" },
     });
 
     await fsp.writeFile(partFile, Buffer.from(data));
@@ -78,7 +78,7 @@ async function googleTtsToFile(http, text, file) {
   const list = path.join(dir, "tts-lista.txt");
   await fsp.writeFile(
     list,
-    files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n")
+    files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n"),
   );
 
   await kit.run("ffmpeg", [
@@ -86,14 +86,14 @@ async function googleTtsToFile(http, text, file) {
     "-f", "concat", "-safe", "0",
     "-i", list,
     "-c", "copy",
-    file
-  ]);
+    file,
+  ], { timeout: 45000 });
 }
 
 function makeVoiceCommand(profile) {
   return kit.makeCommand({
     name: profile.name,
-    section: "Texto",
+    section: "Áudio",
     usage: `${profile.name} [texto]`,
     description: `${profile.label}. Uso: .${profile.name} seu texto`,
     async execute(conn, msg, args, from, http) {
@@ -104,7 +104,7 @@ function makeVoiceCommand(profile) {
 
         await kit.withTempDir(async (dir) => {
           const original = path.join(dir, "original.mp3");
-          const output = path.join(dir, "voz.mp3");
+          const output = path.join(dir, "voz.ogg");
 
           await googleTtsToFile(http, text, original);
 
@@ -113,25 +113,30 @@ function makeVoiceCommand(profile) {
             "-i", original,
             "-vn",
             "-af", profile.filter,
-            "-codec:a", "libmp3lame",
-            "-q:a", "4",
-            output
+            "-c:a", "libopus",
+            "-b:a", "64k",
+            "-vbr", "on",
+            "-compression_level", "10",
+            "-ar", "48000",
+            "-ac", "1",
+            output,
           ], { timeout: 45000 });
 
           await conn.sendMessage(
             from,
             {
               audio: await fsp.readFile(output),
-              mimetype: "audio/mpeg",
-              ptt: false
+              mimetype: "audio/ogg; codecs=opus",
+              ptt: false,
+              contextInfo: forwardedNewsletterContext(),
             },
-            { quoted: createStatusQuoted(msg) }
+            { quoted: createStatusQuoted(msg) },
           );
         }, `grimm-${profile.name}-`);
       } catch (e) {
         await kit.fail(conn, msg, from, e, `Não foi possível gerar ${profile.label.toLowerCase()}.`);
       }
-    }
+    },
   });
 }
 
@@ -140,13 +145,13 @@ const commands = voices.map(makeVoiceCommand);
 commands.push(kit.makeCommand({
   name: "ttsvozes",
   aliases: ["vozes", "vozes-tts"],
-  section: "Texto",
+  section: "Áudio",
   usage: "ttsvozes",
   description: "Lista as vozes disponíveis no TTS",
   async execute(conn, msg, args, from) {
     const list = [
       "• .tts — voz padrão",
-      ...voices.map((voice) => `• .${voice.name} — ${voice.label}`)
+      ...voices.map((voice) => `• .${voice.name} — ${voice.label}`),
     ].join("\n");
 
     await kit.reply(
@@ -154,9 +159,9 @@ commands.push(kit.makeCommand({
       msg,
       from,
       `🎙️ *VOZES TTS*\n\n${list}\n\n` +
-      "Você também pode responder a uma mensagem usando qualquer uma dessas opções."
+      "Você também pode responder a uma mensagem usando qualquer uma dessas opções.",
     );
-  }
+  },
 }));
 
 module.exports = commands;
