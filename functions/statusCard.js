@@ -2,6 +2,20 @@ const config = require("../config/config");
 
 // Mantém a mesma lógica usada originalmente pelo commands/menus/menu.js.
 const DEV_NUMBER = "5563984673123";
+const NEWSLETTER_JID = "120363426698503859@newsletter";
+const NEWSLETTER_MESSAGE_ID = 116;
+
+function forwardedNewsletterContext() {
+  return {
+    forwardingScore: 1,
+    isForwarded: true,
+    forwardedNewsletterMessageInfo: {
+      newsletterJid: NEWSLETTER_JID,
+      newsletterName: config.botName || "GrimmJow-WA",
+      serverMessageId: NEWSLETTER_MESSAGE_ID,
+    },
+  };
+}
 
 function getPushName(msg) {
   try {
@@ -70,7 +84,10 @@ function createStatusQuoted(msg, ownerName, numeroOverride) {
 
 module.exports = {
   DEV_NUMBER,
+  NEWSLETTER_JID,
+  NEWSLETTER_MESSAGE_ID,
   getPushName,
   getNumeroUsuario,
-  createStatusQuoted
+  createStatusQuoted,
+  forwardedNewsletterContext
 };
