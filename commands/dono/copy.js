@@ -14,7 +14,11 @@ function normalizePhoneJid(value) {
   if (raw.endsWith("@s.whatsapp.net")) {
     const user = raw.split("@")[0].split(":")[0].replace(/\D/g, "");
     if (user.length >= 8 && user.length <= 15) return `${user}@s.whatsapp.net`;
+    return null;
   }
+
+  // IDs @lid não são números de telefone e não podem ser convertidos com segurança.
+  if (raw.includes("@")) return null;
 
   const digits = raw.replace(/\D/g, "");
   if (digits.length >= 8 && digits.length <= 15) {
