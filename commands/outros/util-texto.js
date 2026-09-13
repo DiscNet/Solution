@@ -1,4 +1,4 @@
-// Menu: Utilidades - Texto/Conversores
+// Menu: Utilidades - Texto/Áudio/QR
 const fs = require("fs");
 const fsp = fs.promises;
 const path = require("path");
@@ -6,11 +6,11 @@ const crypto = require("crypto");
 const sharp = require("sharp");
 const FormData = require("form-data");
 const kit = require("../../functions/utilityKit");
-const { createStatusQuoted } = require("../../functions/statusCard");
+const { createStatusQuoted, forwardedNewsletterContext } = require("../../functions/statusCard");
 
 function chunks(text, max = 180) {
   const out = [];
-  let rest = text.trim();
+  let rest = String(text || "").trim();
   while (rest.length > max) {
     let cut = rest.lastIndexOf(" ", max);
     if (cut < max / 2) cut = max;
@@ -19,6 +19,35 @@ function chunks(text, max = 180) {
   }
   if (rest) out.push(rest);
   return out;
+}
+
+async function googleTtsToMp3(http, text, dir) {
+  const parts = chunks(text);
+  const files = [];
+
+  for (let i = 0; i < parts.length; i++) {
+    const file = path.join(dir, `parte-${i}.mp3`);
+    const { data } = await http.get("https://translate.googleapis.com/translate_tts", {
+      params: { ie: "UTF-8", client: "tw-ob", tl: "pt-BR", q: parts[i] },
+      responseType: "arraybuffer",
+      timeout: 15000,
+      headers: { "user-agent": "Mozilla/5.0" },
+    });
+    await fsp.writeFile(file, Buffer.from(data));
+    files.push(file);
+  }
+
+  if (files.length === 1) return files[0];
+
+  const list = path.join(dir, "lista.txt");
+  const joined = path.join(dir, "voz-base.mp3");
+  await fsp.writeFile(list, files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n"));
+  await kit.run("ffmpeg", [
+    "-hide_banner", "-loglevel", "error",
+    "-f", "concat", "-safe", "0", "-i", list,
+    "-c", "copy", joined,
+  ], { timeout: 45000 });
+  return joined;
 }
 
 const commands = [
@@ -41,7 +70,7 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "qrcode", section: "Conversores", usage: "qrcode [texto/link]",
+    name: "qrcode", section: "QR Code", usage: "qrcode [texto/link]",
     async execute(conn, msg, args, from) {
       try {
         const text = kit.inputText(msg, args);
@@ -57,7 +86,7 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "lerqr", section: "Conversores", usage: "lerqr (responda ao QR)",
+    name: "lerqr", section: "QR Code", usage: "lerqr (responda ao QR)",
     async execute(conn, msg, args, from) {
       try {
         const media = await kit.downloadMedia(msg);
@@ -78,7 +107,7 @@ const commands = [
     async execute(conn, msg, args, from, http) {
       try {
         let target = "pt";
-        let textArgs = [...args];
+        const textArgs = [...args];
         if (/^[a-z]{2,5}(?:-[a-z]{2})?$/i.test(textArgs[0] || "")) target = textArgs.shift();
         const text = kit.inputText(msg, textArgs);
         if (!text) throw kit.userError("Ex.: .traduzir en bom dia — ou responda a uma mensagem.");
@@ -114,39 +143,44 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "tts", section: "Conversores", usage: "tts [texto]",
+    name: "tts", section: "Áudio", usage: "tts [texto]",
+    description: "Transforma texto em áudio com a voz padrão",
     async execute(conn, msg, args, from, http) {
       try {
         const text = kit.inputText(msg, args);
         if (!text) throw kit.userError("Informe um texto ou responda a uma mensagem.");
         if (text.length > 1200) throw kit.userError("Use no máximo 1200 caracteres por áudio.");
+
         await kit.withTempDir(async (dir) => {
-          const parts = chunks(text);
-          const files = [];
-          for (let i = 0; i < parts.length; i++) {
-            const file = path.join(dir, `parte-${i}.mp3`);
-            const { data } = await http.get("https://translate.googleapis.com/translate_tts", {
-              params: { ie: "UTF-8", client: "tw-ob", tl: "pt-BR", q: parts[i] }, responseType: "arraybuffer", timeout: 15000,
-              headers: { "user-agent": "Mozilla/5.0" },
-            });
-            await fsp.writeFile(file, Buffer.from(data));
-            files.push(file);
-          }
-          let output = files[0];
-          if (files.length > 1) {
-            const list = path.join(dir, "lista.txt");
-            await fsp.writeFile(list, files.map((f) => `file '${f.replace(/'/g, "'\\''")}'`).join("\n"));
-            output = path.join(dir, "voz.mp3");
-            await kit.run("ffmpeg", ["-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", list, "-c", "copy", output]);
-          }
-          await conn.sendMessage(from, { audio: await fsp.readFile(output), mimetype: "audio/mpeg", ptt: false }, { quoted: createStatusQuoted(msg) });
+          const source = await googleTtsToMp3(http, text, dir);
+          const output = path.join(dir, "voz.ogg");
+          await kit.run("ffmpeg", [
+            "-hide_banner", "-loglevel", "error",
+            "-i", source,
+            "-vn",
+            "-af", "aresample=48000",
+            "-c:a", "libopus",
+            "-b:a", "64k",
+            "-vbr", "on",
+            "-compression_level", "10",
+            "-ar", "48000",
+            "-ac", "1",
+            output,
+          ], { timeout: 45000 });
+
+          await conn.sendMessage(from, {
+            audio: await fsp.readFile(output),
+            mimetype: "audio/ogg; codecs=opus",
+            ptt: false,
+            contextInfo: forwardedNewsletterContext(),
+          }, { quoted: createStatusQuoted(msg) });
         }, "grimm-tts-");
       } catch (e) { await kit.fail(conn, msg, from, e, "Não foi possível gerar o áudio."); }
     },
   }),
 
   kit.makeCommand({
-    name: "transcrever", section: "Conversores", usage: "transcrever (responda ao áudio)",
+    name: "transcrever", section: "Áudio", usage: "transcrever (responda ao áudio)",
     async execute(conn, msg, args, from, http) {
       try {
         const media = await kit.downloadMedia(msg);
