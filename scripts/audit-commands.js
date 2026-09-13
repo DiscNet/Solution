@@ -2,7 +2,9 @@ const fs = require("fs");
 const path = require("path");
 
 const ROOT = path.join(__dirname, "..", "commands");
-const MIN_COMMANDS = Number(process.env.MIN_COMMANDS || 1000);
+// Quantidade mínima é opcional. O catálogo deve priorizar comandos úteis,
+// não famílias geradas apenas para inflar a contagem.
+const MIN_COMMANDS = Number(process.env.MIN_COMMANDS || 0);
 
 function walk(dir, out = []) {
   if (!fs.existsSync(dir)) return out;
@@ -84,7 +86,7 @@ const belowTarget = Number.isFinite(MIN_COMMANDS) && MIN_COMMANDS > 0 && records
 console.log(`Commands: ${records.length}`);
 console.log(`Visible commands: ${records.length - hiddenCount}`);
 console.log(`Hidden/generated commands: ${hiddenCount}`);
-console.log(`Minimum target: ${MIN_COMMANDS}`);
+console.log(`Minimum target: ${MIN_COMMANDS > 0 ? MIN_COMMANDS : "disabled"}`);
 console.log(`Canonical duplicates: ${duplicateNames.length}`);
 for (const [name, first, second] of duplicateNames) console.log(`DUPLICATE_NAME ${name}: ${first} <> ${second}`);
 console.log(`Alias collisions: ${aliasCollisions.length}`);
