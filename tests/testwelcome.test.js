@@ -119,3 +119,53 @@ test("welcomeCard mantém as barras de texto dentro de limites estáveis", () =>
   assert.equal(barWidths.length, 3);
   assert.ok(barWidths.every(width => width >= 190 && width <= 930));
 });
+
+
+test("welcomeCard mantém avatar preto e branco com acento neutro", async () => {
+  const bwAvatar = await sharp({
+    create: {
+      width: 128,
+      height: 128,
+      channels: 3,
+      background: { r: 235, g: 235, b: 235 },
+    },
+  })
+    .composite([{
+      input: await sharp({
+        create: {
+          width: 64,
+          height: 128,
+          channels: 3,
+          background: { r: 20, g: 20, b: 20 },
+        },
+      }).png().toBuffer(),
+      left: 0,
+      top: 0,
+    }])
+    .png()
+    .toBuffer();
+
+  const neon = await card._internals.deriveAvatarNeon(bwAvatar);
+  const rgb = neon.match(/[0-9a-f]{2}/gi).map(value => parseInt(value, 16));
+
+  assert.equal(rgb.length, 3);
+  assert.ok(Math.abs(rgb[0] - rgb[1]) <= 2);
+  assert.ok(Math.abs(rgb[1] - rgb[2]) <= 2);
+});
+
+test("welcomeCard não converte cinza puro em vermelho", async () => {
+  const grayAvatar = await sharp({
+    create: {
+      width: 96,
+      height: 96,
+      channels: 3,
+      background: { r: 128, g: 128, b: 128 },
+    },
+  }).png().toBuffer();
+
+  const neon = await card._internals.deriveAvatarNeon(grayAvatar);
+  const rgb = neon.match(/[0-9a-f]{2}/gi).map(value => parseInt(value, 16));
+
+  assert.equal(rgb[0], rgb[1]);
+  assert.equal(rgb[1], rgb[2]);
+});
