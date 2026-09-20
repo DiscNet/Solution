@@ -152,8 +152,10 @@ async function createGroupWelcomeBanner(conn, options = {}) {
     findProfilePictureUrl(conn, candidates),
   ]);
 
-  const backgroundBuffer = backgroundUrl ? null : await createFallbackBackground(groupName);
-  const mainImageBuffer = mainImageUrl ? null : await createFallbackAvatar(displayName);
+  const [backgroundBuffer, mainImageBuffer] = await Promise.all([
+    createFallbackBackground(groupName),
+    createFallbackAvatar(displayName),
+  ]);
 
   const image = await generateWelcomeCard({
     backgroundUrl,
