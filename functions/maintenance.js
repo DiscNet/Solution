@@ -15,16 +15,18 @@ const legacy = [
   "premium",
   "vip",
 ];
+const alwaysEnabled = new Set(["ban"]);
 function list() {
   const d = store.read(true);
   return [
     ...new Set([...legacy, ...(Array.isArray(d.comandos) ? d.comandos : [])]),
-  ];
+  ].filter(name => !alwaysEnabled.has(String(name).toLowerCase()));
 }
 function change(name, enabled) {
+  const normalized = String(name || "").toLowerCase();
   const d = store.read(true);
-  d.comandos = (d.comandos || []).filter((n) => n !== name);
-  if (enabled) d.comandos.push(name);
+  d.comandos = (d.comandos || []).filter((n) => String(n).toLowerCase() !== normalized);
+  if (enabled && !alwaysEnabled.has(normalized)) d.comandos.push(normalized);
   store.write(d);
 }
 module.exports = { list, change };
