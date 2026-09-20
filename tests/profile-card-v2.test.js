@@ -57,7 +57,8 @@ test("profileCardV2 preserva os elementos visuais centrais do Card 2.0", () => {
   assert.match(overlay, />PERFIL</);
   assert.match(overlay, />SOBRE</);
   assert.match(overlay, /João Augusto/);
-  assert.match(overlay, /@joaoaugusto/);
+  assert.match(overlay, />@<\/text>/);
+  assert.match(overlay, />joaoaugusto<\/text>/);
   assert.match(overlay, />PERFIL</);
   assert.match(overlay, />SOBRE</);
   assert.match(overlay, /IDENTIDADE/);
