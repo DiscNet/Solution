@@ -174,28 +174,6 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "idade",
-    section: "Consultas",
-    usage: "idade DD/MM/AAAA",
-    description: "Calcula idade e tempo vivido a partir da data de nascimento",
-    async execute(conn, msg, args, from) {
-      try {
-        const raw = String(args[0] || "").trim();
-        const age = ageFromDate(raw);
-        if (!age) throw kit.userError("Use uma data válida no formato DD/MM/AAAA.");
-        await kit.reply(
-          conn,
-          msg,
-          from,
-          `🎂 *IDADE*\n\n📅 Nascimento: ${raw}\n🎈 Idade: *${age.years} anos, ${age.months} meses e ${age.days} dias*\n🗓️ Dias vividos: *${age.livedDays.toLocaleString("pt-BR")}*\n⏳ Próximo aniversário: *${age.untilBirthday} dia(s)*`
-        );
-      } catch (e) {
-        await kit.fail(conn, msg, from, e, "Não foi possível calcular a idade.");
-      }
-    },
-  }),
-
-  kit.makeCommand({
     name: "wikipedia",
     aliases: ["wiki"],
     section: "Pesquisas",
