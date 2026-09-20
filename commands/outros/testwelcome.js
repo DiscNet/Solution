@@ -41,6 +41,7 @@ module.exports = {
 
       await conn.sendMessage(from, {
         image: card,
+        mimetype: "image/png",
         caption:
           "✅ *ᴄᴀʀᴅ ɢᴇʀᴀᴅᴏ!*\n\n" +
           "🎨 Layout baseado no gerador clássico do seu antigo SkyNetApi."
