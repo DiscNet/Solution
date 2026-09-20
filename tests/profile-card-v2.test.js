@@ -7,7 +7,7 @@ const sharp = require("sharp");
 const card = require("../functions/profileCardV2");
 const perfil = require("../commands/outros/perfil");
 
-test("profileCardV2 mantém o formato 1680x720 do SkyNetApi Card 2.0", async () => {
+test("profileCardV2 usa o novo formato vertical 1680x900", async () => {
   const avatar = await sharp({
     create: {
       width: 420,
@@ -28,7 +28,7 @@ test("profileCardV2 mantém o formato 1680x720 do SkyNetApi Card 2.0", async () 
   const metadata = await sharp(output).metadata();
   assert.equal(metadata.format, "png");
   assert.equal(metadata.width, 1680);
-  assert.equal(metadata.height, 720);
+  assert.equal(metadata.height, 900);
 });
 
 test("profileCardV2 gera fallback quando avatar não está disponível", async () => {
@@ -58,7 +58,10 @@ test("profileCardV2 preserva os elementos visuais centrais do Card 2.0", () => {
   assert.match(overlay, />SOBRE</);
   assert.match(overlay, /João Augusto/);
   assert.match(overlay, /@joaoaugusto/);
-  assert.match(overlay, /width="600" height="600"/);
+  assert.match(overlay, />PERFIL</);
+  assert.match(overlay, />SOBRE</);
+  assert.match(overlay, /IDENTIDADE/);
+  assert.match(overlay, /WHATSAPP/);
 });
 
 test("comando perfil usa o renderer Card 2.0 local e não a Tokito API", () => {
@@ -118,8 +121,8 @@ test("profileCardV2 mantém a foto visível no centro do avatar", async () => {
     .raw()
     .toBuffer({ resolveWithObject: true });
 
-  const x = 360;
-  const y = 360;
+  const x = 276;
+  const y = 310;
   const offset = (y * info.width + x) * info.channels;
   const r = data[offset];
   const g = data[offset + 1];
@@ -180,4 +183,84 @@ test("perfil não possui mais opção VIP e mantém o formato detalhado", () => 
   assert.match(source, /ɢᴏsᴛᴏsᴜʀᴀ/);
   assert.match(source, /ᴘᴜᴛᴀʀɪᴀ/);
   assert.match(source, /ᴘʀᴏɢʀᴀᴍᴀ/);
+});
+
+
+test("profileCardV2 usa o avatar como fundo da metade superior", async () => {
+  const avatar = await sharp({
+    create: {
+      width: 600,
+      height: 600,
+      channels: 3,
+      background: { r: 210, g: 40, b: 55 },
+    },
+  }).png().toBuffer();
+
+  const output = await card.generateProfileCardV2({
+    avatarBuffer: avatar,
+    name: "Hero Teste",
+    gamertag: "hero",
+    status: "Membro",
+    bio: "Fundo derivado do avatar.",
+    accent: "#d92f42",
+  });
+
+  const { data, info } = await sharp(output)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const pixel = (x, y) => {
+    const offset = (y * info.width + x) * info.channels;
+    return [data[offset], data[offset + 1], data[offset + 2]];
+  };
+
+  const topRight = pixel(1420, 210);
+  assert.ok(topRight[0] > topRight[1] + 35);
+  assert.ok(topRight[0] > topRight[2] + 25);
+});
+
+test("profileCardV2 mantém a metade inferior predominantemente preta", async () => {
+  const avatar = await sharp({
+    create: {
+      width: 600,
+      height: 600,
+      channels: 3,
+      background: { r: 30, g: 160, b: 220 },
+    },
+  }).png().toBuffer();
+
+  const output = await card.generateProfileCardV2({
+    avatarBuffer: avatar,
+    name: "Painel Teste",
+    gamertag: "painel",
+    status: "Admin",
+    bio: "A metade inferior deve continuar escura.",
+    accent: "#35aee0",
+  });
+
+  const { data, info } = await sharp(output)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const offset = (850 * info.width + 1500) * info.channels;
+  const rgb = [data[offset], data[offset + 1], data[offset + 2]];
+  assert.ok(rgb.every(value => value < 35), "painel inferior deixou de ser preto/escuro");
+});
+
+test("profileCardV2 inclui ícones e chips decorativos no novo banner", () => {
+  const overlay = card._internals.buildOverlaySvg({
+    name: "Ícones",
+    gamertag: "icones",
+    status: "Admin • Grupo",
+    bio: "Banner mais preenchido.",
+    accent: "#a855f7",
+  }).toString("utf8");
+
+  assert.match(overlay, /IDENTIDADE/);
+  assert.match(overlay, /WHATSAPP/);
+  assert.match(overlay, /PERFIL/);
+  assert.match(overlay, /<circle/);
+  assert.match(overlay, /<path/);
 });
