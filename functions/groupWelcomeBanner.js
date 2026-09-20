@@ -83,6 +83,7 @@ function participantCandidates(participant) {
 }
 
 async function findProfilePictureUrl(conn, candidates) {
+  if (!conn || typeof conn.profilePictureUrl !== "function") return "";
   for (const jid of candidates) {
     try {
       const url = await conn.profilePictureUrl(jid, "image");
@@ -105,30 +106,36 @@ function findMetadataParticipant(metadata, candidates) {
   }) || null;
 }
 
+function cleanPushName(value) {
+  const name = String(value || "").replace(/[\r\n\t]+/g, " ").replace(/\s{2,}/g, " ").trim();
+  return name.slice(0, 80);
+}
+
 async function resolveDisplayName(conn, participant, metadata, candidates) {
-  const direct = participant && typeof participant === "object"
-    ? participant.notify || participant.name || participant.pushName
+  // O nome visual do banner deve vir de pushName. Outros campos como
+  // notify/name não são usados como nome principal para não trocar o nome
+  // escolhido pelo próprio usuário no WhatsApp.
+  const directPushName = participant && typeof participant === "object"
+    ? cleanPushName(participant.pushName || participant.pushname)
     : "";
-  if (direct) return String(direct).trim();
+  if (directPushName) return directPushName;
 
   const item = findMetadataParticipant(metadata, candidates);
-  const fromMetadata = item?.notify || item?.name || item?.pushName;
-  if (fromMetadata) return String(fromMetadata).trim();
+  const metadataPushName = cleanPushName(item?.pushName || item?.pushname);
+  if (metadataPushName) return metadataPushName;
 
-  if (typeof conn.contactFetchWait === "function") {
+  if (conn && typeof conn.contactFetchWait === "function") {
     for (const jid of candidates) {
       try {
         const contact = await conn.contactFetchWait(jid);
-        const name =
-          contact?.notify ||
-          contact?.name ||
-          contact?.verifiedName ||
-          contact?.pushName;
-        if (name) return String(name).trim();
+        const contactPushName = cleanPushName(contact?.pushName || contact?.pushname);
+        if (contactPushName) return contactPushName;
       } catch {}
     }
   }
 
+  // Nem todo evento group-participants.update fornece pushName. Para não
+  // impedir o welcome nesses casos, usa o número somente como fallback técnico.
   return jidNumber(candidates[0]) || "Novo membro";
 }
 
@@ -140,12 +147,21 @@ async function createGroupWelcomeBanner(conn, options = {}) {
   const candidates = participantCandidates(participant);
   if (!candidates.length) throw new Error("Participante inválido.");
 
-  const metadata = options.groupMetadata || await conn.groupMetadata(groupJid);
-  const groupName = String(options.groupName || metadata?.subject || "Grupo").trim();
-  const displayName = String(
-    options.displayName ||
-    await resolveDisplayName(conn, participant, metadata, candidates)
-  ).trim();
+  let metadata = options.groupMetadata || null;
+  if (!metadata) {
+    if (!conn || typeof conn.groupMetadata !== "function") {
+      throw new Error("Não foi possível obter os dados do grupo.");
+    }
+    metadata = await conn.groupMetadata(groupJid);
+  }
+
+  const groupName = String(options.groupName || metadata?.subject || "Grupo")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 120) || "Grupo";
+  const resolvedPushName = await resolveDisplayName(conn, participant, metadata, candidates);
+  const displayName = cleanPushName(resolvedPushName) || jidNumber(candidates[0]) || "Novo membro";
 
   const [backgroundUrl, mainImageUrl] = await Promise.all([
     findProfilePictureUrl(conn, [groupJid]),
@@ -162,9 +178,9 @@ async function createGroupWelcomeBanner(conn, options = {}) {
     backgroundBuffer,
     mainImageUrl,
     mainImageBuffer,
-    text1: options.text1 || "SEJA BEM-VINDO(A)! 👋",
+    text1: options.text1 || "SEJA BEM-VINDO(A)!",
     text2: options.text2 || displayName,
-    text3: options.text3 || ("AO GRUPO " + groupName),
+    text3: options.text3 || groupName,
   }, {
     neon: options.neon,
   });
@@ -201,6 +217,10 @@ function createWelcomeQuoted(groupName) {
 }
 
 async function sendGroupWelcomeBanner(conn, options = {}) {
+  if (!conn || typeof conn.sendMessage !== "function") {
+    throw new Error("Conexão do WhatsApp inválida.");
+  }
+
   const result = await createGroupWelcomeBanner(conn, options);
   const userNumber = jidNumber(result.participantJid);
   const caption = options.caption ||
@@ -235,6 +255,7 @@ module.exports = {
   sendGroupWelcomeBanner,
   _internals: {
     jidNumber,
+    cleanPushName,
     initials,
     createFallbackBackground,
     createFallbackAvatar,
