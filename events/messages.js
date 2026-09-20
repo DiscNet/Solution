@@ -28,6 +28,14 @@ function registerMessagesEvent(conn, processIncomingMessage) {
       runtimeLogger.error({ scope: "contacts.update", error, code: "ERR_CONTACT_CACHE" });
     }
   });
+
+  conn.ev.on("messaging-history.set", ({ contacts }) => {
+    try {
+      contactNameCache.rememberContacts(contacts);
+    } catch (error) {
+      runtimeLogger.error({ scope: "messaging-history.set", error, code: "ERR_CONTACT_CACHE" });
+    }
+  });
 }
 
 module.exports = { registerMessagesEvent };
