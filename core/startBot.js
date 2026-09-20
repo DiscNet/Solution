@@ -393,6 +393,46 @@ function isGroup(jid) { return jid.endsWith("@g.us"); }
 
 let conn = null;
 
+function ownerPrivateJid() {
+  const number = String(config.ownerNumber || "").replace(/\D/g, "");
+  if (number) return number + "@s.whatsapp.net";
+  return String(config.ownerLid || "").trim();
+}
+
+async function notifyOwnerStartup() {
+  const ownerJid = ownerPrivateJid();
+  if (!ownerJid || !conn || typeof conn.sendMessage !== "function") return;
+
+  const botNumber = String(conn.user?.id || "").split(":")[0].split("@")[0] || "desconhecido";
+  const now = new Date();
+  const date = now.toLocaleDateString("pt-BR");
+  const time = now.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  const botName = config.botName || "Solution";
+
+  const message =
+    "✅ *BOT INICIADO COM SUCESSO*\n\n" +
+    "• Bot: " + botName + "\n" +
+    "• Número: " + botNumber + "\n" +
+    "• Data: " + date + "\n" +
+    "• Hora: " + time + "\n\n" +
+    "O sistema foi iniciado/reiniciado e está conectado ao WhatsApp.";
+
+  try {
+    await conn.sendMessage(ownerJid, { text: message });
+  } catch (error) {
+    runtimeLogger.error({
+      scope: "startup-owner-notification",
+      error,
+      code: "ERR_STARTUP_OWNER_NOTIFY",
+    });
+  }
+}
+
+function handleConnectionOpen() {
+  exibirLogsPosInicio();
+  void notifyOwnerStartup();
+}
+
 function exibirLogsPosInicio() {
   console.log(banner);
   console.log(`    ${cores.magenta}🧊 Número: ${cores.amarelo}${conn.user.id.split(":")[0]}${cores.reset}  ${cores.magenta}🧊 Prefixo: ${cores.amarelo}${config.prefix}${cores.reset}  ${cores.magenta}🧊 Comandos: ${cores.amarelo}${Object.keys(commands).length}${cores.reset}`);
@@ -476,7 +516,7 @@ async function startBot() {
     saveCreds,
     DisconnectReason,
     reconnect,
-    onOpen: exibirLogsPosInicio
+    onOpen: handleConnectionOpen
   });
 
   // Mantém um cache leve dos nomes públicos fornecidos pelo próprio WhatsApp.
