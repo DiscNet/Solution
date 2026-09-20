@@ -21,6 +21,7 @@ const { createReconnectController } = require("../events/reconnect");
 const { registerMessagesEvent } = require("../events/messages");
 const { registerGroupEvents } = require("../events/groups");
 const { handlePrivateInbox } = require("../events/privateInbox");
+const contactNameCache = require("../functions/contactNameCache");
 const {
   normalizeCommandName,
   loadCommandModules,
@@ -478,6 +479,16 @@ async function startBot() {
     onOpen: exibirLogsPosInicio
   });
 
+  // Mantém um cache leve dos nomes públicos fornecidos pelo próprio WhatsApp.
+  // O evento de entrada nem sempre inclui pushName, mas contacts.* e mensagens
+  // costumam trazer essa informação.
+  conn.ev.on("contacts.upsert", contacts => {
+    try { contactNameCache.rememberContacts(contacts); } catch (_) {}
+  });
+  conn.ev.on("contacts.update", contacts => {
+    try { contactNameCache.rememberContacts(contacts); } catch (_) {}
+  });
+
   // ==============================================
   // EVENTO DE MENSAGENS
   // ==============================================
@@ -485,6 +496,9 @@ async function startBot() {
   async function processIncomingMessage(msg) {
     if (!msg?.message) return;
     if (msg.key?.fromMe) return;
+
+    // msg.pushName é uma das fontes mais confiáveis do nome público no Baileys.
+    contactNameCache.rememberMessage(msg);
 
     // 🔥 RECARREGA O CONFIG A CADA MENSAGEM (se ativado)
     if (config.recarregarConfig !== false) {
