@@ -1,3 +1,4 @@
+const { getProfilePicture } = require("./profilePicture");
 // Pasta: functions/getUserInfo.js
 module.exports = async (conn, userId, groupId) => {
   try {
@@ -23,12 +24,9 @@ module.exports = async (conn, userId, groupId) => {
       info.bio = status?.status || info.bio;
     } catch {}
 
-    // Foto de perfil
-    try {
-      info.ppUrl = await conn.profilePictureUrl(userId, "image");
-    } catch {
-      info.ppUrl = null;
-    }
+    // Foto de perfil: mesmo mecanismo funcional da Tokito V10.
+    const picture = await getProfilePicture(conn, [userId]);
+    info.ppUrl = picture?.url || null;
 
     return info;
   } catch (err) {
