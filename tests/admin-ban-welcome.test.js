@@ -17,7 +17,7 @@ test("ban escolhe uma identidade utilizável do participante", () => {
       id: "123@lid",
       phoneNumber: "5511999999999@s.whatsapp.net",
     }),
-    "123@lid"
+    "5511999999999@s.whatsapp.net"
   );
   assert.equal(actionJid({ id: "123@lid" }), "123@lid");
 });
@@ -72,4 +72,16 @@ test("comando de teste do welcome está registrado para grupos", () => {
   assert.equal(testWelcomeGroup.permissions.group, true);
   assert.equal(testWelcomeGroup.permissions.admin, true);
   assert.ok(testWelcomeGroup.aliases.includes("testbemvindo"));
+});
+
+
+test("ban mantém LID como fallback quando houver mais de uma identidade", () => {
+  const { actionJids } = ban._internals;
+  assert.deepEqual(
+    actionJids({
+      id: "123@lid",
+      phoneNumber: "5511999999999@s.whatsapp.net",
+    }),
+    ["5511999999999@s.whatsapp.net", "123@lid"]
+  );
 });
