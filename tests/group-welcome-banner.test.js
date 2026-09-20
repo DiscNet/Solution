@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const sharp = require("sharp");
+const contactNameCache = require("../functions/contactNameCache");
 
 const {
   getParticipantJid,
@@ -134,4 +135,37 @@ test("cleanPushName rejeita números e JIDs como nome visual", () => {
   assert.equal(_internals.cleanPushName("+55 (11) 99999-9999"), "");
   assert.equal(_internals.cleanPushName("5511999999999@s.whatsapp.net"), "");
   assert.equal(_internals.cleanPushName("João"), "João");
+});
+
+
+test("groupWelcomeBanner cruza phoneNumber com LID para achar o pushName", async () => {
+  contactNameCache.clear();
+  contactNameCache.remember(["777777@lid"], "Nome pelo LID");
+
+  const conn = {
+    async groupMetadata() {
+      return {
+        subject: "Grupo Alias",
+        participants: [{
+          id: "777777@lid",
+          phoneNumber: "5511777777777@s.whatsapp.net",
+        }],
+      };
+    },
+    async profilePictureUrl() {
+      throw new Error("sem foto");
+    },
+  };
+
+  const result = await createGroupWelcomeBanner(conn, {
+    groupJid: "120363111111111111@g.us",
+    participant: "5511777777777@s.whatsapp.net",
+  });
+
+  assert.equal(result.displayName, "Nome pelo LID");
+  assert.equal(
+    contactNameCache.get(["5511777777777@s.whatsapp.net"]),
+    "Nome pelo LID"
+  );
+  contactNameCache.clear();
 });
