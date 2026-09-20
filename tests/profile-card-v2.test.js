@@ -265,3 +265,46 @@ test("profileCardV2 inclui ícones e chips decorativos no novo banner", () => {
   assert.match(overlay, /<circle/);
   assert.match(overlay, /<path/);
 });
+
+
+test("profileCardV2 gera thumbnail JPEG nítido para o preview do WhatsApp", async () => {
+  const avatar = await sharp({
+    create: {
+      width: 600,
+      height: 600,
+      channels: 3,
+      background: { r: 80, g: 130, b: 220 },
+    },
+  }).png().toBuffer();
+
+  const image = await card.generateProfileCardV2({
+    avatarBuffer: avatar,
+    name: "Preview Teste",
+    gamertag: "preview",
+    status: "Membro",
+    bio: "Thumbnail dedicado para o preview da conversa.",
+  });
+
+  const preview = await card.generateProfileCardPreview(image);
+  const metadata = await sharp(preview.buffer).metadata();
+
+  assert.equal(metadata.format, "jpeg");
+  assert.equal(metadata.width, card.PREVIEW_WIDTH);
+  assert.equal(metadata.height, card.PREVIEW_HEIGHT);
+  assert.equal(preview.width, card.PREVIEW_WIDTH);
+  assert.equal(preview.height, card.PREVIEW_HEIGHT);
+  assert.equal(Buffer.from(preview.base64, "base64").length, preview.buffer.length);
+  assert.ok(preview.buffer.length > 10_000);
+});
+
+test("perfil envia thumbnail customizado e dimensões reais do card", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "perfil.js"),
+    "utf8"
+  );
+
+  assert.match(source, /generateProfileCardPreview/);
+  assert.match(source, /jpegThumbnail:\s*preview\.base64/);
+  assert.match(source, /width:\s*1680/);
+  assert.match(source, /height:\s*900/);
+});
