@@ -972,9 +972,11 @@ async function startBot() {
         const prefix = config.prefix || ".";
 
         function getParticipantJid(p) {
-          if (typeof p === 'string') return p;
-          if (p && typeof p === 'object') return p.id || p.jid || p;
-          return p;
+          if (typeof p === "string") return p;
+          if (p && typeof p === "object") {
+            return p.phoneNumber || p.id || p.jid || p.lid || "";
+          }
+          return "";
         }
 
         if (action === "add") {
