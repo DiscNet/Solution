@@ -1,97 +1,53 @@
 // Menu: Utilidades - Perfil | Comando: afk
-// commands/geral/afk.js
-const config = require("../../config/config");
 const afk = require("../../functions/afk");
+const { createStatusQuoted } = require("../../functions/statusCard");
 
 module.exports = {
   name: "afk",
-  aliases: ["ausente", "away"],
-  description: "ᴅᴇғɪɴᴀ sᴇᴜ ᴇsᴛᴀᴅᴏ ᴄᴏᴍᴏ ᴀᴜsᴇɴᴛᴇ",
-  async execute(conn, msg, args, from, axiosInstance, cmdUsado) {
+  aliases: ["off", "ausente", "away", "on", "ativo", "voltei"],
+  description: "ativa ou encerra seu estado AFK no grupo",
+  menuCategory: "Utilidades",
+  menuSection: "Perfil",
+  usage: "afk [motivo] | voltei",
+  permissions: { group: true },
+
+  async execute(conn, msg, args, from, axiosInstance, requestedName) {
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const prefix = config.prefix || ".";
+      const command = String(requestedName || "afk").toLowerCase();
+      const ids = afk.senderIds(msg, from);
+      const sender = ids[0];
 
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
+      if (["afk", "off", "ausente", "away"].includes(command)) {
+        const motivo = args.join(" ").trim() || "Sem motivo especificado";
+        afk.setAfk(from, ids, motivo);
+        return conn.sendMessage(from, {
+          text:
+            `💤 *@${sender.split("@")[0].split(":")[0]} ficou AFK*\n\n` +
+            `📌 Motivo: *${motivo}*\n\n` +
+            `> Se alguém mencionar ou responder você, o bot avisará que está ausente. Ao mandar uma mensagem normal, o AFK será removido automaticamente.`,
+          mentions: [sender],
+        }, { quoted: createStatusQuoted(msg) });
+      }
 
-      const sender = msg.key.participant || msg.key.remoteJid || from;
-      const numeroUsuario = sender.replace(/[^0-9]/g, "");
+      const item = afk.removeAfk(from, ids);
+      if (!item) {
+        return conn.sendMessage(from, {
+          text: "ℹ️ Você não está AFK neste grupo."
+        }, { quoted: createStatusQuoted(msg) });
+      }
 
-      // 🔥 PEGA O MOTIVO
-      const motivo = args.length > 0 ? args.join(" ") : "Não informado";
-
-      // 🔥 DEFINE O AFK
-      afk.setAfk(sender, motivo);
-
-      await conn.sendMessage(from, {
-        text: `🛌 *${pushName}* ᴇsᴛá ᴀᴜsᴇɴᴛᴇ!\n\n📌 *ᴍᴏᴛɪᴠᴏ:* ${motivo}\n\n📌 ǫᴜᴀɴᴅᴏ ᴀʟɢᴜéᴍ ᴛᴇ ᴍᴀʀᴄᴀʀ, ᴏ ʙᴏᴛ ᴀᴠɪsᴀʀá ǫᴜᴇ ᴠᴏᴄê ᴇsᴛá ᴀᴜsᴇɴᴛᴇ.\n📌 ǫᴜᴀɴᴅᴏ ᴠᴏᴄê ᴇɴᴠɪᴀʀ ᴜᴍᴀ ᴍᴇɴsᴀɢᴇᴍ, ᴏ ᴀғᴋ sᴇʀá ʀᴇᴍᴏᴠɪᴅᴏ.`,
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
-            serverMessageId: 116
-          }
-        }
-      }, {
-        quoted: {
-          key: {
-            remoteJid: "0@s.whatsapp.net",
-            fromMe: false,
-            participant: `${numeroUsuario}@s.whatsapp.net`
-          },
-          message: {
-            contactMessage: {
-              displayName: pushName,
-              vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=" + numeroUsuario + ":" + numeroUsuario + "\nEND:VCARD"
-            }
-          }
-        }
-      });
-
-      await conn.sendMessage(from, { react: { text: "🛌", key: msg.key } });
-
+      const duration = afk.tempo(Date.now() - Number(item.data || Date.now()));
+      return conn.sendMessage(from, {
+        text:
+          `👋 *@${sender.split("@")[0].split(":")[0]} voltou!*\n\n` +
+          `⏳ Tempo ausente: *${duration}*`,
+        mentions: [sender],
+      }, { quoted: createStatusQuoted(msg) });
     } catch (error) {
-      console.error("❌ Erro afk:", error);
-      const sender = msg.key.participant || msg.key.remoteJid || from;
-      const numeroUsuario = sender.replace(/[^0-9]/g, "");
-
-      await conn.sendMessage(from, {
-        text: `❌ *ᴇʀʀᴏ!*\n\n📌 ${error.message}`,
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
-            serverMessageId: 116
-          }
-        }
-      }, {
-        quoted: {
-          key: {
-            remoteJid: "0@s.whatsapp.net",
-            fromMe: false,
-            participant: `${numeroUsuario}@s.whatsapp.net`
-          },
-          message: {
-            contactMessage: {
-              displayName: pushName,
-              vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + pushName + "\nORG:" + owner + ";\nTEL;type=CELL;type=VOICE;waid=" + numeroUsuario + ":" + numeroUsuario + "\nEND:VCARD"
-            }
-          }
-        }
-      });
+      console.error("[AFK]", error);
+      return conn.sendMessage(from, {
+        text: "❌ Não foi possível atualizar seu estado AFK."
+      }, { quoted: createStatusQuoted(msg) });
     }
-  }
+  },
 };
-
-Object.assign(module.exports, {
-  "menuCategory": "Utilidades",
-  "menuSection": "Perfil",
-  "usage": "afk [motivo]",
-  "description": "Uso: .afk [motivo]"
-});
