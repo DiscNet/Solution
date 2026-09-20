@@ -1,6 +1,7 @@
 // Menu: Brincadeiras | pacote de jogos, sorteios e interações
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
+const { getMessageProfilePicture } = require("../../functions/profilePicture");
 
 const forcaGames = new Map();
 const FORCA_TTL = 15 * 60 * 1000;
@@ -396,25 +397,15 @@ commands.push(baseCommand(
 commands.push(baseCommand(
   "roubaravatar", "Interações", "roubaravatar @usuario", "manda a foto de perfil do usuário marcado",
   async (conn, msg, args, from) => {
-    let target = targetJid(msg);
+    const target = targetJid(msg);
     if (!target) return send(conn, from, msg, { text: `❌ Uso: ${prefix()}roubaravatar @usuario` });
-    let url = null;
-    try { url = await conn.profilePictureUrl(target, "image"); } catch {}
-    if (!url) {
-      try {
-        const wa = await conn.onWhatsApp(target);
-        const resolved = wa?.[0]?.jid;
-        if (resolved) {
-          target = resolved;
-          url = await conn.profilePictureUrl(target, "image");
-        }
-      } catch {}
-    }
-    if (!url) return send(conn, from, msg, { text: "❌ Não consegui obter a foto de perfil desse usuário." });
+    const picture = await getMessageProfilePicture(conn, msg, from, [target]);
+    if (!picture) return send(conn, from, msg, { text: "❌ Não consegui obter a foto de perfil desse usuário." });
+    const resolvedTarget = picture.jid || target;
     return send(conn, from, msg, {
-      image: { url },
-      caption: `🖼️ Avatar de ${jidTag(target)} capturado com sucesso 😎`,
-      mentions: [target]
+      image: { url: picture.url },
+      caption: `🖼️ Avatar de ${jidTag(resolvedTarget)} capturado com sucesso 😎`,
+      mentions: [resolvedTarget]
     });
   },
   { aliases: ["roubarpfp", "stealavatar"] }
