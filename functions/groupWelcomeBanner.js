@@ -126,7 +126,10 @@ function cleanPushName(value) {
 
 async function resolveDisplayName(conn, participant, metadata, candidates, groupJid = "") {
   const cachedName = cleanPushName(contactNameCache.get(candidates));
-  if (cachedName) return cachedName;
+  if (cachedName) {
+    contactNameCache.remember(candidates, cachedName);
+    return cachedName;
+  }
 
   // Dependendo do evento/versão do Baileys, o push name pode aparecer como
   // pushName, pushname ou notify. "notify" é uma das formas mais comuns
@@ -137,7 +140,10 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
       participant.pushname ||
       participant.notify
     );
-    if (directPushName) return directPushName;
+    if (directPushName) {
+      contactNameCache.remember(candidates, directPushName);
+      return directPushName;
+    }
   }
 
   const item = findMetadataParticipant(metadata, candidates);
@@ -146,7 +152,10 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
     item?.pushname ||
     item?.notify
   );
-  if (metadataPushName) return metadataPushName;
+  if (metadataPushName) {
+    contactNameCache.remember(candidates, metadataPushName);
+    return metadataPushName;
+  }
 
   if (conn && typeof conn.contactFetchWait === "function") {
     for (const jid of candidates) {
@@ -159,7 +168,10 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
           contact?.notify ||
           contactNameCache.get(candidates)
         );
-        if (contactPushName) return contactPushName;
+        if (contactPushName) {
+          contactNameCache.remember(candidates, contactPushName);
+          return contactPushName;
+        }
       } catch {}
     }
   }
@@ -170,15 +182,21 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
     for (const jid of candidates) {
       try {
         const socketName = cleanPushName(await conn.getName(jid));
-        if (socketName) return socketName;
+        if (socketName) {
+          contactNameCache.remember(candidates, socketName);
+          return socketName;
+        }
       } catch {}
     }
   }
 
   // Eventos de contato podem chegar alguns instantes depois do evento
   // group-participants.update. Dá uma pequena janela para o cache receber o pushName.
-  const delayedName = cleanPushName(await contactNameCache.waitFor(candidates));
-  if (delayedName) return delayedName;
+  const delayedName = cleanPushName(await contactNameCache.waitFor(candidates, 3000, 200));
+  if (delayedName) {
+    contactNameCache.remember(candidates, delayedName);
+    return delayedName;
+  }
 
   // Depois da espera, tenta novamente porque contacts.update/metadata podem
   // chegar logo após group-participants.update.
@@ -193,7 +211,10 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
           contact?.notify ||
           contactNameCache.get(candidates)
         );
-        if (retriedContactName) return retriedContactName;
+        if (retriedContactName) {
+          contactNameCache.remember(candidates, retriedContactName);
+          return retriedContactName;
+        }
       } catch {}
     }
   }
@@ -231,7 +252,7 @@ async function createGroupWelcomeBanner(conn, options = {}) {
   const participant = options.participant;
   if (!groupJid) throw new Error("groupJid não informado.");
 
-  const candidates = participantCandidates(participant);
+  let candidates = participantCandidates(participant);
   if (!candidates.length) throw new Error("Participante inválido.");
 
   let metadata = options.groupMetadata || null;
@@ -240,6 +261,16 @@ async function createGroupWelcomeBanner(conn, options = {}) {
       throw new Error("Não foi possível obter os dados do grupo.");
     }
     metadata = await conn.groupMetadata(groupJid);
+  }
+
+  // O evento pode chegar com apenas LID ou apenas phoneNumber. Une as
+  // identidades encontradas no metadata para localizar o mesmo nome no cache.
+  const metadataParticipant = findMetadataParticipant(metadata, candidates);
+  if (metadataParticipant) {
+    candidates = [...new Set([
+      ...candidates,
+      ...participantCandidates(metadataParticipant),
+    ])];
   }
 
   const groupName = String(options.groupName || metadata?.subject || "Grupo")
