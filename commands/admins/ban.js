@@ -69,7 +69,6 @@ module.exports = h.factory(
     const candidates = actionJids(p);
     h.need(candidates.length, "Não foi possível identificar o membro para remover.");
 
-    let lastError = null;
     let confirmed = false;
 
     for (const jid of candidates) {
@@ -79,10 +78,7 @@ module.exports = h.factory(
           confirmed = true;
           break;
         }
-        lastError = new Error("O WhatsApp não confirmou a remoção para " + jid);
-      } catch (error) {
-        lastError = error;
-      }
+      } catch {}
     }
 
     h.need(
