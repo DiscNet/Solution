@@ -124,7 +124,7 @@ function cleanPushName(value) {
   return name;
 }
 
-async function resolveDisplayName(conn, participant, metadata, candidates) {
+async function resolveDisplayName(conn, participant, metadata, candidates, groupJid = "") {
   const cachedName = cleanPushName(contactNameCache.get(candidates));
   if (cachedName) return cachedName;
 
@@ -180,6 +180,48 @@ async function resolveDisplayName(conn, participant, metadata, candidates) {
   const delayedName = cleanPushName(await contactNameCache.waitFor(candidates));
   if (delayedName) return delayedName;
 
+  // Depois da espera, tenta novamente porque contacts.update/metadata podem
+  // chegar logo após group-participants.update.
+  if (conn && typeof conn.contactFetchWait === "function") {
+    for (const jid of candidates) {
+      try {
+        const contact = await conn.contactFetchWait(jid);
+        contactNameCache.rememberContact(contact);
+        const retriedContactName = cleanPushName(
+          contact?.pushName ||
+          contact?.pushname ||
+          contact?.notify ||
+          contactNameCache.get(candidates)
+        );
+        if (retriedContactName) return retriedContactName;
+      } catch {}
+    }
+  }
+
+  if (groupJid && conn && typeof conn.groupMetadata === "function") {
+    try {
+      const refreshedMetadata = await conn.groupMetadata(groupJid);
+      const refreshedItem = findMetadataParticipant(refreshedMetadata, candidates);
+      const refreshedName = cleanPushName(
+        refreshedItem?.pushName ||
+        refreshedItem?.pushname ||
+        refreshedItem?.notify
+      );
+      if (refreshedName) {
+        contactNameCache.remember(
+          [
+            refreshedItem?.id,
+            refreshedItem?.jid,
+            refreshedItem?.lid,
+            refreshedItem?.phoneNumber,
+          ],
+          refreshedName
+        );
+        return refreshedName;
+      }
+    } catch {}
+  }
+
   // Não mostra telefone no banner caso o WhatsApp realmente não entregue um nome.
   return "Novo membro";
 }
@@ -206,7 +248,13 @@ async function createGroupWelcomeBanner(conn, options = {}) {
     .trim()
     .slice(0, 120) || "Grupo";
   const explicitName = cleanPushName(options.displayName);
-  const resolvedPushName = explicitName || await resolveDisplayName(conn, participant, metadata, candidates);
+  const resolvedPushName = explicitName || await resolveDisplayName(
+    conn,
+    participant,
+    metadata,
+    candidates,
+    groupJid
+  );
   const displayName = cleanPushName(resolvedPushName) || "Novo membro";
 
   const [backgroundUrl, mainImageUrl] = await Promise.all([
