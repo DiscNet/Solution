@@ -4,6 +4,8 @@ const axios = require("axios");
 const sharp = require("sharp");
 
 const CARD_SIZE = 1080;
+const CARD_INSET = 24;
+const CARD_RADIUS = 42;
 const NEON_COLORS = ["#ff1744", "#00a8ff", "#39ff14", "#a855f7"];
 const MAX_REMOTE_BYTES = 15 * 1024 * 1024;
 
@@ -140,12 +142,28 @@ function escapeXml(value) {
     .replace(/'/g, "&apos;");
 }
 
+function splitGraphemes(text) {
+  const value = String(text || "");
+  if (typeof Intl !== "undefined" && typeof Intl.Segmenter === "function") {
+    return Array.from(
+      new Intl.Segmenter("pt-BR", { granularity: "grapheme" }).segment(value),
+      (item) => item.segment
+    );
+  }
+  return Array.from(value);
+}
+
+function isEmojiGrapheme(value) {
+  return /\p{Extended_Pictographic}/u.test(value) || /[\u2600-\u27BF]/u.test(value);
+}
+
 function approxWidth(text, fontSize) {
   let total = 0;
-  for (const ch of String(text || "")) {
-    if (/\s/.test(ch)) total += fontSize * 0.32;
-    else if (/[MW@#%&]/.test(ch)) total += fontSize * 0.8;
-    else if (/[ilI1.,'|]/.test(ch)) total += fontSize * 0.3;
+  for (const grapheme of splitGraphemes(text)) {
+    if (/^\s+$/u.test(grapheme)) total += fontSize * 0.32;
+    else if (isEmojiGrapheme(grapheme)) total += fontSize * 1.04;
+    else if (/^[MW@#%&]$/u.test(grapheme)) total += fontSize * 0.8;
+    else if (/^[ilI1.,'|]$/u.test(grapheme)) total += fontSize * 0.3;
     else total += fontSize * 0.58;
   }
   return total;
@@ -213,7 +231,7 @@ function textBlockSvg(options) {
   const tspans = layout.lines.map((line, index) => {
     const lineY = startY + index * lineHeight;
     return '<text x="540" y="' + lineY + '" text-anchor="middle" dominant-baseline="middle" ' +
-      'font-family="DejaVu Sans,Arial,sans-serif" font-size="' + layout.size + '" font-weight="700" ' +
+      'font-family="Noto Color Emoji,Segoe UI Emoji,Apple Color Emoji,DejaVu Sans,Arial,sans-serif" font-size="' + layout.size + '" font-weight="700" ' +
       'fill="#ffffff" stroke="#03050a" stroke-width="' + (options.strong ? 11 : 8) + '" ' +
       'paint-order="stroke" stroke-linejoin="round">' + escapeXml(line) + '</text>';
   }).join("");
@@ -236,19 +254,29 @@ function buildOverlaySvg(params) {
     text: params.text3, centerY: 925, maxWidth: 870, startSize: 42, maxLines: 2, neon: params.neon
   });
 
+  const innerSize = CARD_SIZE - CARD_INSET * 2;
   const svg =
     '<svg width="1080" height="1080" viewBox="0 0 1080 1080" xmlns="http://www.w3.org/2000/svg">' +
     '<defs>' +
-    '<filter id="frameGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="10" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
-    '<filter id="avatarGlow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="13" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+    '<clipPath id="cardClip"><rect x="' + CARD_INSET + '" y="' + CARD_INSET + '" width="' + innerSize +
+      '" height="' + innerSize + '" rx="' + CARD_RADIUS + '"/></clipPath>' +
+    '<filter id="frameGlow" x="-35%" y="-35%" width="170%" height="170%"><feGaussianBlur stdDeviation="18"/></filter>' +
+    '<filter id="avatarGlow" x="-45%" y="-45%" width="190%" height="190%"><feGaussianBlur stdDeviation="16"/></filter>' +
     '<filter id="textGlow" x="-20%" y="-30%" width="140%" height="160%"><feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
-    '<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(3,5,12,0.48)"/><stop offset="45%" stop-color="rgba(3,5,12,0.22)"/><stop offset="100%" stop-color="rgba(3,5,12,0.62)"/></linearGradient>' +
+    '<linearGradient id="shade" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#03050c" stop-opacity="0.48"/><stop offset="45%" stop-color="#03050c" stop-opacity="0.22"/><stop offset="100%" stop-color="#03050c" stop-opacity="0.62"/></linearGradient>' +
     '</defs>' +
-    '<rect width="1080" height="1080" fill="url(#shade)"/>' +
-    '<rect x="24" y="24" width="1032" height="1032" rx="30" fill="none" stroke="' + params.neon + '" stroke-width="6" filter="url(#frameGlow)"/>' +
-    '<rect x="24" y="24" width="1032" height="1032" rx="30" fill="none" stroke="' + params.neon + '" stroke-width="2"/>' +
-    '<circle cx="540" cy="395" r="140" fill="none" stroke="' + params.neon + '" stroke-width="11" filter="url(#avatarGlow)"/>' +
-    '<circle cx="540" cy="395" r="128" fill="none" stroke="rgba(255,255,255,0.88)" stroke-width="3"/>' +
+    '<rect x="' + CARD_INSET + '" y="' + CARD_INSET + '" width="' + innerSize + '" height="' + innerSize +
+      '" rx="' + CARD_RADIUS + '" fill="url(#shade)" clip-path="url(#cardClip)"/>' +
+    '<rect x="30" y="30" width="1020" height="1020" rx="' + (CARD_RADIUS - 4) +
+      '" fill="none" stroke="' + params.neon + '" stroke-opacity="0.78" stroke-width="15" filter="url(#frameGlow)"/>' +
+    '<rect x="' + CARD_INSET + '" y="' + CARD_INSET + '" width="' + innerSize + '" height="' + innerSize +
+      '" rx="' + CARD_RADIUS + '" fill="none" stroke="' + params.neon + '" stroke-width="6"/>' +
+    '<rect x="28" y="28" width="1024" height="1024" rx="' + (CARD_RADIUS - 4) +
+      '" fill="none" stroke="#ffffff" stroke-opacity="0.62" stroke-width="1.5"/>' +
+    '<circle cx="540" cy="395" r="146" fill="none" stroke="' + params.neon +
+      '" stroke-opacity="0.78" stroke-width="18" filter="url(#avatarGlow)"/>' +
+    '<circle cx="540" cy="395" r="140" fill="none" stroke="' + params.neon + '" stroke-width="11"/>' +
+    '<circle cx="540" cy="395" r="128" fill="none" stroke="#ffffff" stroke-opacity="0.88" stroke-width="3"/>' +
     text1 + text2 + text3 +
     '</svg>';
 
@@ -272,6 +300,29 @@ async function prepareCircularImage(buffer) {
     .toBuffer();
 }
 
+function buildCardMaskSvg() {
+  const innerSize = CARD_SIZE - CARD_INSET * 2;
+  return Buffer.from(
+    '<svg width="' + CARD_SIZE + '" height="' + CARD_SIZE + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect x="' + CARD_INSET + '" y="' + CARD_INSET + '" width="' + innerSize + '" height="' + innerSize +
+      '" rx="' + CARD_RADIUS + '" fill="#ffffff"/>' +
+    '</svg>'
+  );
+}
+
+async function prepareRoundedBackground(buffer) {
+  const resized = await sharp(buffer, { limitInputPixels: 40_000_000 })
+    .resize(CARD_SIZE, CARD_SIZE, { fit: "cover", position: "attention" })
+    .ensureAlpha()
+    .png()
+    .toBuffer();
+
+  return sharp(resized)
+    .composite([{ input: buildCardMaskSvg(), blend: "dest-in" }])
+    .png({ compressionLevel: 8 })
+    .toBuffer();
+}
+
 async function generateWelcomeCard(input, options = {}) {
   const params = sanitizeInput(input);
   if (!params.backgroundUrl) throw new Error("Informe a imagem de fundo.");
@@ -286,10 +337,7 @@ async function generateWelcomeCard(input, options = {}) {
     ? options.neon
     : NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
 
-  const background = await sharp(images[0], { limitInputPixels: 40_000_000 })
-    .resize(CARD_SIZE, CARD_SIZE, { fit: "cover", position: "attention" })
-    .png()
-    .toBuffer();
+  const background = await prepareRoundedBackground(images[0]);
 
   const mainImage = await prepareCircularImage(images[1]);
   const overlay = buildOverlaySvg({
@@ -310,6 +358,8 @@ async function generateWelcomeCard(input, options = {}) {
 
 module.exports = {
   CARD_SIZE,
+  CARD_INSET,
+  CARD_RADIUS,
   NEON_COLORS,
   parseCommandInput,
   sanitizeInput,
@@ -317,10 +367,14 @@ module.exports = {
   _internals: {
     cleanText,
     escapeXml,
+    splitGraphemes,
+    isEmojiGrapheme,
     approxWidth,
     wrapWords,
     fitBlock,
     isPrivateIp,
     buildOverlaySvg,
+    buildCardMaskSvg,
+    prepareRoundedBackground,
   },
 };
