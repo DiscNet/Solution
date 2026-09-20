@@ -133,6 +133,40 @@ async function fetchRemoteImage(urlValue) {
   throw new Error("A URL excedeu o limite de redirecionamentos.");
 }
 
+async function normalizeImageBuffer(buffer) {
+  if (!Buffer.isBuffer(buffer) || !buffer.length) {
+    throw new Error("Buffer de imagem inválido.");
+  }
+  if (buffer.length > MAX_REMOTE_BYTES) {
+    throw new Error("Imagem local muito grande.");
+  }
+
+  const metadata = await sharp(buffer, {
+    failOn: "error",
+    limitInputPixels: 40_000_000,
+    sequentialRead: true,
+  }).metadata();
+
+  if (!metadata.width || !metadata.height || metadata.width * metadata.height > 40_000_000) {
+    throw new Error("As dimensões da imagem são inválidas ou grandes demais.");
+  }
+
+  return sharp(buffer, { failOn: "error", limitInputPixels: 40_000_000 })
+    .rotate()
+    .png({ compressionLevel: 8 })
+    .toBuffer();
+}
+
+async function resolveImageSource(urlValue, bufferValue, fieldName) {
+  if (Buffer.isBuffer(bufferValue) && bufferValue.length) {
+    return normalizeImageBuffer(bufferValue);
+  }
+  if (String(urlValue || "").trim()) {
+    return fetchRemoteImage(urlValue);
+  }
+  throw new Error(`Informe ${fieldName}.`);
+}
+
 function escapeXml(value) {
   return String(value || "")
     .replace(/&/g, "&amp;")
@@ -330,12 +364,12 @@ async function prepareRoundedBackground(buffer) {
 
 async function generateWelcomeCard(input, options = {}) {
   const params = sanitizeInput(input);
-  if (!params.backgroundUrl) throw new Error("Informe a imagem de fundo.");
-  if (!params.mainImageUrl) throw new Error("Informe a imagem principal.");
+  const backgroundBuffer = Buffer.isBuffer(input?.backgroundBuffer) ? input.backgroundBuffer : null;
+  const mainImageBuffer = Buffer.isBuffer(input?.mainImageBuffer) ? input.mainImageBuffer : null;
 
   const images = await Promise.all([
-    fetchRemoteImage(params.backgroundUrl),
-    fetchRemoteImage(params.mainImageUrl),
+    resolveImageSource(params.backgroundUrl, backgroundBuffer, "a imagem de fundo"),
+    resolveImageSource(params.mainImageUrl, mainImageBuffer, "a imagem principal"),
   ]);
 
   const neon = options.neon && /^#[0-9a-f]{6}$/i.test(options.neon)
@@ -378,6 +412,8 @@ module.exports = {
     wrapWords,
     fitBlock,
     isPrivateIp,
+    normalizeImageBuffer,
+    resolveImageSource,
     buildOverlaySvg,
     buildCardMaskSvg,
     prepareRoundedBackground,
