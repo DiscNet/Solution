@@ -35,18 +35,19 @@ function senderCandidates(msg, from = "") {
 }
 
 function targetCandidates(msg, from = "", explicit = []) {
+  const explicitTargets = unique(explicit.map(normalizeJid).filter(Boolean));
+  if (explicitTargets.length) return explicitTargets;
+
   const ctx = messageContext(msg);
   const mentioned = unique(ctx?.mentionedJid || []).map(normalizeJid).filter(Boolean);
+  if (mentioned.length) return mentioned;
+
   const quoted = ctx?.quotedMessage
     ? unique([ctx.participantAlt, ctx.participant]).map(normalizeJid).filter(Boolean)
     : [];
+  if (quoted.length) return quoted;
 
-  return unique([
-    ...explicit.map(normalizeJid).filter(Boolean),
-    ...mentioned,
-    ...quoted,
-    ...senderCandidates(msg, from),
-  ]);
+  return senderCandidates(msg, from);
 }
 
 async function enrichWithGroup(conn, from, candidates = []) {
