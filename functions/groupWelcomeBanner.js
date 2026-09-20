@@ -205,7 +205,8 @@ async function createGroupWelcomeBanner(conn, options = {}) {
     .replace(/\s{2,}/g, " ")
     .trim()
     .slice(0, 120) || "Grupo";
-  const resolvedPushName = await resolveDisplayName(conn, participant, metadata, candidates);
+  const explicitName = cleanPushName(options.displayName);
+  const resolvedPushName = explicitName || await resolveDisplayName(conn, participant, metadata, candidates);
   const displayName = cleanPushName(resolvedPushName) || "Novo membro";
 
   const [backgroundUrl, mainImageUrl] = await Promise.all([
