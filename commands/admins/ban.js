@@ -85,12 +85,10 @@ module.exports = h.factory(
       }
     }
 
-    if (!confirmed) {
-      const error = lastError || new Error("Falha desconhecida ao remover participante.");
-      error.message =
-        "Não foi possível remover o membro. Confira se o bot ainda é administrador e se o usuário continua no grupo.";
-      throw error;
-    }
+    h.need(
+      confirmed,
+      "Não foi possível remover o membro. Confira se o bot ainda é administrador e se o usuário continua no grupo."
+    );
 
     return "✅ Membro removido do grupo.";
   }
