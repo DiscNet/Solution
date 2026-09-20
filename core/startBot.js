@@ -220,6 +220,7 @@ const { isAntispamAtivo, verificarSpam } = require("../functions/antispam");
 
 const bemvindoFunctions = require("../functions/bemvindo");
 const isBemvindoAtivo = bemvindoFunctions.isBemvindoAtivo;
+const { sendGroupWelcomeBanner } = require("../functions/groupWelcomeBanner");
 
 // ==============================================
 // CONFIGURAÇÃO DE MANUTENÇÃO
@@ -946,11 +947,6 @@ async function startBot() {
   registerGroupEvents(conn, async (update) => {
     try {
       const config = require("../config/config");
-      const axios = require("axios");
-      const { downloadMediaMessage } = require("@whiskeysockets/baileys");
-
-      const tokitoApi = config.tokitoApi;
-      const readmore = String.fromCharCode(8206).repeat(4001);
       const { id, participants, action } = update;
       const bemvindoAtivo = isBemvindoAtivo(id);
 
@@ -970,130 +966,27 @@ async function startBot() {
         if (action === "add") {
           for (const participant of participants) {
             try {
-              const userJid = getParticipantJid(participant);
-              const userNumber = userJid ? userJid.split('@')[0] : 'usuário';
-
-              async function getAvatarUrl(jid) {
-                let url = null;
-                try {
-                  url = await conn.profilePictureUrl(jid, "image");
-                  return url;
-                } catch {}
-                if (!url) {
-                  try {
-                    const wa = await conn.onWhatsApp(jid);
-                    const realJid = wa?.[0]?.jid;
-                    if (realJid) {
-                      url = await conn.profilePictureUrl(realJid, "image");
-                      return url;
-                    }
-                  } catch {}
-                }
-                if (!url) {
-                  try {
-                    const res = await conn.query({
-                      tag: "iq",
-                      attrs: {
-                        to: jid,
-                        type: "get",
-                        xmlns: "w:profile:picture"
-                      },
-                      content: [
-                        {
-                          tag: "picture",
-                          attrs: { type: "image" }
-                        }
-                      ]
-                    });
-                    const pic = res?.content?.find(x => x.tag === "picture");
-                    url = pic?.attrs?.url || null;
-                    return url;
-                  } catch (e) {}
-                }
-                return null;
-              }
-
-              let avatarUrl = null;
-              try {
-                avatarUrl = await getAvatarUrl(userJid);
-              } catch (e) {}
-              if (!avatarUrl) {
-                avatarUrl = "https://i.ibb.co/2MWKpM3/avatar-default.png";
-              }
-
-              const canvasUrl = `https://tokito-apis.com.br/canvas/welcome?fundo=https%3A%2F%2Fraw.githubusercontent.com%2FdylanModz%2Fuploadsgg%2Fmain%2Fmidias%2Fimagens%2F674b8565116.jpg&avatar=${encodeURIComponent(avatarUrl)}&titulo=Seja+Bem+Vindo%21&sub=${encodeURIComponent(groupName)}&apikey=${tokitoApi}`;
-
-              let imageBuffer = null;
-              try {
-                const response = await axios.get(canvasUrl, {
-                  responseType: "arraybuffer",
-                  timeout: 30000
-                });
-                imageBuffer = Buffer.from(response.data);
-              } catch (e) {}
-
-              if (imageBuffer && imageBuffer.length > 100) {
-                const mensagemBoasVindas = `*⎾🧊⏌ sᴇᴊᴀ ʙᴇᴍ ᴠɪɴᴅᴏ @${userNumber}!*\n\n • ᴘᴏʀ ғᴀᴠᴏʀ ʟᴇɪᴀ ᴀ ᴅᴇsᴄʀɪᴄ̧ᴀ̃ᴏ\nᴇ sɪɢᴀ ᴀs ʀᴇɢʀᴀs\n\n> 『🧊』ᴀᴘʀᴏᴠᴇɪᴛᴇ!`;
-                await conn.sendMessage(id, {
-                  image: imageBuffer,
-                  caption: mensagemBoasVindas,
-                  mentions: [userJid],
-                  contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                      newsletterJid: "120363426698503859@newsletter",
-                      newsletterName: config.botName || "LukaModzz",
-                      serverMessageId: 116
-                    }
-                  }
-                }, {
-                  quoted: {
-                    key: {
-                      remoteJid: "status@broadcast",
-                      fromMe: false,
-                      participant: "13135550002@s.whatsapp.net"
-                    },
-                    message: {
-                      contactMessage: {
-                        displayName: groupName,
-                        vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + groupName + "\nORG:LukaModzz;\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD"
-                      }
-                    }
-                  }
-                });
-              } else {
-                const mensagemBoasVindas = `*⎾🧊⏌ sᴇᴊᴀ ʙᴇᴍ ᴠɪɴᴅᴏ @${userNumber}!*\n\n • ᴘᴏʀ ғᴀᴠᴏʀ ʟᴇɪᴀ ᴀ ᴅᴇsᴄʀɪᴄ̧ᴀ̃ᴏ\nᴇ sɪɢᴀ ᴀs ʀᴇɢʀᴀs\n\n> 『🧊』ᴀᴘʀᴏᴠᴇɪᴛᴇ!`;
-                await conn.sendMessage(id, {
-                  text: mensagemBoasVindas,
-                  mentions: [userJid],
-                  contextInfo: {
-                    forwardingScore: 1,
-                    isForwarded: true,
-                    forwardedNewsletterMessageInfo: {
-                      newsletterJid: "120363426698503859@newsletter",
-                      newsletterName: config.botName || "LukaModzz",
-                      serverMessageId: 116
-                    }
-                  }
-                }, {
-                  quoted: {
-                    key: {
-                      remoteJid: "status@broadcast",
-                      fromMe: false,
-                      participant: "13135550002@s.whatsapp.net"
-                    },
-                    message: {
-                      contactMessage: {
-                        displayName: groupName,
-                        vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + groupName + "\nORG:LukaModzz;\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD"
-                      }
-                    }
-                  }
-                });
-              }
+              await sendGroupWelcomeBanner(conn, {
+                groupJid: id,
+                participant,
+                groupMetadata,
+                botName: config.botName || "LukaModzz",
+              });
             } catch (err) {
-              console.error("Erro ao processar novo membro:", err);
+              console.error("Erro ao gerar banner de boas-vindas:", err);
+
+              const userJid = getParticipantJid(participant);
+              const userNumber = userJid ? userJid.split("@")[0] : "usuario";
+              const mensagemBoasVindas =
+                "*⎾🧊⏌ sᴇᴊᴀ ʙᴇᴍ ᴠɪɴᴅᴏ @" + userNumber + "!*\n\n" +
+                " • ᴘᴏʀ ғᴀᴠᴏʀ ʟᴇɪᴀ ᴀ ᴅᴇsᴄʀɪᴄ̧ᴀ̃ᴏ\n" +
+                "ᴇ sɪɢᴀ ᴀs ʀᴇɢʀᴀs\n\n" +
+                "> 『🧊』ᴀᴘʀᴏᴠᴇɪᴛᴇ!";
+
+              await conn.sendMessage(id, {
+                text: mensagemBoasVindas,
+                mentions: userJid ? [userJid] : [],
+              }).catch(() => {});
             }
           }
         } else if (action === "remove") {
