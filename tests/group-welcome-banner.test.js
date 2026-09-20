@@ -34,7 +34,7 @@ test("groupWelcomeBanner cria card local sem API externa", async () => {
     groupJid: "120363000000000000@g.us",
     participant: {
       id: "5511999999999@s.whatsapp.net",
-      name: "João Teste",
+      pushName: "João Teste",
     },
     text1: "BEM-VINDO",
   });
@@ -61,4 +61,54 @@ test("fallback local é utilizável quando URL remota falha", async () => {
   assert.equal(metadata.format, "png");
   assert.ok(metadata.width > 0);
   assert.ok(metadata.height > 0);
+});
+
+
+test("groupWelcomeBanner prioriza somente pushName como nome visual", async () => {
+  const name = await _internals.resolveDisplayName(
+    {
+      async contactFetchWait() {
+        return {
+          pushName: "Push do contato",
+          notify: "Notify ignorado",
+          name: "Nome salvo ignorado",
+        };
+      },
+    },
+    {
+      id: "5511777777777@s.whatsapp.net",
+      pushName: "Push direto",
+      notify: "Notify direto",
+      name: "Nome direto",
+    },
+    {
+      participants: [{
+        id: "5511777777777@s.whatsapp.net",
+        pushName: "Push metadata",
+        notify: "Notify metadata",
+      }],
+    },
+    ["5511777777777@s.whatsapp.net"]
+  );
+
+  assert.equal(name, "Push direto");
+});
+
+test("groupWelcomeBanner cai para número quando pushName não existe", async () => {
+  const name = await _internals.resolveDisplayName(
+    {},
+    "5511666666666@s.whatsapp.net",
+    { participants: [] },
+    ["5511666666666@s.whatsapp.net"]
+  );
+
+  assert.equal(name, "5511666666666");
+});
+
+test("cleanPushName remove quebras e limita texto inseguro", () => {
+  assert.equal(
+    _internals.cleanPushName("  João\n   Teste\t "),
+    "João Teste"
+  );
+  assert.ok(_internals.cleanPushName("x".repeat(200)).length <= 80);
 });
