@@ -3,6 +3,7 @@ const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/geral/perfil.js
 const config = require("../../config/config");
 const axios = require("axios");
+const { getMessageProfilePicture } = require("../../functions/profilePicture");
 
 module.exports = {
   name: "perfil",
@@ -47,63 +48,17 @@ module.exports = {
 
       // =====================
       // BUSCA O AVATAR DO USUÁRIO
+      // Mesmo mecanismo funcional da Tokito: profilePictureUrl(jid, "image")
+      // com tentativa do JID alternativo quando disponível.
       // =====================
-      let avatarUrl = null;
-
-      // 1. PROFILE PICTURE NORMAL
-      try {
-        avatarUrl = await conn.profilePictureUrl(userJid, "image");
-        console.log("✅ Avatar obtido via profilePictureUrl");
-      } catch {}
-
-      // 2. FALLBACK LID → PN
-      if (!avatarUrl) {
-        try {
-          const wa = await conn.onWhatsApp(userJid);
-          const realJid = wa?.[0]?.jid;
-          if (realJid) {
-            avatarUrl = await conn.profilePictureUrl(realJid, "image");
-            console.log("✅ Avatar obtido via onWhatsApp");
-          }
-        } catch {}
-      }
-
-      // 3. PREVIEW
-      if (!avatarUrl) {
-        try {
-          avatarUrl = await conn.profilePictureUrl(userJid, "preview");
-          console.log("✅ Avatar obtido via preview");
-        } catch {}
-      }
-
-      // 4. IQ DIRETO
-      if (!avatarUrl) {
-        try {
-          const res = await conn.query({
-            tag: "iq",
-            attrs: {
-              to: userJid,
-              type: "get",
-              xmlns: "w:profile:picture"
-            },
-            content: [
-              {
-                tag: "picture",
-                attrs: { type: "image" }
-              }
-            ]
-          });
-          const pic = res?.content?.find(x => x.tag === "picture");
-          avatarUrl = pic?.attrs?.url || null;
-          if (avatarUrl) console.log("✅ Avatar obtido via IQ");
-        } catch {}
-      }
-
-      // Avatar padrão se não tiver foto
-      if (!avatarUrl) {
-        avatarUrl = "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/176d2335e4d.jpg";
-        console.log("⚠️ Usando avatar padrão");
-      }
+      const profilePicture = await getMessageProfilePicture(
+        conn,
+        msg,
+        from,
+        [userJid],
+        { fallback: "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/176d2335e4d.jpg" }
+      );
+      const avatarUrl = profilePicture?.url || "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/176d2335e4d.jpg";
 
       // =====================
       // INFORMAÇÕES DO GRUPO (SE FOR GRUPO)
