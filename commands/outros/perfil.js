@@ -4,6 +4,7 @@ const config = require("../../config/config");
 const { getMessageProfilePicture } = require("../../functions/profilePicture");
 const {
   generateProfileCardV2,
+  generateProfileCardPreview,
   fetchImageBuffer,
 } = require("../../functions/profileCardV2");
 const contactNameCache = require("../../functions/contactNameCache");
@@ -246,6 +247,8 @@ module.exports = {
         bio,
       });
 
+      const preview = await generateProfileCardPreview(imageBuffer);
+
       const caption =
         "*👤 | ᴘᴇʀғɪʟ ᴅᴏ ᴜsᴜᴀʀɪᴏ*\n\n" +
         "- *👤 | ᴜsᴜᴀ́ʀɪᴏ* → *@" + pushName + "*\n" +
@@ -263,6 +266,9 @@ module.exports = {
       await conn.sendMessage(from, {
         image: imageBuffer,
         mimetype: "image/png",
+        jpegThumbnail: preview.base64,
+        width: 1680,
+        height: 900,
         caption,
         contextInfo: {
           forwardingScore: 1,
