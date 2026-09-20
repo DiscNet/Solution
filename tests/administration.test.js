@@ -348,7 +348,11 @@ test("WhatsApp group operations check acknowledgements and resolve phone/LID tar
   await run("apagarmensagem", [], quoted);
   assert.equal(messages[0].delete.id, "quoted");
   await run("ban", ["559900000003"]);
-  assert.deepEqual(actions.at(-1), [group, [member], "remove"]);
+  assert.deepEqual(actions.at(-1), [
+    group,
+    ["559900000003@s.whatsapp.net"],
+    "remove",
+  ]);
   const saved = conn.groupParticipantsUpdate;
   conn.groupParticipantsUpdate = async () => [{ status: "403" }];
   assert.equal(await run("ban", ["559900000003"]), false);
