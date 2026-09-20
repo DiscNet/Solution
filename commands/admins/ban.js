@@ -2,14 +2,27 @@
 const h = require("../../functions/adminHelpers");
 const { sameIdentity, isOwner } = require("../../functions/permissions");
 
+function actionJids(participant) {
+  const values = [
+    participant?.phoneNumber,
+    participant?.jid,
+    participant?.id,
+    participant?.lid,
+  ].filter(Boolean);
+
+  const unique = [...new Set(values)];
+  return [
+    ...unique.filter(jid => String(jid).endsWith("@s.whatsapp.net")),
+    ...unique.filter(jid => String(jid).endsWith("@lid")),
+    ...unique.filter(jid =>
+      !String(jid).endsWith("@s.whatsapp.net") &&
+      !String(jid).endsWith("@lid")
+    ),
+  ];
+}
+
 function actionJid(participant) {
-  return (
-    participant?.id ||
-    participant?.jid ||
-    participant?.lid ||
-    participant?.phoneNumber ||
-    ""
-  );
+  return actionJids(participant)[0] || "";
 }
 
 function removalConfirmed(results) {
@@ -53,15 +66,31 @@ module.exports = h.factory(
       "Não é permitido remover o dono do bot."
     );
 
-    const jid = actionJid(p);
-    h.need(jid, "Não foi possível identificar o membro para remover.");
+    const candidates = actionJids(p);
+    h.need(candidates.length, "Não foi possível identificar o membro para remover.");
 
-    const results = await conn.groupParticipantsUpdate(from, [jid], "remove");
+    let lastError = null;
+    let confirmed = false;
 
-    h.need(
-      removalConfirmed(results),
-      "O WhatsApp não confirmou a remoção. Confira se o bot ainda é administrador e tente novamente."
-    );
+    for (const jid of candidates) {
+      try {
+        const results = await conn.groupParticipantsUpdate(from, [jid], "remove");
+        if (removalConfirmed(results)) {
+          confirmed = true;
+          break;
+        }
+        lastError = new Error("O WhatsApp não confirmou a remoção para " + jid);
+      } catch (error) {
+        lastError = error;
+      }
+    }
+
+    if (!confirmed) {
+      const error = lastError || new Error("Falha desconhecida ao remover participante.");
+      error.message =
+        "Não foi possível remover o membro. Confira se o bot ainda é administrador e se o usuário continua no grupo.";
+      throw error;
+    }
 
     return "✅ Membro removido do grupo.";
   }
@@ -69,5 +98,6 @@ module.exports = h.factory(
 
 module.exports._internals = {
   actionJid,
+  actionJids,
   removalConfirmed,
 };
