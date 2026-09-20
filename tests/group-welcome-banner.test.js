@@ -94,7 +94,7 @@ test("groupWelcomeBanner prioriza somente pushName como nome visual", async () =
   assert.equal(name, "Push direto");
 });
 
-test("groupWelcomeBanner cai para número quando pushName não existe", async () => {
+test("groupWelcomeBanner não usa número como nome quando pushName não existe", async () => {
   const name = await _internals.resolveDisplayName(
     {},
     "5511666666666@s.whatsapp.net",
@@ -102,7 +102,7 @@ test("groupWelcomeBanner cai para número quando pushName não existe", async ()
     ["5511666666666@s.whatsapp.net"]
   );
 
-  assert.equal(name, "5511666666666");
+  assert.equal(name, "Novo membro");
 });
 
 test("cleanPushName remove quebras e limita texto inseguro", () => {
@@ -111,4 +111,27 @@ test("cleanPushName remove quebras e limita texto inseguro", () => {
     "João Teste"
   );
   assert.ok(_internals.cleanPushName("x".repeat(200)).length <= 80);
+});
+
+
+test("groupWelcomeBanner usa notify como push name do Baileys", async () => {
+  const name = await _internals.resolveDisplayName(
+    {
+      async contactFetchWait() {
+        return { notify: "João do WhatsApp" };
+      },
+    },
+    "5511555555555@s.whatsapp.net",
+    { participants: [] },
+    ["5511555555555@s.whatsapp.net"]
+  );
+
+  assert.equal(name, "João do WhatsApp");
+});
+
+test("cleanPushName rejeita números e JIDs como nome visual", () => {
+  assert.equal(_internals.cleanPushName("5511999999999"), "");
+  assert.equal(_internals.cleanPushName("+55 (11) 99999-9999"), "");
+  assert.equal(_internals.cleanPushName("5511999999999@s.whatsapp.net"), "");
+  assert.equal(_internals.cleanPushName("João"), "João");
 });
