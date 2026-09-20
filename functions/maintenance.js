@@ -15,7 +15,7 @@ const legacy = [
   "premium",
   "vip",
 ];
-const alwaysEnabled = new Set(["ban"]);
+const alwaysEnabled = new Set(["ban", "kick", "remover"]);
 function list() {
   const d = store.read(true);
   return [
