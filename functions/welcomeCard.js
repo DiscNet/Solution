@@ -415,16 +415,31 @@ async function deriveAvatarNeon(buffer) {
       b: 0,
     }));
 
+    let usablePixels = 0;
+    let chromaticPixels = 0;
+    let saturationSum = 0;
+    let brightnessSum = 0;
+
     for (let i = 0; i < data.length; i += info.channels) {
       const r = data[i];
       const g = data[i + 1];
       const b = data[i + 2];
       const hsv = rgbToHsv(r, g, b);
 
-      if (hsv.v < 0.16) continue;
-      if (hsv.v > 0.97 && hsv.s < 0.12) continue;
+      // Mantém preto/branco/cinza no cálculo de luminosidade, mas nunca deixa
+      // pixels sem saturação entrarem nos bins de matiz (HSV usa hue 0 nesses
+      // casos, o que antes transformava imagens P&B em vermelho).
+      usablePixels += 1;
+      saturationSum += hsv.s;
+      brightnessSum += hsv.v;
 
-      const saturationWeight = 0.2 + hsv.s * 1.8;
+      if (hsv.v < 0.12) continue;
+      if (hsv.s < 0.16) continue;
+      if (hsv.v > 0.98 && hsv.s < 0.22) continue;
+
+      chromaticPixels += 1;
+
+      const saturationWeight = 0.35 + hsv.s * 1.9;
       const brightnessWeight = 0.55 + (1 - Math.abs(hsv.v - 0.62)) * 0.7;
       const weight = saturationWeight * brightnessWeight;
       const binIndex = Math.min(17, Math.floor(hsv.h / 20));
@@ -437,11 +452,25 @@ async function deriveAvatarNeon(buffer) {
       bin.b += b * weight;
     }
 
+    const avgSaturation = usablePixels ? saturationSum / usablePixels : 0;
+    const avgBrightness = usablePixels ? brightnessSum / usablePixels : 0;
+    const chromaticRatio = usablePixels ? chromaticPixels / usablePixels : 0;
+
+    // Avatar realmente monocromático: a cor principal também deve ser neutra.
+    // O brilho do cinza acompanha a luminosidade da própria imagem.
+    if (chromaticRatio < 0.06 || avgSaturation < 0.10) {
+      const neutral = Math.round(190 + Math.max(0, Math.min(1, avgBrightness)) * 50);
+      return rgbToHex(neutral, neutral, neutral);
+    }
+
     const best = bins.reduce((winner, bin) =>
       bin.score > winner.score ? bin : winner
     , bins[0]);
 
-    if (!best || best.weight <= 0) return "#7c3aed";
+    if (!best || best.weight <= 0) {
+      const neutral = Math.round(190 + Math.max(0, Math.min(1, avgBrightness)) * 50);
+      return rgbToHex(neutral, neutral, neutral);
+    }
 
     const r = best.r / best.weight;
     const g = best.g / best.weight;
@@ -454,7 +483,8 @@ async function deriveAvatarNeon(buffer) {
 
     return rgbToHex(nr, ng, nb);
   } catch {
-    return "#7c3aed";
+    // Fallback neutro: nunca inventa uma cor saturada quando a análise falha.
+    return "#d9d9d9";
   }
 }
 
