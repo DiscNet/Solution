@@ -7,6 +7,8 @@ const HEIGHT = 900;
 const HERO_HEIGHT = 450;
 const AVATAR_SIZE = 360;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const PREVIEW_WIDTH = 720;
+const PREVIEW_HEIGHT = Math.round(PREVIEW_WIDTH * HEIGHT / WIDTH);
 
 function cleanText(value, maxLength) {
   return String(value || "")
@@ -340,6 +342,35 @@ function buildOverlaySvg(params) {
   );
 }
 
+async function generateProfileCardPreview(imageBuffer) {
+  if (!Buffer.isBuffer(imageBuffer) || !imageBuffer.length) {
+    throw new Error("Imagem do perfil inválida para preview.");
+  }
+
+  const jpeg = await sharp(imageBuffer, {
+    failOn: "error",
+    limitInputPixels: 40_000_000,
+  })
+    .resize(PREVIEW_WIDTH, PREVIEW_HEIGHT, {
+      fit: "fill",
+      kernel: sharp.kernel.lanczos3,
+    })
+    .sharpen({ sigma: 0.9, m1: 0.7, m2: 1.4, x1: 2, y2: 10, y3: 20 })
+    .jpeg({
+      quality: 92,
+      chromaSubsampling: "4:4:4",
+      mozjpeg: true,
+    })
+    .toBuffer();
+
+  return {
+    buffer: jpeg,
+    base64: jpeg.toString("base64"),
+    width: PREVIEW_WIDTH,
+    height: PREVIEW_HEIGHT,
+  };
+}
+
 async function generateProfileCardV2(input = {}) {
   const params = sanitizeInput(input);
 
@@ -383,8 +414,11 @@ module.exports = {
   HEIGHT,
   HERO_HEIGHT,
   AVATAR_SIZE,
+  PREVIEW_WIDTH,
+  PREVIEW_HEIGHT,
   sanitizeInput,
   fetchImageBuffer,
+  generateProfileCardPreview,
   generateProfileCardV2,
   _internals: {
     cleanText,
@@ -397,6 +431,7 @@ module.exports = {
     createFallbackAvatar,
     prepareAvatar,
     prepareHeroBackground,
+    generateProfileCardPreview,
     buildBaseSvg,
     buildOverlaySvg,
     iconUser,
