@@ -37,7 +37,12 @@ function remember(jids, name) {
 
 function rememberContact(contact) {
   if (!contact || typeof contact !== "object") return "";
-  const name = contact.pushName || contact.pushname || contact.notify;
+  const name =
+    contact.pushName ||
+    contact.pushname ||
+    contact.notify ||
+    contact.name ||
+    contact.verifiedName;
   return remember([
     contact.id,
     contact.jid,
