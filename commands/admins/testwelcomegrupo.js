@@ -12,7 +12,7 @@ module.exports = h.factory(
     menuCategory: "Grupos",
     menuSection: "Configuração",
     usage: "testwelcomegrupo",
-    description: "Testa o banner real de boas-vindas usando você como membro de teste.",
+    description: "Testa o welcome real do grupo, incluindo resolução de nome, fotos e banner.",
   },
   async ({ conn, msg, from }) => {
     contactNameCache.rememberMessage(msg);
@@ -34,7 +34,6 @@ module.exports = h.factory(
     await sendGroupWelcomeBanner(conn, {
       groupJid: from,
       participant,
-      displayName: currentName || participant.pushName || undefined,
     });
 
     const enabled = bemvindoFunctions.isBemvindoAtivo(from);
