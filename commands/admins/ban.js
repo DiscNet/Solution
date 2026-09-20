@@ -4,10 +4,10 @@ const { sameIdentity, isOwner } = require("../../functions/permissions");
 
 function actionJid(participant) {
   return (
-    participant?.phoneNumber ||
-    participant?.jid ||
     participant?.id ||
+    participant?.jid ||
     participant?.lid ||
+    participant?.phoneNumber ||
     ""
   );
 }
