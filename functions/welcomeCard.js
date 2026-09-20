@@ -158,12 +158,21 @@ async function normalizeImageBuffer(buffer) {
 }
 
 async function resolveImageSource(urlValue, bufferValue, fieldName) {
-  if (Buffer.isBuffer(bufferValue) && bufferValue.length) {
+  const url = String(urlValue || "").trim();
+  const hasFallbackBuffer = Buffer.isBuffer(bufferValue) && bufferValue.length;
+
+  if (url) {
+    try {
+      return await fetchRemoteImage(url);
+    } catch (error) {
+      if (!hasFallbackBuffer) throw error;
+    }
+  }
+
+  if (hasFallbackBuffer) {
     return normalizeImageBuffer(bufferValue);
   }
-  if (String(urlValue || "").trim()) {
-    return fetchRemoteImage(urlValue);
-  }
+
   throw new Error(`Informe ${fieldName}.`);
 }
 
