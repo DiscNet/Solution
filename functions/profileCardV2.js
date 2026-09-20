@@ -240,13 +240,13 @@ function buildOverlaySvg(params) {
     ? (params.gamertag.startsWith("@") ? params.gamertag : "@" + params.gamertag)
     : "";
 
-  const bioLines = wrapText(params.bio || "Sem descrição.", 1420, 42, 4);
+  const bioLines = wrapText(params.bio || "Sem descrição.", 1420, 42, 3);
   const statusWidth = params.status
-    ? Math.min(620, Math.max(150, Math.ceil(approxWidth(params.status, 24) + 74)))
+    ? Math.min(680, Math.max(300, Math.ceil(approxWidth(params.status, 29) + 96)))
     : 0;
 
   const bioSvg = bioLines.map((line, index) =>
-    '<text x="130" y="' + (635 + index * 48) + '" ' +
+    '<text x="130" y="' + (645 + index * 54) + '" ' +
       'font-family="DejaVu Sans,Arial,sans-serif" font-size="42" font-weight="700" ' +
       'fill="#f4f5f8" fill-opacity=".94">' + escapeXml(line) + '</text>'
   ).join("");
@@ -288,7 +288,7 @@ function buildOverlaySvg(params) {
     const icon = item.kind === "user"
       ? iconUser(centerX - iconSize / 2, iconY, iconSize, params.accent, 0.98)
       : item.kind === "at"
-        ? iconAt(centerX, chipY + 58, iconSize, params.accent, 0.98)
+        ? iconAt(centerX - 14, chipY + 58, iconSize, params.accent, 0.98)
         : iconShield(centerX - iconSize / 2, iconY + 2, iconSize, params.accent, 0.98);
 
     return '<g>' +
