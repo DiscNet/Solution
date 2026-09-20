@@ -2,6 +2,7 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
 const { unwrapMessage } = require("../../functions/messageText");
 const { isGroupJid, senderCandidates, digits } = require("../../functions/permissions");
+const { getProfilePicture } = require("../../functions/profilePicture");
 const {
   newsletterContext,
   findParticipant,
@@ -149,21 +150,9 @@ async function resolveUserCandidates(conn, metadata, initial = []) {
 }
 
 async function findProfilePicture(conn, candidates = []) {
-  if (typeof conn.profilePictureUrl !== "function") return null;
-  const ordered = preferredCandidates(candidates);
-
-  for (const type of ["image", "preview"]) {
-    for (const jid of ordered) {
-      try {
-        const url = await conn.profilePictureUrl(jid, type);
-        if (url) return { url, jid, quality: type === "image" ? "Original" : "Prévia" };
-      } catch (_) {
-        // 401/403/404 são comuns quando não há foto ou a privacidade não permite acesso.
-      }
-    }
-  }
-
-  return null;
+  const picture = await getProfilePicture(conn, preferredCandidates(candidates));
+  if (!picture) return null;
+  return { ...picture, quality: "Original" };
 }
 
 async function safeName(conn, candidates, fallback) {
