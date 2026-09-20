@@ -113,7 +113,9 @@ module.exports = {
         habilidades: [],
         ultimoTreino: null,
         ultimaCaca: null,
-        ultimaMina: null
+        ultimaMina: null,
+        pokemon: null,
+        inventarioPokemon: {}
       };
 
       salvarDb(db);
