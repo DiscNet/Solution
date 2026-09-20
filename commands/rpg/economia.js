@@ -148,47 +148,6 @@ const commands = [
   },
 
   {
-    name: "trabalhar",
-    aliases: ["work"],
-    menuCategory: "RPG",
-    menuSection: "Economia",
-    usage: "trabalhar",
-    description: "trabalha para ganhar Coins",
-    permissions: { group: true },
-    async execute(conn, msg, args, from) {
-      try {
-        ensureEnabled(from);
-        const jid = sender(msg, from);
-        const user = economy.reconcileUser(jid);
-        const wait = remaining(user.lastWork, WORK_CD);
-        if (wait) throw Object.assign(new Error(), { userMessage: `Você precisa aguardar *${fmtTime(wait)}* para trabalhar novamente.` });
-
-        const jobs = [
-          ["ferreiro", 180, 420, "🔨"],
-          ["mensageiro", 140, 350, "📦"],
-          ["caçador", 170, 390, "🏹"],
-          ["alquimista", 200, 450, "⚗️"],
-          ["mercador", 160, 410, "🛒"],
-        ];
-        const [job, min, max, emoji] = jobs[Math.floor(Math.random() * jobs.length)];
-        const gain = Math.floor(Math.random() * (max - min + 1)) + min;
-        user.coins += gain;
-        user.lastWork = Date.now();
-        user.stats.worked = Number(user.stats.worked || 0) + 1;
-        economy.saveUser(user);
-
-        return reply(conn, msg, from,
-          `${emoji} *ᴛʀᴀʙᴀʟʜᴏ ᴄᴏɴᴄʟᴜɪ́ᴅᴏ*\n\n` +
-          `📋 ғᴜɴᴄ̧ᴀ̃ᴏ: *${job}*\n` +
-          `🪙 ɢᴀɴʜᴏ: *+${economy.format(gain)}*\n` +
-          `💰 sᴀʟᴅᴏ: *${economy.format(user.coins)}*`);
-      } catch (e) {
-        return reply(conn, msg, from, `❌ ${e.userMessage || "Não foi possível trabalhar."}`);
-      }
-    },
-  },
-
-  {
     name: "dailycoins",
     aliases: ["daily", "bonusdiario"],
     menuCategory: "RPG",
