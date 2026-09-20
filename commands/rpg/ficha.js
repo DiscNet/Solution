@@ -5,6 +5,9 @@ const fs = require("fs");
 const path = require("path");
 const rpgSystem = require("../../functions/rpgSystem");
 const patentes = require("../../functions/patentes");
+const economy = require("../../functions/economySystem");
+const poke = require("../../functions/pokemonSystem");
+const { resolveRegisteredKey } = require("../../functions/rpgIdentity");
 
 const dbPath = path.join(__dirname, "..", "..", "database", "rpg.json");
 const petsPath = path.join(__dirname, "..", "..", "database", "rpgPets.json");
@@ -51,19 +54,13 @@ module.exports = {
         }, { quoted: msg });
       }
 
-      // Pega o LID do usuário
-      let lid = msg.key.participant || msg.key.remoteJid || from;
-
-      if (from.endsWith("@g.us") && msg.key.participant) {
-        lid = msg.key.participant;
-      }
-
-      // Carrega o banco de dados
+      // Carrega o banco de dados e resolve corretamente LID/PN.
       const db = carregarDb();
       const petsData = carregarPets();
+      const lid = resolveRegisteredKey(msg, from, db.usuarios);
 
       // Verifica se está registrado
-      if (!db.usuarios[lid]) {
+      if (!lid || !db.usuarios[lid]) {
         return await conn.sendMessage(from, {
           text: `❌ ᴠᴏᴄᴇ ᴀɪɴᴅᴀ ɴᴀᴏ ᴇsᴛᴀ́ ʀᴇɢɪsᴛʀᴀᴅᴏ!\n\n📌 ᴜsᴇ ${prefix}registro para criar seu personagem.`,
           contextInfo: {
@@ -128,6 +125,15 @@ module.exports = {
         petEquipadoTexto = `${pet.emoji} ${ficha.petEquipado}`;
       }
 
+      // Economia compartilhada e Pokémon.
+      const coinsAtivo = economy.isEnabled(from);
+      const wallet = coinsAtivo ? economy.reconcileUser(lid) : null;
+      const pokemonAtual = ficha.pokemon ? poke.normalizePokemon(ficha.pokemon) : null;
+      const pokemonData = pokemonAtual ? poke.pokemonData(pokemonAtual) : null;
+      const pokemonTexto = pokemonAtual
+        ? `${pokemonData?.emoji || "🧿"} ${pokemonAtual.nickname || pokemonData?.name || pokemonAtual.species} Lv.${pokemonAtual.level}`
+        : "ɴᴇɴʜᴜᴍ";
+
       // Monta a mensagem com fonte smallcap
       const texto = `${emoji} *ғ ɪ ᴄ ʜ ᴀ  ᴅ ᴇ  ʀ ᴘ ɢ*
 
@@ -136,8 +142,9 @@ module.exports = {
 🏷️ ᴄʟᴀssᴇ: ${ficha.classe}
 📊 ʟᴇᴠᴇʟ: ${ficha.level}
 ${emojiPatente} ᴘᴀᴛᴇɴᴛᴇ: ${ficha.patente}
-💰 ɢᴏʟᴅ: ${ficha.gold}
-🐾 ᴘᴇᴛ ᴇǫᴜɪᴘᴀᴅᴏ: ${petEquipadoTexto}
+💰 ɢᴏʟᴅ: ${Number(ficha.gold || 0).toLocaleString("pt-BR")}
+${coinsAtivo ? `🪙 ᴄᴏɪɴs: ${economy.format(wallet?.coins || 0)}\n` : ""}🐾 ᴘᴇᴛ ᴇǫᴜɪᴘᴀᴅᴏ: ${petEquipadoTexto}
+🎴 ᴘᴏᴋᴇ́ᴍᴏɴ: ${pokemonTexto}
 
 📈 ᴇxᴘ: ${ficha.xp}/${xpNecessario}
 ${barra}
@@ -154,14 +161,14 @@ ${barraPatente}
 💥 ᴄʀɪᴛɪᴄᴏ: ${ficha.critico}%
 
 ━━━━━━━━━━━━━━━━━━━━
-🗡️ ᴀʀᴍᴀs: ${ficha.arma.length > 0 ? ficha.arma.join(", ") : "ɴᴇɴʜᴜᴍᴀ"}
-⚔️ ᴇsᴘᴀᴅᴀs: ${ficha.espada.length > 0 ? ficha.espada.join(", ") : "ɴᴇɴʜᴜᴍᴀ"}
-🛡️ ᴇsᴄᴜᴅᴏs: ${ficha.escudo.length > 0 ? ficha.escudo.join(", ") : "ɴᴇɴʜᴜᴍ"}
-🐾 ᴘᴇᴛs: ${ficha.pet.length > 0 ? ficha.pet.join(", ") : "ɴᴇɴʜᴜᴍ"}
+🗡️ ᴀʀᴍᴀs: ${Array.isArray(ficha.arma) && ficha.arma.length ? ficha.arma.join(", ") : "ɴᴇɴʜᴜᴍᴀ"}
+⚔️ ᴇsᴘᴀᴅᴀs: ${Array.isArray(ficha.espada) && ficha.espada.length ? ficha.espada.join(", ") : "ɴᴇɴʜᴜᴍᴀ"}
+🛡️ ᴇsᴄᴜᴅᴏs: ${Array.isArray(ficha.escudo) && ficha.escudo.length ? ficha.escudo.join(", ") : "ɴᴇɴʜᴜᴍ"}
+🐾 ᴘᴇᴛs: ${Array.isArray(ficha.pet) && ficha.pet.length ? ficha.pet.join(", ") : "ɴᴇɴʜᴜᴍ"}
 
-🎯 ʜᴀʙɪʟɪᴅᴀᴅᴇs: ${ficha.habilidades.length > 0 ? ficha.habilidades.join(", ") : "ɴᴇɴʜᴜᴍᴀ"}
+🎯 ʜᴀʙɪʟɪᴅᴀᴅᴇs: ${Array.isArray(ficha.habilidades) && ficha.habilidades.length ? ficha.habilidades.join(", ") : "ɴᴇɴʜᴜᴍᴀ"}
 
-📦 ɪᴛᴇɴs: ${ficha.itens.length > 0 ? ficha.itens.join(", ") : "ɴᴇɴʜᴜᴍ"}
+📦 ɪᴛᴇɴs: ${Array.isArray(ficha.itens) && ficha.itens.length ? ficha.itens.join(", ") : "ɴᴇɴʜᴜᴍ"}
 ━━━━━━━━━━━━━━━━━━━━
 
 > 🌫️ ᴜᴛɪʟɪᴢᴇ ${prefix}menu para ver os comandos`;
