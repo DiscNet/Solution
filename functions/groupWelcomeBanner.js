@@ -138,7 +138,8 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
     const directPushName = cleanPushName(
       participant.pushName ||
       participant.pushname ||
-      participant.notify
+      participant.notify ||
+      participant.name
     );
     if (directPushName) {
       contactNameCache.remember(candidates, directPushName);
@@ -150,7 +151,8 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
   const metadataPushName = cleanPushName(
     item?.pushName ||
     item?.pushname ||
-    item?.notify
+    item?.notify ||
+    item?.name
   );
   if (metadataPushName) {
     contactNameCache.remember(candidates, metadataPushName);
@@ -166,6 +168,8 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
           contact?.pushName ||
           contact?.pushname ||
           contact?.notify ||
+          contact?.name ||
+          contact?.verifiedName ||
           contactNameCache.get(candidates)
         );
         if (contactPushName) {
@@ -192,7 +196,7 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
 
   // Eventos de contato podem chegar alguns instantes depois do evento
   // group-participants.update. Dá uma pequena janela para o cache receber o pushName.
-  const delayedName = cleanPushName(await contactNameCache.waitFor(candidates, 3000, 200));
+  const delayedName = cleanPushName(await contactNameCache.waitFor(candidates, 5000, 250));
   if (delayedName) {
     contactNameCache.remember(candidates, delayedName);
     return delayedName;
@@ -209,6 +213,8 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
           contact?.pushName ||
           contact?.pushname ||
           contact?.notify ||
+          contact?.name ||
+          contact?.verifiedName ||
           contactNameCache.get(candidates)
         );
         if (retriedContactName) {
@@ -226,7 +232,8 @@ async function resolveDisplayName(conn, participant, metadata, candidates, group
       const refreshedName = cleanPushName(
         refreshedItem?.pushName ||
         refreshedItem?.pushname ||
-        refreshedItem?.notify
+        refreshedItem?.notify ||
+        refreshedItem?.name
       );
       if (refreshedName) {
         contactNameCache.remember(
