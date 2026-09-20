@@ -92,3 +92,92 @@ test("perfil reconhece a mesma pessoa entre phoneNumber e LID", () => {
   assert.ok(found);
   assert.equal(found.id, "123456@lid");
 });
+
+
+test("profileCardV2 mantém a foto visível no centro do avatar", async () => {
+  const avatar = await sharp({
+    create: {
+      width: 600,
+      height: 600,
+      channels: 3,
+      background: { r: 20, g: 90, b: 230 },
+    },
+  }).png().toBuffer();
+
+  const output = await card.generateProfileCardV2({
+    avatarBuffer: avatar,
+    name: "Avatar Teste",
+    gamertag: "avatar",
+    status: "Membro",
+    bio: "Teste de visibilidade.",
+    accent: "#a855f7",
+  });
+
+  const { data, info } = await sharp(output)
+    .removeAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+
+  const x = 360;
+  const y = 360;
+  const offset = (y * info.width + x) * info.channels;
+  const r = data[offset];
+  const g = data[offset + 1];
+  const b = data[offset + 2];
+
+  assert.ok(b > 180, `azul central muito baixo: ${b}`);
+  assert.ok(b > r + 80);
+  assert.ok(b > g + 60);
+});
+
+test("perfil usa a mesma leitura de bio do getbio", async () => {
+  const result = await perfil._internals.fetchBio(
+    {
+      async fetchStatus() {
+        return { status: { status: "Meu recado do WhatsApp" } };
+      },
+    },
+    ["5511999999999@s.whatsapp.net"]
+  );
+
+  assert.equal(result.text, "Meu recado do WhatsApp");
+  assert.equal(result.jid, "5511999999999@s.whatsapp.net");
+});
+
+test("perfil usa getStatus como fallback da mesma lógica do getbio", async () => {
+  const result = await perfil._internals.fetchBio(
+    {
+      async fetchStatus() {
+        throw new Error("indisponível");
+      },
+      async getStatus() {
+        return [{ status: { status: "Bio alternativa" } }];
+      },
+    },
+    ["5511888888888@s.whatsapp.net"]
+  );
+
+  assert.equal(result.text, "Bio alternativa");
+});
+
+test("perfil reduz cargo real para apenas Admin ou Membro", () => {
+  assert.equal(perfil._internals.resolveCargo({ admin: "admin" }), "Admin");
+  assert.equal(perfil._internals.resolveCargo({ admin: "superadmin" }), "Admin");
+  assert.equal(perfil._internals.resolveCargo({ admin: null }), "Membro");
+  assert.equal(perfil._internals.resolveCargo(null), "Membro");
+});
+
+test("perfil não possui mais opção VIP e mantém o formato detalhado", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "perfil.js"),
+    "utf8"
+  );
+
+  assert.doesNotMatch(source, /isVip/);
+  assert.doesNotMatch(source, /ᴠɪᴘ/i);
+  assert.match(source, /ᴘᴇʀғɪʟ ᴅᴏ ᴜsᴜᴀʀɪᴏ/);
+  assert.match(source, /ɴɪᴠᴇʟ ɢᴀᴅᴏ/);
+  assert.match(source, /ɢᴏsᴛᴏsᴜʀᴀ/);
+  assert.match(source, /ᴘᴜᴛᴀʀɪᴀ/);
+  assert.match(source, /ᴘʀᴏɢʀᴀᴍᴀ/);
+});
