@@ -88,3 +88,26 @@ test("efeitos de imagem escolhidos produzem resultados distintos", async () => {
   }
   assert.equal(hashes.size, effects.length);
 });
+
+
+test("comando pixel aceita imagem e possui definição própria para vídeo", () => {
+  const pixel = imageCommands.find((command) => command.name === "pixel");
+  assert.ok(pixel);
+  assert.match(pixel.usage, /imagem ou vídeo/);
+  assert.ok(pixel.videoDefinition);
+  assert.equal(pixel.videoDefinition.input, "video");
+  assert.equal(pixel.videoDefinition.output, "video");
+  assert.match(pixel.videoDefinition.videoFilter, /flags=neighbor/);
+
+  const args = buildArgs(
+    pixel.videoDefinition,
+    "input.mp4",
+    "output.mp4",
+    { hasAudio: true, hasVideo: true },
+  );
+  const vfIndex = args.indexOf("-vf");
+  assert.notEqual(vfIndex, -1);
+  assert.equal(args[vfIndex + 1], pixel.videoDefinition.videoFilter);
+  assert.ok(args.includes("-c:a"));
+  assert.ok(args.includes("aac"));
+});
