@@ -90,6 +90,18 @@ function findOwnedSession(msg, from) {
   return null;
 }
 
+function findChatSession(from) {
+  for (const session of sessions.values()) {
+    if (session.chat === from) return session;
+  }
+  return null;
+}
+
+function playerName(session) {
+  const value = String(session?.ownerName || "").trim();
+  return value || "Alguém";
+}
+
 function resolveSession(msg, from, suppliedToken) {
   const token = String(suppliedToken || "").trim();
   const current = actorIds(msg, from);
@@ -158,6 +170,12 @@ function guessButtons(session) {
     quick("✅ Acertou", "acertou", session.token),
     quick("❌ Errou", "errou", session.token),
     quick("✖️ Encerrar", "parar", session.token),
+  ];
+}
+
+function introButtons() {
+  return [
+    quick("🧞 Jogar", "iniciar"),
   ];
 }
 
@@ -274,6 +292,24 @@ async function sendInteractiveSafe(conn, from, msg, content, fallbackText) {
   }
 }
 
+async function sendIntro(conn, msg, from) {
+  const text = [
+    "🧞 *AKINATOR*",
+    "",
+    "Pense em um personagem real ou fictício.",
+    "Eu vou fazer perguntas até tentar descobrir quem é.",
+    "",
+    "Toque em *Jogar* para começar.",
+  ].join("\n");
+
+  const prefix = config.prefix || ".";
+  return sendInteractiveSafe(conn, from, msg, {
+    text,
+    footer: "Akinator • jogo de adivinhação",
+    interactiveButtons: introButtons(),
+  }, `${text}\n\nUse ${prefix}akinator iniciar para começar.`);
+}
+
 async function sendQuestion(conn, msg, from, session) {
   const aki = session.aki;
   const step = Number(aki.step || 0) + 1;
@@ -355,6 +391,19 @@ async function finishSession(conn, msg, from, session, text) {
 }
 
 async function startGame(conn, msg, from) {
+  const currentActor = actorIds(msg, from);
+  const chatSession = findChatSession(from);
+
+  if (isGroupJid(from) && chatSession && !sameActor(chatSession.ownerIds, currentActor)) {
+    return temporaryReply(
+      conn,
+      msg,
+      from,
+      `⚠️ Já existe uma partida do Akinator neste grupo.\n\n👤 Jogador: *${playerName(chatSession)}*\n\nAguarde ela terminar ou ser cancelada.`,
+      9000,
+    );
+  }
+
   const old = findOwnedSession(msg, from);
   if (old?.busy) return temporaryReply(conn, msg, from, "🧞 Aguarde a ação anterior terminar.");
 
@@ -364,7 +413,8 @@ async function startGame(conn, msg, from) {
     aki,
     token,
     chat: from,
-    ownerIds: actorIds(msg, from),
+    ownerIds: currentActor,
+    ownerName: String(msg?.pushName || "Alguém").trim() || "Alguém",
     phase: "question",
     busy: true,
     createdAt: Date.now(),
@@ -487,12 +537,38 @@ module.exports = {
   description: "Jogue o Akinator real pelo WhatsApp com botões.",
   menuCategory: "Brincadeiras",
   menuSection: "Jogos",
-  usage: "akinator [sim|nao|nsei|provavelmente|provavelmentenao|voltar|parar]",
+  usage: "akinator [iniciar|status|sim|nao|nsei|provavelmente|provavelmentenao|voltar|parar]",
   async execute(conn, msg, args, from) {
     const action = normalize(args[0] || "");
     const token = String(args[1] || "").trim();
 
-    if (!action || ["iniciar", "start", "novo", "novojogo"].includes(action)) {
+    if (!action) {
+      const owned = findOwnedSession(msg, from);
+      if (owned) {
+        return temporaryReply(
+          conn,
+          msg,
+          from,
+          `🧞 Você já tem uma partida ativa. Use ${(config.prefix || ".")}akinator status para recuperar a pergunta atual.`,
+          8000,
+        );
+      }
+
+      const chatSession = findChatSession(from);
+      if (isGroupJid(from) && chatSession) {
+        return temporaryReply(
+          conn,
+          msg,
+          from,
+          `⚠️ Já existe uma partida do Akinator neste grupo.\n\n👤 Jogador: *${playerName(chatSession)}*\n\nAguarde ela terminar ou ser cancelada.`,
+          9000,
+        );
+      }
+
+      return sendIntro(conn, msg, from);
+    }
+
+    if (["iniciar", "start", "novo", "novojogo", "jogar"].includes(action)) {
       return startGame(conn, msg, from);
     }
 
@@ -573,6 +649,8 @@ module.exports._internals = {
   actorIds,
   sameActor,
   resolveSession,
+  findChatSession,
+  playerName,
   sentMessageKey,
   rotateMessage,
   deleteMessageSafe,
