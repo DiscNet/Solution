@@ -237,7 +237,7 @@ function buildOverlaySvg(params) {
         '</linearGradient>' +
       '</defs>' +
 
-      '<rect x="60" y="60" width="600" height="600" rx="32" fill="#0c0f16"/>' +
+      '<rect x="60" y="60" width="600" height="600" rx="32" fill="none"/>' +
       '<rect x="60" y="60" width="600" height="600" rx="32" fill="none" stroke="' + params.accent + '" stroke-opacity=".45" stroke-width="16" filter="url(#avatarGlow)"/>' +
       '<rect x="60" y="60" width="600" height="600" rx="32" fill="none" stroke="' + params.accent + '" stroke-opacity=".68" stroke-width="4"/>' +
       '<rect x="686" y="126" width="5" height="468" rx="3" fill="' + params.accent + '"/>' +
@@ -301,6 +301,7 @@ module.exports = {
   HEIGHT,
   AVATAR_SIZE,
   sanitizeInput,
+  fetchImageBuffer,
   generateProfileCardV2,
   _internals: {
     cleanText,
