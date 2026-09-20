@@ -1,219 +1,246 @@
 // Menu: Utilidades - Perfil | Comando: perfil
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/geral/perfil.js
 const config = require("../../config/config");
-const axios = require("axios");
 const { getMessageProfilePicture } = require("../../functions/profilePicture");
+const { generateProfileCardV2 } = require("../../functions/profileCardV2");
+const contactNameCache = require("../../functions/contactNameCache");
+const { sameIdentity } = require("../../functions/permissions");
+
+function senderCandidates(msg, from) {
+  const key = msg?.key || {};
+  return [...new Set([
+    key.participantAlt,
+    key.participant,
+    !String(from).endsWith("@g.us") ? key.remoteJidAlt : null,
+    !String(from).endsWith("@g.us") ? key.remoteJid : null,
+  ].filter(Boolean))];
+}
+
+function participantValues(participant) {
+  return [
+    participant?.phoneNumber,
+    participant?.id,
+    participant?.jid,
+    participant?.lid,
+  ].filter(Boolean);
+}
+
+function findParticipant(metadata, candidates) {
+  return (metadata?.participants || []).find(participant =>
+    participantValues(participant).some(value =>
+      candidates.some(candidate => sameIdentity(value, candidate))
+    )
+  ) || null;
+}
+
+function cleanName(value) {
+  return String(value || "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 60);
+}
+
+function gamertagFromName(name, fallback = "whatsapp") {
+  const clean = String(name || "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9._-]+/g, "")
+    .slice(0, 38);
+  return clean || String(fallback || "whatsapp").slice(0, 38);
+}
+
+async function resolveDisplayName(conn, msg, metadata, candidates) {
+  contactNameCache.rememberMessage(msg);
+
+  const direct = cleanName(msg?.pushName || msg?.pushname || msg?.notify);
+  if (direct) {
+    contactNameCache.remember(candidates, direct);
+    return direct;
+  }
+
+  const cached = cleanName(contactNameCache.get(candidates));
+  if (cached) return cached;
+
+  const participant = findParticipant(metadata, candidates);
+  const fromMetadata = cleanName(
+    participant?.pushName ||
+    participant?.pushname ||
+    participant?.notify ||
+    participant?.name
+  );
+  if (fromMetadata) {
+    contactNameCache.remember([...candidates, ...participantValues(participant)], fromMetadata);
+    return fromMetadata;
+  }
+
+  if (typeof conn?.contactFetchWait === "function") {
+    for (const jid of candidates) {
+      try {
+        const contact = await conn.contactFetchWait(jid);
+        contactNameCache.rememberContact(contact);
+        const name = cleanName(
+          contact?.pushName ||
+          contact?.pushname ||
+          contact?.notify ||
+          contact?.name ||
+          contact?.verifiedName
+        );
+        if (name) {
+          contactNameCache.remember(candidates, name);
+          return name;
+        }
+      } catch {}
+    }
+  }
+
+  return "Usuário";
+}
+
+async function resolveBio(conn, candidates) {
+  for (const jid of candidates) {
+    if (typeof conn?.fetchStatus === "function") {
+      try {
+        const result = await conn.fetchStatus(jid);
+        const status = cleanName(result?.status || result?.about);
+        if (status) return status;
+      } catch {}
+    }
+
+    if (typeof conn?.contactQuery === "function") {
+      try {
+        const result = await conn.contactQuery(jid);
+        const status = cleanName(result?.status || result?.about);
+        if (status) return status;
+      } catch {}
+    }
+  }
+  return "Sem recado público disponível.";
+}
 
 module.exports = {
   name: "perfil",
   aliases: ["profile", "meuperfil"],
-  description: "ᴍᴏsᴛʀᴀ ᴀs ɪɴғᴏʀᴍᴀᴄ̧ᴏ̃ᴇs ᴅᴏ sᴇᴜ ᴘᴇʀғɪʟ",
+  description: "mostra as informações do seu perfil",
+  menuCategory: "Utilidades",
+  menuSection: "Perfil",
+
   async execute(conn, msg, args, from) {
+    const bot = config.botName || "LukaModzz";
+    const isGroup = String(from || "").endsWith("@g.us");
+    let metadata = null;
+
     try {
-      const prefix = config.prefix || ".";
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const tokitoApi = config.tokitoApi;
-
-      let pushName = "Usuário";
-      try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
-
-      const isGroup = from.endsWith("@g.us");
-      let userJid = null;
-      let userNumber = "";
-
-      // =====================
-      // PEGA O JID DO USUÁRIO (SEMPRE QUEM USOU O COMANDO)
-      // =====================
-      if (isGroup) {
-        userJid = msg.key.participantAlt || msg.key.participant || msg.sender;
-      } else {
-        userJid = msg.key.remoteJidAlt || msg.key.remoteJid || from;
-      }
-
-      if (!userJid) {
+      const candidates = senderCandidates(msg, from);
+      if (!candidates.length) {
         return conn.sendMessage(from, {
-          text: "❌ ᴇʀʀᴏ ᴀᴏ ɪᴅᴇɴᴛɪғɪᴄᴀʀ ᴏ ᴜsᴜᴀ́ʀɪᴏ.",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        });
+          text: "❌ ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇʟ ɪᴅᴇɴᴛɪғɪᴄᴀʀ ᴏ ᴜsᴜᴀ́ʀɪᴏ.",
+        }, { quoted: msg });
       }
 
-      // Extrai o número
-      userNumber = userJid.replace(/[^0-9]/g, "");
-      if (userNumber.length > 13) userNumber = userNumber.substring(0, 13);
+      if (isGroup) {
+        try {
+          metadata = await conn.groupMetadata(from);
+          const participant = findParticipant(metadata, candidates);
+          if (participant) {
+            for (const value of participantValues(participant)) {
+              if (!candidates.some(candidate => sameIdentity(candidate, value))) {
+                candidates.push(value);
+              }
+            }
+          }
+        } catch (error) {
+          console.log("⚠️ Perfil: falha ao obter metadados do grupo:", error.message);
+        }
+      }
 
-      console.log("📌 Perfil - JID:", userJid);
-      console.log("📌 Perfil - Número:", userNumber);
+      const pushName = await resolveDisplayName(conn, msg, metadata, candidates);
+      const participant = findParticipant(metadata, candidates);
+      const cargo = participant?.admin === "superadmin"
+        ? "CRIADOR"
+        : participant?.admin
+          ? "ADMIN"
+          : "MEMBRO";
+      const isVip = participant?.admin === "superadmin";
+      const groupName = isGroup
+        ? cleanName(metadata?.subject || "Grupo")
+        : "Privado";
 
-      // =====================
-      // BUSCA O AVATAR DO USUÁRIO
-      // Mesmo mecanismo funcional da Tokito: profilePictureUrl(jid, "image")
-      // com tentativa do JID alternativo quando disponível.
-      // =====================
+      const bio = await resolveBio(conn, candidates);
+
       const profilePicture = await getMessageProfilePicture(
         conn,
         msg,
         from,
-        [userJid],
-        { fallback: "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/176d2335e4d.jpg" }
+        candidates,
+        { fallback: null }
       );
-      const avatarUrl = profilePicture?.url || "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/176d2335e4d.jpg";
 
-      // =====================
-      // INFORMAÇÕES DO GRUPO (SE FOR GRUPO)
-      // =====================
-      let grupoNome = "PV";
-      let isAdmin = false;
-      let isVip = false;
-      let bio = "privado, ou sem recado!!";
+      const primaryIdentity =
+        candidates.find(jid => String(jid).endsWith("@s.whatsapp.net")) ||
+        candidates[0] ||
+        "";
+      const userNumber = String(primaryIdentity).split("@")[0].split(":")[0].replace(/\D/g, "");
+      const gamertag = gamertagFromName(pushName, userNumber || "whatsapp");
 
-      if (isGroup) {
-        try {
-          const groupMetadata = await conn.groupMetadata(from);
-          grupoNome = groupMetadata.subject || "Grupo";
+      const statusParts = [cargo];
+      if (isVip) statusParts.push("VIP");
+      if (isGroup && groupName) statusParts.push(groupName);
+      const status = statusParts.join(" • ").slice(0, 42);
 
-          // Verifica se é admin
-          isAdmin = groupMetadata.participants.some(p => p.id === userJid && p.admin);
-
-          // Verifica se é VIP (dono ou superadmin)
-          isVip = groupMetadata.participants.some(p => p.id === userJid && p.admin === 'superadmin');
-
-        } catch (e) {
-          console.log("⚠️ Erro ao obter metadados do grupo:", e.message);
-        }
-      }
-
-      // Tenta buscar a bio do usuário
-      try {
-        const contact = await conn.contactQuery(userJid);
-        if (contact?.status) {
-          bio = contact.status;
-        }
-      } catch (e) {
-        console.log("⚠️ Erro ao buscar bio:", e.message);
-      }
-
-      // =====================
-      // GERANDO PORCENTAGENS ALEATÓRIAS
-      // =====================
-      const gayPercent = Math.floor(Math.random() * 101);
-      const gadoPercent = Math.floor(Math.random() * 101);
-      const gostosuraPercent = Math.floor(Math.random() * 101);
-      const putariaPercent = Math.floor(Math.random() * 101);
-      const dinheiro = Math.floor(Math.random() * 10000) + 100;
-
-      // =====================
-      // CONSTRÓI A URL DO CANVAS
-      // =====================
-      const nome = encodeURIComponent(pushName);
-      const grupo = encodeURIComponent(grupoNome);
-      const cargo = isAdmin ? "ADMIN" : "Membro";
-      const vip = isVip ? "SIM ✅" : "NAO ❌";
-      const bioEncoded = encodeURIComponent(bio || "privado, ou sem recado!!");
-
-      const canvasUrl = `https://tokito-apis.com.br/canvas/perfil?fundo=${encodeURIComponent(avatarUrl)}&avatar=${encodeURIComponent(avatarUrl)}&text=${nome}&subtext=${grupo}&logo=${encodeURIComponent(avatarUrl)}&cargo=${cargo}&vip=${vip}&bio=${bioEncoded}&apikey=${tokitoApi}`;
-
-      console.log("🖼️ Canvas URL:", canvasUrl);
-
-      // =====================
-      // BAIXA A IMAGEM DO CANVAS
-      // =====================
-      let imageBuffer = null;
-
-      try {
-        const response = await axios.get(canvasUrl, {
-          responseType: "arraybuffer",
-          timeout: 30000,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        });
-        imageBuffer = Buffer.from(response.data);
-        console.log("✅ Imagem do perfil baixada com sucesso! Tamanho:", imageBuffer.length);
-      } catch (e) {
-        console.log("⚠️ Erro ao baixar imagem do canvas:", e.message);
-      }
-
-      // =====================
-      // TEXTO DO PERFIL (NOVO FORMATO)
-      // =====================
-      const textProfile = `*👤 | ᴘᴇʀғɪʟ ᴅᴏ ᴜsᴜᴀʀɪᴏ*
-
-- *👤 | ᴜsᴜᴀ́ʀɪᴏ* → *@${pushName}*
-- *📱 | ɴᴜᴍᴇʀᴏ → ${userNumber}*
-- *🗒️ | ʙɪᴏ → ${bio}*
-- *💎 | ᴠɪᴘ → ${vip}*
-- *🧰 | ᴄᴀʀɢᴏ → ${cargo}*
-- *🏘️ | ɢʀᴜᴘᴏ → ${grupoNome}*
-- *🐂 | ɴɪᴠᴇʟ ɢᴀᴅᴏ → ${gadoPercent}%*
-- *😋 | ɢᴏsᴛᴏsᴜʀᴀ → ${gostosuraPercent}%*
-- *🏳️‍🌈 | ɢᴀʏ → ${gayPercent}%*
-- *🔞 | ᴘᴜᴛᴀʀɪᴀ → ${putariaPercent}%*
-- *💰 | ᴘʀᴏɢʀᴀᴍᴀ → R$${dinheiro.toLocaleString('pt-BR')}*
-
-> 🌫️ | ᴜᴛɪʟɪᴢᴇ ${prefix}menu ᴘᴀʀᴀ ʀᴇᴄᴇʙᴇʀ ᴀ ʟɪsᴛᴀ ᴅᴇ ᴄᴏᴍᴀɴᴅᴏs`;
-
-      // =====================
-      // ENVIA A RESPOSTA
-      // =====================
       await conn.sendMessage(from, { react: { text: "👤", key: msg.key } });
 
-      if (imageBuffer && imageBuffer.length > 1000) {
-        // Envia a imagem do canvas
-        await conn.sendMessage(from, {
-          image: imageBuffer,
-          caption: textProfile,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${bot}`,
-              serverMessageId: 116
-            }
-          }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      } else {
-        // Fallback: envia só o texto
-        await conn.sendMessage(from, {
-          text: textProfile,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${bot}`,
-              serverMessageId: 116
-            }
-          }
-        }, { quoted: msg });
-      }
+      const imageBuffer = await generateProfileCardV2({
+        avatarUrl: profilePicture?.url || "",
+        name: pushName,
+        gamertag,
+        status,
+        bio,
+      });
 
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+      const caption =
+        "*👤 | ᴘᴇʀғɪʟ*\n\n" +
+        "• ᴜsᴜᴀ́ʀɪᴏ: *" + pushName + "*\n" +
+        (userNumber ? "• ɴᴜ́ᴍᴇʀᴏ: *" + userNumber + "*\n" : "") +
+        "• ᴄᴀʀɢᴏ: *" + cargo + "*\n" +
+        "• ɢʀᴜᴘᴏ: *" + groupName + "*\n" +
+        "• ʙɪᴏ: " + bio;
 
-    } catch (error) {
-      console.error("❌ Erro perfil:", error);
       await conn.sendMessage(from, {
-        text: `❌ *ᴇʀʀᴏ ᴀᴏ ɢᴇʀᴀʀ ᴘᴇʀғɪʟ!*\n\n📌 ${error.message}`,
+        image: imageBuffer,
+        mimetype: "image/png",
+        caption,
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,
           forwardedNewsletterMessageInfo: {
             newsletterJid: "120363426698503859@newsletter",
-            newsletterName: `${bot}`,
-            serverMessageId: 116
-          }
-        }
-      }, { quoted: msg });
-    }
-  }
-};
+            newsletterName: bot,
+            serverMessageId: 116,
+          },
+        },
+      }, {
+        quoted: createStatusQuoted(msg),
+      });
 
-Object.assign(module.exports, {
-  "menuCategory": "Utilidades",
-  "menuSection": "Perfil",
-  "description": "mostra as informações do seu perfil"
-});
+      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+    } catch (error) {
+      console.error("❌ Erro perfil Card 2.0:", error);
+      await conn.sendMessage(from, {
+        text:
+          "❌ *ᴇʀʀᴏ ᴀᴏ ɢᴇʀᴀʀ ᴘᴇʀғɪʟ!*\n\n" +
+          "📌 " + (error?.message || "Erro desconhecido."),
+      }, { quoted: msg }).catch(() => {});
+    }
+  },
+
+  _internals: {
+    senderCandidates,
+    participantValues,
+    findParticipant,
+    cleanName,
+    gamertagFromName,
+    resolveDisplayName,
+    resolveBio,
+  },
+};
