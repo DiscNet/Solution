@@ -1,5 +1,6 @@
 const sharp = require("sharp");
 const { generateWelcomeCard } = require("./welcomeCard");
+const contactNameCache = require("./contactNameCache");
 
 function normalizeJid(value) {
   const raw = String(value || "").trim();
@@ -124,6 +125,9 @@ function cleanPushName(value) {
 }
 
 async function resolveDisplayName(conn, participant, metadata, candidates) {
+  const cachedName = cleanPushName(contactNameCache.get(candidates));
+  if (cachedName) return cachedName;
+
   // Dependendo do evento/versão do Baileys, o push name pode aparecer como
   // pushName, pushname ou notify. "notify" é uma das formas mais comuns
   // retornadas pelos dados de contato.
@@ -148,10 +152,12 @@ async function resolveDisplayName(conn, participant, metadata, candidates) {
     for (const jid of candidates) {
       try {
         const contact = await conn.contactFetchWait(jid);
+        contactNameCache.rememberContact(contact);
         const contactPushName = cleanPushName(
           contact?.pushName ||
           contact?.pushname ||
-          contact?.notify
+          contact?.notify ||
+          contactNameCache.get(candidates)
         );
         if (contactPushName) return contactPushName;
       } catch {}
@@ -169,7 +175,12 @@ async function resolveDisplayName(conn, participant, metadata, candidates) {
     }
   }
 
-  // Não mostra telefone no banner caso o WhatsApp não entregue um nome.
+  // Eventos de contato podem chegar alguns instantes depois do evento
+  // group-participants.update. Dá uma pequena janela para o cache receber o pushName.
+  const delayedName = cleanPushName(await contactNameCache.waitFor(candidates));
+  if (delayedName) return delayedName;
+
+  // Não mostra telefone no banner caso o WhatsApp realmente não entregue um nome.
   return "Novo membro";
 }
 
