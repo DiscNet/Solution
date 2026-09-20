@@ -203,11 +203,12 @@ function isEmojiGrapheme(value) {
 function approxWidth(text, fontSize) {
   let total = 0;
   for (const grapheme of splitGraphemes(text)) {
-    if (/^\s+$/u.test(grapheme)) total += fontSize * 0.32;
-    else if (isEmojiGrapheme(grapheme)) total += fontSize * 1.04;
-    else if (/^[MW@#%&]$/u.test(grapheme)) total += fontSize * 0.8;
-    else if (/^[ilI1.,'|]$/u.test(grapheme)) total += fontSize * 0.3;
-    else total += fontSize * 0.58;
+    if (/^\s+$/u.test(grapheme)) total += fontSize * 0.34;
+    else if (isEmojiGrapheme(grapheme)) total += fontSize * 1.12;
+    else if (/^[MW@#%&]$/u.test(grapheme)) total += fontSize * 0.86;
+    else if (/^[A-ZÁÉÍÓÚÃÕÂÊÔÇ]$/u.test(grapheme)) total += fontSize * 0.67;
+    else if (/^[ilI1.,'|]$/u.test(grapheme)) total += fontSize * 0.31;
+    else total += fontSize * 0.61;
   }
   return total;
 }
@@ -257,18 +258,20 @@ function textBlockSvg(options) {
 
   const layout = fitBlock(text, options.maxWidth, options.startSize, options.maxLines);
   const measured = Math.max(...layout.lines.map((line) => approxWidth(line, layout.size)));
-  const horizontalPadding = options.strong ? 38 : 32;
-  const verticalPadding = options.strong ? 22 : 18;
-  const lineHeight = Math.round(layout.size * (options.strong ? 1.22 : 1.18));
-  const minWidth = options.strong ? 220 : 160;
-  const blockWidth = Math.min(
-    options.maxWidth + horizontalPadding * 2,
-    Math.max(minWidth, Math.ceil(measured + horizontalPadding * 2))
+  const horizontalPadding = options.strong ? 46 : 40;
+  const verticalPadding = options.strong ? 20 : 17;
+  const lineHeight = Math.round(layout.size * (options.strong ? 1.2 : 1.16));
+  const minWidth = options.minWidth || (options.strong ? 260 : 190);
+  const maxBlockWidth = Math.min(
+    options.blockMaxWidth || 930,
+    CARD_SIZE - (CARD_INSET + 42) * 2
   );
+  const wantedWidth = Math.ceil(measured * 1.08 + horizontalPadding * 2);
+  const blockWidth = Math.max(minWidth, Math.min(maxBlockWidth, wantedWidth));
   const textHeight = layout.size + Math.max(0, layout.lines.length - 1) * lineHeight;
   const blockHeight = Math.ceil(textHeight + verticalPadding * 2);
-  const x = (CARD_SIZE - blockWidth) / 2;
-  const y = options.centerY - blockHeight / 2;
+  const x = Math.round((CARD_SIZE - blockWidth) / 2);
+  const y = Math.round(options.centerY - blockHeight / 2);
   const startY = options.centerY - ((layout.lines.length - 1) * lineHeight) / 2;
 
   const tspans = layout.lines.map((line, index) => {
@@ -288,13 +291,33 @@ function textBlockSvg(options) {
 
 function buildOverlaySvg(params) {
   const text1 = textBlockSvg({
-    text: params.text1, centerY: 132, maxWidth: 870, startSize: 52, maxLines: 2, neon: params.neon
+    text: params.text1,
+    centerY: 132,
+    maxWidth: 760,
+    blockMaxWidth: 900,
+    startSize: 50,
+    maxLines: 1,
+    neon: params.neon,
   });
   const text2 = textBlockSvg({
-    text: params.text2, centerY: 720, maxWidth: 900, startSize: 78, maxLines: 4, neon: params.neon, strong: true
+    text: params.text2,
+    centerY: 718,
+    maxWidth: 780,
+    blockMaxWidth: 930,
+    startSize: 72,
+    maxLines: 2,
+    minWidth: 280,
+    neon: params.neon,
+    strong: true,
   });
   const text3 = textBlockSvg({
-    text: params.text3, centerY: 925, maxWidth: 870, startSize: 42, maxLines: 2, neon: params.neon
+    text: params.text3,
+    centerY: 925,
+    maxWidth: 790,
+    blockMaxWidth: 920,
+    startSize: 42,
+    maxLines: 2,
+    neon: params.neon,
   });
 
   const innerSize = CARD_SIZE - CARD_INSET * 2;
@@ -324,6 +347,115 @@ function buildOverlaySvg(params) {
     '</svg>';
 
   return Buffer.from(svg);
+}
+
+function rgbToHsv(r, g, b) {
+  const rn = r / 255;
+  const gn = g / 255;
+  const bn = b / 255;
+  const max = Math.max(rn, gn, bn);
+  const min = Math.min(rn, gn, bn);
+  const delta = max - min;
+  let h = 0;
+
+  if (delta) {
+    if (max === rn) h = ((gn - bn) / delta) % 6;
+    else if (max === gn) h = (bn - rn) / delta + 2;
+    else h = (rn - gn) / delta + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+
+  return {
+    h,
+    s: max === 0 ? 0 : delta / max,
+    v: max,
+  };
+}
+
+function hsvToRgb(h, s, v) {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  let rp = 0, gp = 0, bp = 0;
+
+  if (h < 60) [rp, gp, bp] = [c, x, 0];
+  else if (h < 120) [rp, gp, bp] = [x, c, 0];
+  else if (h < 180) [rp, gp, bp] = [0, c, x];
+  else if (h < 240) [rp, gp, bp] = [0, x, c];
+  else if (h < 300) [rp, gp, bp] = [x, 0, c];
+  else [rp, gp, bp] = [c, 0, x];
+
+  return [
+    Math.round((rp + m) * 255),
+    Math.round((gp + m) * 255),
+    Math.round((bp + m) * 255),
+  ];
+}
+
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b]
+    .map(value => Math.max(0, Math.min(255, value)).toString(16).padStart(2, "0"))
+    .join("");
+}
+
+async function deriveAvatarNeon(buffer) {
+  try {
+    const { data, info } = await sharp(buffer, { limitInputPixels: 40_000_000 })
+      .resize(48, 48, { fit: "cover", position: "attention" })
+      .removeAlpha()
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+
+    const bins = Array.from({ length: 18 }, () => ({
+      score: 0,
+      weight: 0,
+      r: 0,
+      g: 0,
+      b: 0,
+    }));
+
+    for (let i = 0; i < data.length; i += info.channels) {
+      const r = data[i];
+      const g = data[i + 1];
+      const b = data[i + 2];
+      const hsv = rgbToHsv(r, g, b);
+
+      if (hsv.v < 0.16) continue;
+      if (hsv.v > 0.97 && hsv.s < 0.12) continue;
+
+      const saturationWeight = 0.2 + hsv.s * 1.8;
+      const brightnessWeight = 0.55 + (1 - Math.abs(hsv.v - 0.62)) * 0.7;
+      const weight = saturationWeight * brightnessWeight;
+      const binIndex = Math.min(17, Math.floor(hsv.h / 20));
+      const bin = bins[binIndex];
+
+      bin.score += weight;
+      bin.weight += weight;
+      bin.r += r * weight;
+      bin.g += g * weight;
+      bin.b += b * weight;
+    }
+
+    const best = bins.reduce((winner, bin) =>
+      bin.score > winner.score ? bin : winner
+    , bins[0]);
+
+    if (!best || best.weight <= 0) return "#7c3aed";
+
+    const r = best.r / best.weight;
+    const g = best.g / best.weight;
+    const b = best.b / best.weight;
+    const hsv = rgbToHsv(r, g, b);
+
+    const boostedS = Math.max(0.58, Math.min(0.92, hsv.s * 1.22));
+    const boostedV = Math.max(0.78, Math.min(0.96, hsv.v * 1.16));
+    const [nr, ng, nb] = hsvToRgb(hsv.h, boostedS, boostedV);
+
+    return rgbToHex(nr, ng, nb);
+  } catch {
+    return "#7c3aed";
+  }
 }
 
 async function prepareCircularImage(buffer) {
@@ -383,7 +515,7 @@ async function generateWelcomeCard(input, options = {}) {
 
   const neon = options.neon && /^#[0-9a-f]{6}$/i.test(options.neon)
     ? options.neon
-    : NEON_COLORS[Math.floor(Math.random() * NEON_COLORS.length)];
+    : await deriveAvatarNeon(images[1]);
 
   const background = await prepareRoundedBackground(images[0]);
 
@@ -420,6 +552,10 @@ module.exports = {
     approxWidth,
     wrapWords,
     fitBlock,
+    rgbToHsv,
+    hsvToRgb,
+    rgbToHex,
+    deriveAvatarNeon,
     isPrivateIp,
     normalizeImageBuffer,
     resolveImageSource,
