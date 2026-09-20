@@ -2,7 +2,10 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { getMessageProfilePicture } = require("../../functions/profilePicture");
-const { generateProfileCardV2 } = require("../../functions/profileCardV2");
+const {
+  generateProfileCardV2,
+  fetchImageBuffer,
+} = require("../../functions/profileCardV2");
 const contactNameCache = require("../../functions/contactNameCache");
 const { sameIdentity } = require("../../functions/permissions");
 
@@ -50,6 +53,46 @@ function gamertagFromName(name, fallback = "whatsapp") {
   return clean || String(fallback || "whatsapp").slice(0, 38);
 }
 
+function phone(jid) {
+  return String(jid || "")
+    .split("@")[0]
+    .split(":")[0]
+    .replace(/\D/g, "");
+}
+
+function parseStatus(value) {
+  return String(
+    value?.status?.status ||
+    value?.status ||
+    value?.[0]?.status?.status ||
+    value?.[0]?.status ||
+    ""
+  ).trim();
+}
+
+// Mesma lógica do comando getbio em tokito-extras.js.
+async function fetchBio(conn, candidates = []) {
+  for (const jid of [...new Set(candidates.filter(Boolean))]) {
+    try {
+      if (typeof conn.fetchStatus === "function") {
+        const result = await conn.fetchStatus(jid);
+        const text = parseStatus(result);
+        if (text) return { text, jid };
+      }
+    } catch {}
+
+    try {
+      if (typeof conn.getStatus === "function") {
+        const result = await conn.getStatus(jid);
+        const text = parseStatus(result);
+        if (text) return { text, jid };
+      }
+    } catch {}
+  }
+
+  return null;
+}
+
 async function resolveDisplayName(conn, msg, metadata, candidates) {
   contactNameCache.rememberMessage(msg);
 
@@ -69,8 +112,12 @@ async function resolveDisplayName(conn, msg, metadata, candidates) {
     participant?.notify ||
     participant?.name
   );
+
   if (fromMetadata) {
-    contactNameCache.remember([...candidates, ...participantValues(participant)], fromMetadata);
+    contactNameCache.remember(
+      [...candidates, ...participantValues(participant)],
+      fromMetadata
+    );
     return fromMetadata;
   }
 
@@ -79,6 +126,7 @@ async function resolveDisplayName(conn, msg, metadata, candidates) {
       try {
         const contact = await conn.contactFetchWait(jid);
         contactNameCache.rememberContact(contact);
+
         const name = cleanName(
           contact?.pushName ||
           contact?.pushname ||
@@ -86,6 +134,7 @@ async function resolveDisplayName(conn, msg, metadata, candidates) {
           contact?.name ||
           contact?.verifiedName
         );
+
         if (name) {
           contactNameCache.remember(candidates, name);
           return name;
@@ -97,25 +146,27 @@ async function resolveDisplayName(conn, msg, metadata, candidates) {
   return "Usuário";
 }
 
-async function resolveBio(conn, candidates) {
-  for (const jid of candidates) {
-    if (typeof conn?.fetchStatus === "function") {
-      try {
-        const result = await conn.fetchStatus(jid);
-        const status = cleanName(result?.status || result?.about);
-        if (status) return status;
-      } catch {}
-    }
+function resolveCargo(participant) {
+  return participant?.admin ? "Admin" : "Membro";
+}
 
-    if (typeof conn?.contactQuery === "function") {
-      try {
-        const result = await conn.contactQuery(jid);
-        const status = cleanName(result?.status || result?.about);
-        if (status) return status;
-      } catch {}
-    }
+async function resolveAvatarBuffer(conn, msg, from, candidates) {
+  const profilePicture = await getMessageProfilePicture(
+    conn,
+    msg,
+    from,
+    candidates,
+    { fallback: null }
+  );
+
+  if (!profilePicture?.url) return null;
+
+  try {
+    return await fetchImageBuffer(profilePicture.url);
+  } catch (error) {
+    console.log("⚠️ Perfil: não foi possível baixar a foto de perfil:", error.message);
+    return null;
   }
-  return "Sem recado público disponível.";
 }
 
 module.exports = {
@@ -127,11 +178,13 @@ module.exports = {
 
   async execute(conn, msg, args, from) {
     const bot = config.botName || "LukaModzz";
+    const prefix = config.prefix || ".";
     const isGroup = String(from || "").endsWith("@g.us");
     let metadata = null;
 
     try {
       const candidates = senderCandidates(msg, from);
+
       if (!candidates.length) {
         return conn.sendMessage(from, {
           text: "❌ ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇʟ ɪᴅᴇɴᴛɪғɪᴄᴀʀ ᴏ ᴜsᴜᴀ́ʀɪᴏ.",
@@ -142,6 +195,7 @@ module.exports = {
         try {
           metadata = await conn.groupMetadata(from);
           const participant = findParticipant(metadata, candidates);
+
           if (participant) {
             for (const value of participantValues(participant)) {
               if (!candidates.some(candidate => sameIdentity(candidate, value))) {
@@ -154,57 +208,57 @@ module.exports = {
         }
       }
 
-      const pushName = await resolveDisplayName(conn, msg, metadata, candidates);
       const participant = findParticipant(metadata, candidates);
-      const cargo = participant?.admin === "superadmin"
-        ? "CRIADOR"
-        : participant?.admin
-          ? "ADMIN"
-          : "MEMBRO";
-      const isVip = participant?.admin === "superadmin";
+      const pushName = await resolveDisplayName(conn, msg, metadata, candidates);
+      const cargo = resolveCargo(participant);
       const groupName = isGroup
         ? cleanName(metadata?.subject || "Grupo")
-        : "Privado";
+        : "PV";
 
-      const bio = await resolveBio(conn, candidates);
-
-      const profilePicture = await getMessageProfilePicture(
-        conn,
-        msg,
-        from,
-        candidates,
-        { fallback: null }
-      );
+      const bioResult = await fetchBio(conn, candidates);
+      const bio = cleanName(bioResult?.text) || "privado, ou sem recado!!";
 
       const primaryIdentity =
         candidates.find(jid => String(jid).endsWith("@s.whatsapp.net")) ||
+        candidates.find(jid => /\d+@/.test(String(jid))) ||
         candidates[0] ||
         "";
-      const userNumber = String(primaryIdentity).split("@")[0].split(":")[0].replace(/\D/g, "");
+
+      const userNumber = phone(primaryIdentity);
       const gamertag = gamertagFromName(pushName, userNumber || "whatsapp");
+      const avatarBuffer = await resolveAvatarBuffer(conn, msg, from, candidates);
 
-      const statusParts = [cargo];
-      if (isVip) statusParts.push("VIP");
-      if (isGroup && groupName) statusParts.push(groupName);
-      const status = statusParts.join(" • ").slice(0, 42);
+      const gadoPercent = Math.floor(Math.random() * 101);
+      const gostosuraPercent = Math.floor(Math.random() * 101);
+      const gayPercent = Math.floor(Math.random() * 101);
+      const putariaPercent = Math.floor(Math.random() * 101);
+      const dinheiro = Math.floor(Math.random() * 10000) + 100;
 
-      await conn.sendMessage(from, { react: { text: "👤", key: msg.key } });
+      await conn.sendMessage(from, {
+        react: { text: "👤", key: msg.key },
+      }).catch(() => {});
 
       const imageBuffer = await generateProfileCardV2({
-        avatarUrl: profilePicture?.url || "",
+        avatarBuffer,
         name: pushName,
         gamertag,
-        status,
+        status: (cargo + (isGroup ? " • " + groupName : "")).slice(0, 42),
         bio,
       });
 
       const caption =
-        "*👤 | ᴘᴇʀғɪʟ*\n\n" +
-        "• ᴜsᴜᴀ́ʀɪᴏ: *" + pushName + "*\n" +
-        (userNumber ? "• ɴᴜ́ᴍᴇʀᴏ: *" + userNumber + "*\n" : "") +
-        "• ᴄᴀʀɢᴏ: *" + cargo + "*\n" +
-        "• ɢʀᴜᴘᴏ: *" + groupName + "*\n" +
-        "• ʙɪᴏ: " + bio;
+        "*👤 | ᴘᴇʀғɪʟ ᴅᴏ ᴜsᴜᴀʀɪᴏ*\n\n" +
+        "- *👤 | ᴜsᴜᴀ́ʀɪᴏ* → *@" + pushName + "*\n" +
+        "- *📱 | ɴᴜᴍᴇʀᴏ → " + (userNumber || "indisponível") + "*\n" +
+        "- *🗒️ | ʙɪᴏ → " + bio + "*\n" +
+        "- *🧰 | ᴄᴀʀɢᴏ → " + cargo + "*\n" +
+        "- *🏘️ | ɢʀᴜᴘᴏ → " + groupName + "*\n" +
+        "- *🐂 | ɴɪᴠᴇʟ ɢᴀᴅᴏ → " + gadoPercent + "%*\n" +
+        "- *😋 | ɢᴏsᴛᴏsᴜʀᴀ → " + gostosuraPercent + "%*\n" +
+        "- *🏳️‍🌈 | ɢᴀʏ → " + gayPercent + "%*\n" +
+        "- *🔞 | ᴘᴜᴛᴀʀɪᴀ → " + putariaPercent + "%*\n" +
+        "- *💰 | ᴘʀᴏɢʀᴀᴍᴀ → R$" + dinheiro.toLocaleString("pt-BR") + "*\n\n" +
+        "> 🌫️ | ᴜᴛɪʟɪᴢᴇ " + prefix + "menu ᴘᴀʀᴀ ʀᴇᴄᴇʙᴇʀ ᴀ ʟɪsᴛᴀ ᴅᴇ ᴄᴏᴍᴀɴᴅᴏs";
 
       await conn.sendMessage(from, {
         image: imageBuffer,
@@ -223,9 +277,12 @@ module.exports = {
         quoted: createStatusQuoted(msg),
       });
 
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+      await conn.sendMessage(from, {
+        react: { text: "✅", key: msg.key },
+      }).catch(() => {});
     } catch (error) {
       console.error("❌ Erro perfil Card 2.0:", error);
+
       await conn.sendMessage(from, {
         text:
           "❌ *ᴇʀʀᴏ ᴀᴏ ɢᴇʀᴀʀ ᴘᴇʀғɪʟ!*\n\n" +
@@ -240,7 +297,11 @@ module.exports = {
     findParticipant,
     cleanName,
     gamertagFromName,
+    phone,
+    parseStatus,
+    fetchBio,
     resolveDisplayName,
-    resolveBio,
+    resolveCargo,
+    resolveAvatarBuffer,
   },
 };
