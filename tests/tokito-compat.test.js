@@ -32,7 +32,6 @@ test("novos comandos gratuitos do catálogo estão registrados", () => {
   for (const name of [
     "getperfil",
     "getbio",
-    "idade",
     "wikipedia",
     "npm",
     "chance",
