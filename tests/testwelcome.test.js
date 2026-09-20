@@ -69,3 +69,53 @@ test("welcomeCard prepara renderização e medição para emojis", () => {
   assert.match(overlay, /clipPath id="cardClip"/);
   assert.ok(card._internals.approxWidth("😀", 40) > card._internals.approxWidth("i", 40));
 });
+
+
+test("welcomeCard deriva a cor principal da paleta do avatar", async () => {
+  const redAvatar = await sharp({
+    create: {
+      width: 128,
+      height: 128,
+      channels: 3,
+      background: { r: 220, g: 35, b: 45 },
+    },
+  }).png().toBuffer();
+
+  const blueAvatar = await sharp({
+    create: {
+      width: 128,
+      height: 128,
+      channels: 3,
+      background: { r: 35, g: 80, b: 220 },
+    },
+  }).png().toBuffer();
+
+  const redNeon = await card._internals.deriveAvatarNeon(redAvatar);
+  const blueNeon = await card._internals.deriveAvatarNeon(blueAvatar);
+
+  assert.match(redNeon, /^#[0-9a-f]{6}$/i);
+  assert.match(blueNeon, /^#[0-9a-f]{6}$/i);
+  assert.notEqual(redNeon, blueNeon);
+
+  const redRgb = redNeon.match(/[0-9a-f]{2}/gi).map(value => parseInt(value, 16));
+  const blueRgb = blueNeon.match(/[0-9a-f]{2}/gi).map(value => parseInt(value, 16));
+
+  assert.ok(redRgb[0] > redRgb[1] && redRgb[0] > redRgb[2]);
+  assert.ok(blueRgb[2] > blueRgb[0] && blueRgb[2] > blueRgb[1]);
+});
+
+test("welcomeCard mantém as barras de texto dentro de limites estáveis", () => {
+  const overlay = card._internals.buildOverlaySvg({
+    text1: "SEJA BEM-VINDO(A)!",
+    text2: "Um nome extremamente grande para testar o ajuste correto da barra atrás do texto",
+    text3: "Um grupo com um nome igualmente grande para testar o limite visual",
+    neon: "#6f7cff",
+  }).toString("utf8");
+
+  const barWidths = [...overlay.matchAll(
+    /<rect x="[^"]+" y="[^"]+" width="([^"]+)" height="[^"]+" rx="[^"]+" fill="rgba\(5,7,14,[^)]+\)"/g
+  )].map(match => Number(match[1]));
+
+  assert.equal(barWidths.length, 3);
+  assert.ok(barWidths.every(width => width >= 190 && width <= 930));
+});
