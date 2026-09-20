@@ -271,8 +271,8 @@ function buildOverlaySvg(params) {
       '" fill="none" stroke="' + params.neon + '" stroke-opacity="0.78" stroke-width="15" filter="url(#frameGlow)"/>' +
     '<rect x="' + CARD_INSET + '" y="' + CARD_INSET + '" width="' + innerSize + '" height="' + innerSize +
       '" rx="' + CARD_RADIUS + '" fill="none" stroke="' + params.neon + '" stroke-width="6"/>' +
-    '<rect x="28" y="28" width="1024" height="1024" rx="' + (CARD_RADIUS - 4) +
-      '" fill="none" stroke="#ffffff" stroke-opacity="0.62" stroke-width="1.5"/>' +
+    '<rect x="30.5" y="30.5" width="1019" height="1019" rx="' + (CARD_RADIUS - 7) +
+      '" fill="none" stroke="#ffffff" stroke-opacity="0.96" stroke-width="1"/>' +
     '<circle cx="540" cy="395" r="146" fill="none" stroke="' + params.neon +
       '" stroke-opacity="0.78" stroke-width="18" filter="url(#avatarGlow)"/>' +
     '<circle cx="540" cy="395" r="140" fill="none" stroke="' + params.neon + '" stroke-width="11"/>' +
@@ -313,6 +313,11 @@ function buildCardMaskSvg() {
 async function prepareRoundedBackground(buffer) {
   const resized = await sharp(buffer, { limitInputPixels: 40_000_000 })
     .resize(CARD_SIZE, CARD_SIZE, { fit: "cover", position: "attention" })
+    .blur(8)
+    .modulate({
+      brightness: 0.72,
+      saturation: 0.94,
+    })
     .ensureAlpha()
     .png()
     .toBuffer();
