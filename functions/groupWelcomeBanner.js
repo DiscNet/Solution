@@ -107,36 +107,70 @@ function findMetadataParticipant(metadata, candidates) {
 }
 
 function cleanPushName(value) {
-  const name = String(value || "").replace(/[\r\n\t]+/g, " ").replace(/\s{2,}/g, " ").trim();
-  return name.slice(0, 80);
+  const name = String(value || "")
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim()
+    .slice(0, 80);
+
+  if (!name) return "";
+
+  // Nunca deixa número/JID virar o "nome" visual do banner.
+  const compact = name.replace(/[\s()+\-.]/g, "");
+  if (/^\d{6,}$/.test(compact)) return "";
+  if (/^\d+@(s\.whatsapp\.net|lid|g\.us)$/i.test(name)) return "";
+
+  return name;
 }
 
 async function resolveDisplayName(conn, participant, metadata, candidates) {
-  // O nome visual do banner deve vir de pushName. Outros campos como
-  // notify/name não são usados como nome principal para não trocar o nome
-  // escolhido pelo próprio usuário no WhatsApp.
-  const directPushName = participant && typeof participant === "object"
-    ? cleanPushName(participant.pushName || participant.pushname)
-    : "";
-  if (directPushName) return directPushName;
+  // Dependendo do evento/versão do Baileys, o push name pode aparecer como
+  // pushName, pushname ou notify. "notify" é uma das formas mais comuns
+  // retornadas pelos dados de contato.
+  if (participant && typeof participant === "object") {
+    const directPushName = cleanPushName(
+      participant.pushName ||
+      participant.pushname ||
+      participant.notify
+    );
+    if (directPushName) return directPushName;
+  }
 
   const item = findMetadataParticipant(metadata, candidates);
-  const metadataPushName = cleanPushName(item?.pushName || item?.pushname);
+  const metadataPushName = cleanPushName(
+    item?.pushName ||
+    item?.pushname ||
+    item?.notify
+  );
   if (metadataPushName) return metadataPushName;
 
   if (conn && typeof conn.contactFetchWait === "function") {
     for (const jid of candidates) {
       try {
         const contact = await conn.contactFetchWait(jid);
-        const contactPushName = cleanPushName(contact?.pushName || contact?.pushname);
+        const contactPushName = cleanPushName(
+          contact?.pushName ||
+          contact?.pushname ||
+          contact?.notify
+        );
         if (contactPushName) return contactPushName;
       } catch {}
     }
   }
 
-  // Nem todo evento group-participants.update fornece pushName. Para não
-  // impedir o welcome nesses casos, usa o número somente como fallback técnico.
-  return jidNumber(candidates[0]) || "Novo membro";
+  // Algumas implementações/wrappers do socket oferecem getName().
+  // Só aceita o retorno se ele for de fato um nome e não um número/JID.
+  if (conn && typeof conn.getName === "function") {
+    for (const jid of candidates) {
+      try {
+        const socketName = cleanPushName(await conn.getName(jid));
+        if (socketName) return socketName;
+      } catch {}
+    }
+  }
+
+  // Não mostra telefone no banner caso o WhatsApp não entregue um nome.
+  return "Novo membro";
 }
 
 async function createGroupWelcomeBanner(conn, options = {}) {
@@ -161,7 +195,7 @@ async function createGroupWelcomeBanner(conn, options = {}) {
     .trim()
     .slice(0, 120) || "Grupo";
   const resolvedPushName = await resolveDisplayName(conn, participant, metadata, candidates);
-  const displayName = cleanPushName(resolvedPushName) || jidNumber(candidates[0]) || "Novo membro";
+  const displayName = cleanPushName(resolvedPushName) || "Novo membro";
 
   const [backgroundUrl, mainImageUrl] = await Promise.all([
     findProfilePictureUrl(conn, [groupJid]),
