@@ -102,23 +102,17 @@ test("avatar candidate ordering prefers phone JID over LID", () => {
   );
 });
 
-test("avatar falls back from original profile image to preview", async () => {
+test("avatar usa apenas profilePictureUrl image como a Tokito", async () => {
   const calls = [];
-  const conn = {
+  const result = await avatar._internals.findProfilePicture({
     async profilePictureUrl(jid, type) {
       calls.push([jid, type]);
-      if (type === "image") throw new Error("not available");
-      return "https://example.test/preview.jpg";
+      throw new Error("sem foto");
     },
-  };
+  }, ["5511999999999@s.whatsapp.net"]);
 
-  const result = await findProfilePicture(conn, ["5511888888888@s.whatsapp.net"]);
-  assert.equal(result.url, "https://example.test/preview.jpg");
-  assert.equal(result.quality, "Prévia");
-  assert.deepEqual(calls, [
-    ["5511888888888@s.whatsapp.net", "image"],
-    ["5511888888888@s.whatsapp.net", "preview"],
-  ]);
+  assert.equal(result, null);
+  assert.deepEqual(calls, [["5511999999999@s.whatsapp.net", "image"]]);
 });
 
 test("avatar grupo outside groups returns one helpful text response", async () => {
