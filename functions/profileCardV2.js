@@ -3,8 +3,9 @@ const sharp = require("sharp");
 const { _internals: welcomeInternals } = require("./welcomeCard");
 
 const WIDTH = 1680;
-const HEIGHT = 720;
-const AVATAR_SIZE = 600;
+const HEIGHT = 900;
+const HERO_HEIGHT = 450;
+const AVATAR_SIZE = 360;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 function cleanText(value, maxLength) {
@@ -127,7 +128,7 @@ async function createFallbackAvatar(name = "Perfil") {
       '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
         '<stop offset="0%" stop-color="#171923"/><stop offset="100%" stop-color="#090b11"/>' +
       '</linearGradient></defs>' +
-      '<rect width="600" height="600" rx="32" fill="url(#g)"/>' +
+      '<rect width="600" height="600" fill="url(#g)"/>' +
       '<text x="300" y="330" text-anchor="middle" dominant-baseline="middle" ' +
         'font-family="DejaVu Sans,Arial,sans-serif" font-size="180" font-weight="700" fill="#f7f8fb">' +
         escapeXml(initials) +
@@ -145,8 +146,8 @@ async function prepareAvatar(buffer) {
     .toBuffer();
 
   const mask = Buffer.from(
-    '<svg width="600" height="600" xmlns="http://www.w3.org/2000/svg">' +
-      '<rect width="600" height="600" rx="29" fill="#fff"/>' +
+    '<svg width="' + AVATAR_SIZE + '" height="' + AVATAR_SIZE + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect width="' + AVATAR_SIZE + '" height="' + AVATAR_SIZE + '" rx="34" fill="#fff"/>' +
     '</svg>'
   );
 
@@ -156,114 +157,168 @@ async function prepareAvatar(buffer) {
     .toBuffer();
 }
 
-function buildBackgroundSvg(accent) {
+async function prepareHeroBackground(buffer) {
+  return sharp(buffer, { limitInputPixels: 40_000_000 })
+    .resize(WIDTH, HERO_HEIGHT, { fit: "cover", position: "attention" })
+    .blur(1.5)
+    .modulate({ brightness: 0.82, saturation: 0.92 })
+    .png()
+    .toBuffer();
+}
+
+function iconUser(x, y, size, color, opacity = 1) {
+  const s = size;
+  return '<g transform="translate(' + x + ' ' + y + ')" fill="none" stroke="' + color + '" stroke-opacity="' + opacity + '" stroke-width="' + Math.max(2, Math.round(s * 0.085)) + '" stroke-linecap="round" stroke-linejoin="round">' +
+    '<circle cx="' + (s * 0.5) + '" cy="' + (s * 0.32) + '" r="' + (s * 0.18) + '"/>' +
+    '<path d="M ' + (s * 0.17) + ' ' + (s * 0.87) + ' C ' + (s * 0.2) + ' ' + (s * 0.62) + ', ' + (s * 0.8) + ' ' + (s * 0.62) + ', ' + (s * 0.83) + ' ' + (s * 0.87) + '"/>' +
+  '</g>';
+}
+
+function iconAt(x, y, size, color, opacity = 1) {
+  return '<text x="' + x + '" y="' + y + '" font-family="DejaVu Sans,Arial,sans-serif" font-size="' + size + '" font-weight="700" fill="' + color + '" fill-opacity="' + opacity + '">@</text>';
+}
+
+function iconShield(x, y, size, color, opacity = 1) {
+  return '<path d="M ' + x + ' ' + y + ' L ' + (x + size / 2) + ' ' + (y + size * 0.18) + ' L ' + (x + size) + ' ' + y +
+    ' L ' + (x + size * 0.92) + ' ' + (y + size * 0.58) + ' Q ' + (x + size * 0.5) + ' ' + (y + size) + ' ' + x + ' ' + (y + size * 0.58) +
+    ' Z" fill="none" stroke="' + color + '" stroke-opacity="' + opacity + '" stroke-width="' + Math.max(2, Math.round(size * 0.08)) + '" stroke-linejoin="round"/>';
+}
+
+function iconQuote(x, y, size, color, opacity = 1) {
+  return '<g fill="' + color + '" fill-opacity="' + opacity + '">' +
+    '<path d="M ' + x + ' ' + (y + size * 0.2) + ' h ' + (size * 0.34) + ' v ' + (size * 0.34) + ' h -' + (size * 0.16) + ' q 0 ' + (size * 0.24) + ' -' + (size * 0.18) + ' ' + (size * 0.3) + ' z"/>' +
+    '<path d="M ' + (x + size * 0.5) + ' ' + (y + size * 0.2) + ' h ' + (size * 0.34) + ' v ' + (size * 0.34) + ' h -' + (size * 0.16) + ' q 0 ' + (size * 0.24) + ' -' + (size * 0.18) + ' ' + (size * 0.3) + ' z"/>' +
+  '</g>';
+}
+
+function iconSpark(x, y, size, color, opacity = 1) {
+  return '<path d="M ' + (x + size / 2) + ' ' + y +
+    ' L ' + (x + size * 0.62) + ' ' + (y + size * 0.38) +
+    ' L ' + (x + size) + ' ' + (y + size * 0.5) +
+    ' L ' + (x + size * 0.62) + ' ' + (y + size * 0.62) +
+    ' L ' + (x + size * 0.5) + ' ' + (y + size) +
+    ' L ' + (x + size * 0.38) + ' ' + (y + size * 0.62) +
+    ' L ' + x + ' ' + (y + size * 0.5) +
+    ' L ' + (x + size * 0.38) + ' ' + (y + size * 0.38) +
+    ' Z" fill="' + color + '" fill-opacity="' + opacity + '"/>';
+}
+
+function buildBaseSvg(accent) {
   return Buffer.from(
-    '<svg width="1680" height="720" viewBox="0 0 1680 720" xmlns="http://www.w3.org/2000/svg">' +
+    '<svg width="' + WIDTH + '" height="' + HEIGHT + '" viewBox="0 0 ' + WIDTH + ' ' + HEIGHT + '" xmlns="http://www.w3.org/2000/svg">' +
       '<defs>' +
-        '<linearGradient id="bg" x1="0" y1="0" x2="1680" y2="720">' +
-          '<stop offset="0%" stop-color="#090b11"/>' +
-          '<stop offset="52%" stop-color="#0d1018"/>' +
-          '<stop offset="100%" stop-color="#12101a"/>' +
+        '<linearGradient id="heroShade" x1="0" y1="0" x2="1" y2="0">' +
+          '<stop offset="0%" stop-color="#000000" stop-opacity=".93"/>' +
+          '<stop offset="38%" stop-color="#000000" stop-opacity=".70"/>' +
+          '<stop offset="72%" stop-color="#000000" stop-opacity=".34"/>' +
+          '<stop offset="100%" stop-color="#000000" stop-opacity=".14"/>' +
         '</linearGradient>' +
-        '<radialGradient id="accentGlow" cx="82%" cy="16%" r="52%">' +
-          '<stop offset="0%" stop-color="' + accent + '" stop-opacity=".13"/>' +
+        '<linearGradient id="heroBottomFade" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="#000000" stop-opacity="0"/>' +
+          '<stop offset="100%" stop-color="#000000" stop-opacity=".76"/>' +
+        '</linearGradient>' +
+        '<radialGradient id="accentGlow" cx="78%" cy="14%" r="48%">' +
+          '<stop offset="0%" stop-color="' + accent + '" stop-opacity=".20"/>' +
           '<stop offset="100%" stop-color="' + accent + '" stop-opacity="0"/>' +
         '</radialGradient>' +
       '</defs>' +
-      '<rect width="1680" height="720" fill="url(#bg)"/>' +
-      '<rect width="1680" height="720" fill="url(#accentGlow)"/>' +
-      Array.from({ length: 7 }, (_, i) => {
-        const y = 92 + i * 92;
-        return '<line x1="705" y1="' + y + '" x2="1626" y2="' + y + '" stroke="#ffffff" stroke-opacity=".055" stroke-width="1"/>';
-      }).join("") +
+      '<rect x="0" y="' + HERO_HEIGHT + '" width="' + WIDTH + '" height="' + (HEIGHT - HERO_HEIGHT) + '" fill="#050608"/>' +
+      '<rect x="0" y="0" width="' + WIDTH + '" height="' + HERO_HEIGHT + '" fill="url(#heroShade)"/>' +
+      '<rect x="0" y="0" width="' + WIDTH + '" height="' + HERO_HEIGHT + '" fill="url(#heroBottomFade)"/>' +
+      '<rect x="0" y="0" width="' + WIDTH + '" height="' + HERO_HEIGHT + '" fill="url(#accentGlow)"/>' +
+      '<rect x="0" y="' + (HERO_HEIGHT - 2) + '" width="' + WIDTH + '" height="4" fill="' + accent + '" fill-opacity=".28"/>' +
     '</svg>'
   );
 }
 
 function buildOverlaySvg(params) {
-  const left = 720;
-  const right = 1620;
+  const left = 510;
+  const right = 1600;
   const contentWidth = right - left;
-  const titleSize = fitFont(params.name, contentWidth, 64, 38);
+  const titleSize = fitFont(params.name, contentWidth, 72, 42);
   const handle = params.gamertag
     ? (params.gamertag.startsWith("@") ? params.gamertag : "@" + params.gamertag)
     : "";
 
-  const bioLines = wrapText(params.bio || "Sem descrição.", contentWidth, 32, 4);
+  const bioLines = wrapText(params.bio || "Sem descrição.", 1420, 34, 4);
   const statusWidth = params.status
-    ? Math.min(480, Math.max(138, Math.ceil(approxWidth(params.status, 23) + 56)))
+    ? Math.min(620, Math.max(150, Math.ceil(approxWidth(params.status, 24) + 74)))
     : 0;
 
   const bioSvg = bioLines.map((line, index) =>
-    '<text x="' + left + '" y="' + (382 + index * 44) + '" ' +
-      'font-family="DejaVu Sans,Arial,sans-serif" font-size="32" font-weight="700" ' +
-      'fill="#f5f6fa" fill-opacity=".92">' + escapeXml(line) + '</text>'
+    '<text x="130" y="' + (635 + index * 48) + '" ' +
+      'font-family="DejaVu Sans,Arial,sans-serif" font-size="34" font-weight="700" ' +
+      'fill="#f4f5f8" fill-opacity=".94">' + escapeXml(line) + '</text>'
   ).join("");
 
   const handleSvg = handle && handle !== params.name
-    ? '<text x="' + left + '" y="210" font-family="DejaVu Sans,Arial,sans-serif" ' +
-        'font-size="30" font-weight="700" fill="#e7e9f1" fill-opacity=".82">' +
-        escapeXml(handle) + '</text>'
+    ? iconAt(left, 273, 31, "#ffffff", 0.72) +
+      '<text x="' + (left + 40) + '" y="272" font-family="DejaVu Sans,Arial,sans-serif" ' +
+        'font-size="30" font-weight="700" fill="#ffffff" fill-opacity=".78">' +
+        escapeXml(handle.replace(/^@/, "")) + '</text>'
     : "";
 
   const statusSvg = params.status
     ? '<g>' +
-        '<rect x="' + left + '" y="240" width="' + statusWidth + '" height="52" rx="26" ' +
-          'fill="' + params.accent + '" fill-opacity=".14" stroke="' + params.accent + '" stroke-opacity=".56" stroke-width="1.8"/>' +
-        '<text x="' + (left + 28) + '" y="267" dominant-baseline="middle" ' +
-          'font-family="DejaVu Sans,Arial,sans-serif" font-size="23" font-weight="700" fill="#f5f6fa">' +
+        '<rect x="' + left + '" y="305" width="' + statusWidth + '" height="58" rx="29" ' +
+          'fill="#050608" fill-opacity=".66" stroke="' + params.accent + '" stroke-opacity=".72" stroke-width="2"/>' +
+        iconShield(left + 20, 319, 28, params.accent, 0.95) +
+        '<text x="' + (left + 62) + '" y="335" dominant-baseline="middle" ' +
+          'font-family="DejaVu Sans,Arial,sans-serif" font-size="24" font-weight="700" fill="#ffffff">' +
           escapeXml(params.status) + '</text>' +
       '</g>'
     : "";
 
-  const footerDots = Array.from({ length: 4 }, (_, index) => {
-    const x = left + 380 + index * 42;
-    const r = index === 0 ? 7 : 5;
-    return '<circle cx="' + x + '" cy="635" r="' + r + '" fill="none" stroke="' +
-      (index === 0 ? params.accent : "#ffffff") + '" stroke-opacity="' +
-      (index === 0 ? ".75" : ".18") + '" stroke-width="2"/>';
-  }).join("");
+  const chips = [
+    { x: 130, label: "IDENTIDADE", icon: iconUser(154, 805, 34, params.accent, 0.95) },
+    { x: 430, label: "WHATSAPP", icon: iconAt(454, 834, 32, params.accent, 0.95) },
+    { x: 730, label: "PERFIL", icon: iconShield(754, 809, 32, params.accent, 0.95) },
+  ].map(item =>
+    '<g>' +
+      '<rect x="' + item.x + '" y="790" width="250" height="72" rx="22" fill="#ffffff" fill-opacity=".035" stroke="#ffffff" stroke-opacity=".08" stroke-width="1.5"/>' +
+      item.icon +
+      '<text x="' + (item.x + 76) + '" y="832" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff" fill-opacity=".62">' + item.label + '</text>' +
+    '</g>'
+  ).join("");
 
   return Buffer.from(
-    '<svg width="1680" height="720" viewBox="0 0 1680 720" xmlns="http://www.w3.org/2000/svg">' +
+    '<svg width="' + WIDTH + '" height="' + HEIGHT + '" viewBox="0 0 ' + WIDTH + ' ' + HEIGHT + '" xmlns="http://www.w3.org/2000/svg">' +
       '<defs>' +
-        '<filter id="avatarGlow" x="-20%" y="-20%" width="140%" height="140%">' +
-          '<feGaussianBlur stdDeviation="10"/>' +
+        '<filter id="avatarGlow" x="-30%" y="-30%" width="160%" height="160%">' +
+          '<feGaussianBlur stdDeviation="14"/>' +
         '</filter>' +
-        '<linearGradient id="footerLine" x1="' + left + '" y1="0" x2="' + right + '" y2="0">' +
-          '<stop offset="0%" stop-color="' + params.accent + '" stop-opacity=".85"/>' +
-          '<stop offset="32%" stop-color="' + params.accent + '" stop-opacity=".22"/>' +
+        '<linearGradient id="bioLine" x1="0" y1="0" x2="1" y2="0">' +
+          '<stop offset="0%" stop-color="' + params.accent + '" stop-opacity=".90"/>' +
+          '<stop offset="35%" stop-color="' + params.accent + '" stop-opacity=".28"/>' +
           '<stop offset="100%" stop-color="#ffffff" stop-opacity=".035"/>' +
         '</linearGradient>' +
       '</defs>' +
 
-      '<rect x="60" y="60" width="600" height="600" rx="32" fill="none"/>' +
-      '<rect x="60" y="60" width="600" height="600" rx="32" fill="none" stroke="' + params.accent + '" stroke-opacity=".45" stroke-width="16" filter="url(#avatarGlow)"/>' +
-      '<rect x="60" y="60" width="600" height="600" rx="32" fill="none" stroke="' + params.accent + '" stroke-opacity=".68" stroke-width="4"/>' +
-      '<rect x="686" y="126" width="5" height="468" rx="3" fill="' + params.accent + '"/>' +
+      '<rect x="96" y="130" width="' + AVATAR_SIZE + '" height="' + AVATAR_SIZE + '" rx="38" fill="none" stroke="' + params.accent + '" stroke-opacity=".42" stroke-width="20" filter="url(#avatarGlow)"/>' +
+      '<rect x="96" y="130" width="' + AVATAR_SIZE + '" height="' + AVATAR_SIZE + '" rx="38" fill="none" stroke="' + params.accent + '" stroke-opacity=".82" stroke-width="4"/>' +
+      '<rect x="106" y="140" width="' + (AVATAR_SIZE - 20) + '" height="' + (AVATAR_SIZE - 20) + '" rx="31" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="2"/>' +
 
-      '<text x="' + left + '" y="82" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" fill="' + params.accent + '">PERFIL</text>' +
-      '<text x="' + left + '" y="160" font-family="DejaVu Sans,Arial,sans-serif" font-size="' + titleSize + '" font-weight="700" fill="#f7f8fb">' +
+      iconUser(left, 92, 34, params.accent, 1) +
+      '<text x="' + (left + 48) + '" y="121" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="3" fill="' + params.accent + '">PERFIL</text>' +
+      iconSpark(1540, 86, 34, params.accent, 0.82) +
+
+      '<text x="' + left + '" y="212" font-family="DejaVu Sans,Arial,sans-serif" font-size="' + titleSize + '" font-weight="700" fill="#f8f9fb">' +
         escapeXml(params.name) + '</text>' +
       handleSvg +
       statusSvg +
 
-      '<text x="' + left + '" y="350" font-family="DejaVu Sans,Arial,sans-serif" font-size="20" font-weight="700" fill="' + params.accent + '">SOBRE</text>' +
-      '<rect x="' + (left + 86) + '" y="341" width="254" height="2" fill="' + params.accent + '" fill-opacity=".38"/>' +
-      bioSvg +
+      '<g>' +
+        '<rect x="92" y="535" width="1496" height="292" rx="30" fill="#090a0d" fill-opacity=".78" stroke="#ffffff" stroke-opacity=".055" stroke-width="1.5"/>' +
+        iconQuote(130, 574, 42, params.accent, 0.95) +
+        '<text x="190" y="606" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" font-weight="700" letter-spacing="2.4" fill="' + params.accent + '">SOBRE</text>' +
+        '<rect x="296" y="596" width="1210" height="3" rx="2" fill="url(#bioLine)"/>' +
+        bioSvg +
+      '</g>' +
 
-      '<rect x="' + left + '" y="584" width="' + contentWidth + '" height="3" rx="2" fill="url(#footerLine)"/>' +
-      '<rect x="' + left + '" y="608" width="238" height="54" rx="18" fill="' + params.accent + '" fill-opacity=".16" stroke="' + params.accent + '" stroke-opacity=".32" stroke-width="1.5"/>' +
-      '<rect x="' + (left + 24) + '" y="631" width="94" height="7" rx="4" fill="' + params.accent + '" fill-opacity=".75"/>' +
-      '<rect x="' + (left + 132) + '" y="631" width="72" height="7" rx="4" fill="#ffffff" fill-opacity=".16"/>' +
-      footerDots +
-      '<rect x="' + (right - 330) + '" y="602" width="330" height="66" rx="20" fill="none" stroke="#ffffff" stroke-opacity=".09" stroke-width="1.5"/>' +
-      '<rect x="' + (right - 310) + '" y="623" width="116" height="5" rx="3" fill="' + params.accent + '" fill-opacity=".62"/>' +
-      '<rect x="' + (right - 310) + '" y="638" width="206" height="5" rx="3" fill="#ffffff" fill-opacity=".14"/>' +
-      '<rect x="' + (right - 86) + '" y="623" width="64" height="20" rx="10" fill="' + params.accent + '" fill-opacity=".11"/>' +
+      chips +
 
-      '<rect x="24" y="24" width="1632" height="672" rx="32" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="2"/>' +
-      '<rect x="32" y="32" width="1616" height="656" rx="28" fill="none" stroke="' + params.accent + '" stroke-opacity=".22" stroke-width="1"/>' +
+      '<rect x="24" y="24" width="' + (WIDTH - 48) + '" height="' + (HEIGHT - 48) + '" rx="36" fill="none" stroke="#ffffff" stroke-opacity=".10" stroke-width="2"/>' +
+      '<rect x="32" y="32" width="' + (WIDTH - 64) + '" height="' + (HEIGHT - 64) + '" rx="31" fill="none" stroke="' + params.accent + '" stroke-opacity=".23" stroke-width="1"/>' +
     '</svg>'
   );
 }
@@ -281,15 +336,25 @@ async function generateProfileCardV2(input = {}) {
 
   params.accent = params.accent || await welcomeInternals.deriveAvatarNeon(avatarBuffer);
 
-  const [background, avatar, overlay] = await Promise.all([
-    sharp(buildBackgroundSvg(params.accent)).png().toBuffer(),
+  const [hero, avatar, base, overlay] = await Promise.all([
+    prepareHeroBackground(avatarBuffer),
     prepareAvatar(avatarBuffer),
+    Promise.resolve(buildBaseSvg(params.accent)),
     Promise.resolve(buildOverlaySvg(params)),
   ]);
 
-  return sharp(background)
+  return sharp({
+    create: {
+      width: WIDTH,
+      height: HEIGHT,
+      channels: 4,
+      background: { r: 5, g: 6, b: 8, alpha: 1 },
+    },
+  })
     .composite([
-      { input: avatar, left: 60, top: 60 },
+      { input: hero, left: 0, top: 0 },
+      { input: base, left: 0, top: 0 },
+      { input: avatar, left: 96, top: 130 },
       { input: overlay, left: 0, top: 0 },
     ])
     .png({ compressionLevel: 8 })
@@ -299,6 +364,7 @@ async function generateProfileCardV2(input = {}) {
 module.exports = {
   WIDTH,
   HEIGHT,
+  HERO_HEIGHT,
   AVATAR_SIZE,
   sanitizeInput,
   fetchImageBuffer,
@@ -313,7 +379,13 @@ module.exports = {
     fetchImageBuffer,
     createFallbackAvatar,
     prepareAvatar,
-    buildBackgroundSvg,
+    prepareHeroBackground,
+    buildBaseSvg,
     buildOverlaySvg,
+    iconUser,
+    iconAt,
+    iconShield,
+    iconQuote,
+    iconSpark,
   },
 };
