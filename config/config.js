@@ -13,7 +13,7 @@ module.exports = {
   recarregarConfig: true, // true = recarrega config automaticamente
 
   // Segredos e chaves ficam em variáveis de ambiente no Railway/local.
-  tokitoApi: process.env.TOKITO_API || "",
+  tokitoApi: process.env.TOKITO_API || "tokito_aa8ec032609afb987ab771bb9bfc586d09e8",
   imagekitPrivateKey: process.env.IMAGEKIT_PRIVATE_KEY || "",
   imagekitPublicKey: process.env.IMAGEKIT_PUBLIC_KEY || "",
   imagekitUrlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT || "https://ik.imagekit.io/3cki3c6xi/",
