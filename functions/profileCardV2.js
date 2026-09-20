@@ -235,51 +235,68 @@ function buildOverlaySvg(params) {
   const left = 510;
   const right = 1600;
   const contentWidth = right - left;
-  const titleSize = fitFont(params.name, contentWidth, 72, 42);
+  const titleSize = fitFont(params.name, contentWidth, 88, 52);
   const handle = params.gamertag
     ? (params.gamertag.startsWith("@") ? params.gamertag : "@" + params.gamertag)
     : "";
 
-  const bioLines = wrapText(params.bio || "Sem descrição.", 1420, 34, 4);
+  const bioLines = wrapText(params.bio || "Sem descrição.", 1420, 42, 4);
   const statusWidth = params.status
     ? Math.min(620, Math.max(150, Math.ceil(approxWidth(params.status, 24) + 74)))
     : 0;
 
   const bioSvg = bioLines.map((line, index) =>
     '<text x="130" y="' + (635 + index * 48) + '" ' +
-      'font-family="DejaVu Sans,Arial,sans-serif" font-size="34" font-weight="700" ' +
+      'font-family="DejaVu Sans,Arial,sans-serif" font-size="42" font-weight="700" ' +
       'fill="#f4f5f8" fill-opacity=".94">' + escapeXml(line) + '</text>'
   ).join("");
 
   const handleSvg = handle && handle !== params.name
-    ? iconAt(left, 273, 31, "#ffffff", 0.72) +
-      '<text x="' + (left + 40) + '" y="272" font-family="DejaVu Sans,Arial,sans-serif" ' +
-        'font-size="30" font-weight="700" fill="#ffffff" fill-opacity=".78">' +
+    ? iconAt(left, 282, 38, "#ffffff", 0.76) +
+      '<text x="' + (left + 50) + '" y="281" font-family="DejaVu Sans,Arial,sans-serif" ' +
+        'font-size="36" font-weight="700" fill="#ffffff" fill-opacity=".82">' +
         escapeXml(handle.replace(/^@/, "")) + '</text>'
     : "";
 
   const statusSvg = params.status
     ? '<g>' +
-        '<rect x="' + left + '" y="305" width="' + statusWidth + '" height="58" rx="29" ' +
+        '<rect x="' + left + '" y="322" width="' + Math.max(statusWidth, 300) + '" height="68" rx="34" ' +
           'fill="#050608" fill-opacity=".66" stroke="' + params.accent + '" stroke-opacity=".72" stroke-width="2"/>' +
-        iconShield(left + 20, 319, 28, params.accent, 0.95) +
-        '<text x="' + (left + 62) + '" y="335" dominant-baseline="middle" ' +
-          'font-family="DejaVu Sans,Arial,sans-serif" font-size="24" font-weight="700" fill="#ffffff">' +
+        iconShield(left + 24, 338, 34, params.accent, 0.95) +
+        '<text x="' + (left + 74) + '" y="356" dominant-baseline="middle" ' +
+          'font-family="DejaVu Sans,Arial,sans-serif" font-size="29" font-weight="700" fill="#ffffff">' +
           escapeXml(params.status) + '</text>' +
       '</g>'
     : "";
 
+  const chipWidth = 330;
+  const chipHeight = 92;
+  const chipGap = 42;
+  const chipY = 780;
+  const totalChipsWidth = chipWidth * 3 + chipGap * 2;
+  const chipsStartX = Math.round((WIDTH - totalChipsWidth) / 2);
+
   const chips = [
-    { x: 130, label: "IDENTIDADE", icon: iconUser(154, 805, 34, params.accent, 0.95) },
-    { x: 430, label: "WHATSAPP", icon: iconAt(454, 834, 32, params.accent, 0.95) },
-    { x: 730, label: "PERFIL", icon: iconShield(754, 809, 32, params.accent, 0.95) },
-  ].map(item =>
-    '<g>' +
-      '<rect x="' + item.x + '" y="790" width="250" height="72" rx="22" fill="#ffffff" fill-opacity=".035" stroke="#ffffff" stroke-opacity=".08" stroke-width="1.5"/>' +
-      item.icon +
-      '<text x="' + (item.x + 76) + '" y="832" font-family="DejaVu Sans,Arial,sans-serif" font-size="18" font-weight="700" fill="#ffffff" fill-opacity=".62">' + item.label + '</text>' +
-    '</g>'
-  ).join("");
+    { label: "IDENTIDADE", kind: "user" },
+    { label: "WHATSAPP", kind: "at" },
+    { label: "PERFIL", kind: "shield" },
+  ].map((item, index) => {
+    const x = chipsStartX + index * (chipWidth + chipGap);
+    const centerX = x + chipWidth / 2;
+    const iconSize = item.kind === "at" ? 48 : 50;
+    const iconY = chipY + 16;
+    const icon = item.kind === "user"
+      ? iconUser(centerX - iconSize / 2, iconY, iconSize, params.accent, 0.98)
+      : item.kind === "at"
+        ? iconAt(centerX, chipY + 58, iconSize, params.accent, 0.98)
+        : iconShield(centerX - iconSize / 2, iconY + 2, iconSize, params.accent, 0.98);
+
+    return '<g>' +
+      '<rect x="' + x + '" y="' + chipY + '" width="' + chipWidth + '" height="' + chipHeight + '" rx="26" fill="#ffffff" fill-opacity=".04" stroke="#ffffff" stroke-opacity=".10" stroke-width="1.5"/>' +
+      icon +
+      '<text x="' + centerX + '" y="' + (chipY + 80) + '" text-anchor="middle" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" fill="#ffffff" fill-opacity=".72">' + item.label + '</text>' +
+    '</g>';
+  }).join("");
 
   return Buffer.from(
     '<svg width="' + WIDTH + '" height="' + HEIGHT + '" viewBox="0 0 ' + WIDTH + ' ' + HEIGHT + '" xmlns="http://www.w3.org/2000/svg">' +
@@ -298,20 +315,20 @@ function buildOverlaySvg(params) {
       '<rect x="96" y="130" width="' + AVATAR_SIZE + '" height="' + AVATAR_SIZE + '" rx="38" fill="none" stroke="' + params.accent + '" stroke-opacity=".82" stroke-width="4"/>' +
       '<rect x="106" y="140" width="' + (AVATAR_SIZE - 20) + '" height="' + (AVATAR_SIZE - 20) + '" rx="31" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="2"/>' +
 
-      iconUser(left, 92, 34, params.accent, 1) +
-      '<text x="' + (left + 48) + '" y="121" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="700" letter-spacing="3" fill="' + params.accent + '">PERFIL</text>' +
+      iconUser(left, 88, 42, params.accent, 1) +
+      '<text x="' + (left + 60) + '" y="124" font-family="DejaVu Sans,Arial,sans-serif" font-size="27" font-weight="700" letter-spacing="3" fill="' + params.accent + '">PERFIL</text>' +
       iconSpark(1540, 86, 34, params.accent, 0.82) +
 
-      '<text x="' + left + '" y="212" font-family="DejaVu Sans,Arial,sans-serif" font-size="' + titleSize + '" font-weight="700" fill="#f8f9fb">' +
+      '<text x="' + left + '" y="228" font-family="DejaVu Sans,Arial,sans-serif" font-size="' + titleSize + '" font-weight="700" fill="#f8f9fb">' +
         escapeXml(params.name) + '</text>' +
       handleSvg +
       statusSvg +
 
       '<g>' +
         '<rect x="92" y="535" width="1496" height="292" rx="30" fill="#090a0d" fill-opacity=".78" stroke="#ffffff" stroke-opacity=".055" stroke-width="1.5"/>' +
-        iconQuote(130, 574, 42, params.accent, 0.95) +
-        '<text x="190" y="606" font-family="DejaVu Sans,Arial,sans-serif" font-size="21" font-weight="700" letter-spacing="2.4" fill="' + params.accent + '">SOBRE</text>' +
-        '<rect x="296" y="596" width="1210" height="3" rx="2" fill="url(#bioLine)"/>' +
+        iconQuote(130, 570, 50, params.accent, 0.95) +
+        '<text x="202" y="610" font-family="DejaVu Sans,Arial,sans-serif" font-size="27" font-weight="700" letter-spacing="2.4" fill="' + params.accent + '">SOBRE</text>' +
+        '<rect x="324" y="598" width="1182" height="3" rx="2" fill="url(#bioLine)"/>' +
         bioSvg +
       '</g>' +
 
