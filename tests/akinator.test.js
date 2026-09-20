@@ -196,3 +196,33 @@ test("Akinator extracts the original prompt key from interactive context", () =>
   assert.equal(key.remoteJid, group);
   assert.equal(key.fromMe, true);
 });
+
+
+test("Akinator permite apenas uma partida por grupo como a Tokito", () => {
+  const command = require("../commands/brincadeiras/akinator");
+  const group = "120363000000000000@g.us";
+
+  command._sessions.clear();
+  command._sessions.set("aaaa1111", {
+    token: "aaaa1111",
+    chat: group,
+    ownerName: "Alice",
+    ownerIds: new Set(["5511999999999@s.whatsapp.net"]),
+    touchedAt: Date.now(),
+  });
+
+  const session = command._internals.findChatSession(group);
+  assert.ok(session);
+  assert.equal(session.ownerName, "Alice");
+  assert.equal(command._internals.playerName(session), "Alice");
+
+  command._sessions.clear();
+});
+
+test("Akinator usage inclui tela inicial/status e mantém respostas antigas", () => {
+  const command = require("../commands/brincadeiras/akinator");
+  assert.match(command.usage, /iniciar/);
+  assert.match(command.usage, /status/);
+  assert.match(command.usage, /voltar/);
+  assert.match(command.usage, /provavelmentenao/);
+});
