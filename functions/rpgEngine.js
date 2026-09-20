@@ -2,6 +2,7 @@ const fs = require("fs");
 const path = require("path");
 const config = require("../config/config");
 const rpgSystem = require("./rpgSystem");
+const economySystem = require("./economySystem");
 const { createStatusQuoted } = require("./statusCard");
 
 const DB_PATH = path.join(__dirname, "..", "database", "rpg.json");
@@ -272,6 +273,6 @@ else if(["adminadditem","adminremoveitem","adminreset","adminban","adminunban"].
 else if(def.kind==="adminevent"){const text=args.join(" ").trim();if(!text)result={text:`Use \`${prefix}rpgevento Nome do evento\` ou \`${prefix}rpgevento off\`.`,changed:false};else if(text.toLowerCase()==="off"){db.eventoGlobal={};result={text:"Evento global encerrado.",changed:true};}else{db.eventoGlobal={name:text.slice(0,60),bonus:"recompensas e exploração ampliadas",at:Date.now(),by:id};result={text:`Evento global criado: ${text.slice(0,60)}.`,changed:true};}}
 else result={text:"Comando RPG ainda não implementado corretamente.",changed:false};
 
-if(user){user.stats.acoes+=result?.changed&&!["gather","collect","train","explore"].includes(def.kind)?1:0;const achievements=checkAchievements(user);if(achievements.length&&result)result.text+=`\n🏆 Novo título: ${achievements.join(", ")}.`;db.usuarios[id]=user;}if(result?.changed)saveDb(db);return send(conn,from,msg,result?.text||"Ação concluída.");}
+if(user){user.stats.acoes+=result?.changed&&!["gather","collect","train","explore"].includes(def.kind)?1:0;const achievements=checkAchievements(user);if(achievements.length&&result)result.text+=`\n🏆 Novo título: ${achievements.join(", ")}.`;db.usuarios[id]=user;}if(result?.changed){saveDb(db);if(user&&economySystem.isEnabled(from))economySystem.reconcileUser(id);}return send(conn,from,msg,result?.text||"Ação concluída.");}
 
 module.exports={execute,executeDefinition:execute,loadDb,saveDb,normalizeUser,senderId,targetId,addItem,removeItem,itemCount,ITEMS,RECIPES,CLASSES,SKILLS,QUESTS,ZONES,MONSTERS,BOSSES,LEGACY_COMMANDS,stylize};
