@@ -85,3 +85,57 @@ test("ban mantém LID como fallback quando houver mais de uma identidade", () =>
     ["5511999999999@s.whatsapp.net", "123@lid"]
   );
 });
+
+
+test("ban tenta phoneNumber e cai para LID se necessário", async () => {
+  const calls = [];
+  const groupJid = "120363222222222222@g.us";
+  const actor = "5511000000001@s.whatsapp.net";
+  const botJid = "5511000000002@s.whatsapp.net";
+  const targetPhone = "5511000000003@s.whatsapp.net";
+  const targetLid = "999999@lid";
+
+  const conn = {
+    user: { id: botJid },
+    async groupMetadata() {
+      return {
+        participants: [
+          { id: actor, admin: "admin" },
+          { id: botJid, admin: "admin" },
+          { id: targetLid, phoneNumber: targetPhone, admin: null },
+        ],
+      };
+    },
+    async groupParticipantsUpdate(from, jids, action) {
+      calls.push({ from, jid: jids[0], action });
+      if (jids[0] === targetPhone) throw new Error("PN indisponível");
+      return [{ status: "200" }];
+    },
+    async sendMessage() {
+      return {};
+    },
+  };
+
+  const msg = {
+    key: {
+      remoteJid: groupJid,
+      participant: actor,
+    },
+    message: {
+      extendedTextMessage: {
+        text: ".ban @alvo",
+        contextInfo: {
+          mentionedJid: [targetPhone],
+        },
+      },
+    },
+  };
+
+  await ban.execute(conn, msg, [], groupJid);
+
+  assert.deepEqual(
+    calls.map(item => item.jid),
+    [targetPhone, targetLid]
+  );
+  assert.equal(calls.every(item => item.action === "remove"), true);
+});
