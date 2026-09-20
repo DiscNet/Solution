@@ -1,5 +1,6 @@
 // Alteradores de imagem centralizados: um downloader, um pipeline e efeitos realmente distintos.
 const { runImageTransform } = require("../../functions/imageTransform");
+const { getMediaSource, runTransform } = require("../../functions/mediaTransform");
 
 function sc(text) {
   const map = {
@@ -27,7 +28,7 @@ const definitions = [
   { name: "negativo", aliases: ["invert", "negative"], effect: "negative", label: "Negativo", emoji: "🔄", help: "inverte todas as cores da imagem" },
   { name: "noise", aliases: ["ruido", "ruído"], effect: "noise", label: "Ruído", emoji: "📺", help: "adiciona granulação e ruído visual" },
   { name: "oil", aliases: ["oleo", "óleo", "pinturaoleo"], effect: "oil", label: "Pintura a óleo", emoji: "🎨", help: "suaviza e agrupa tons para lembrar pintura a óleo" },
-  { name: "pixel", aliases: ["pixelar"], effect: "pixel", label: "Pixel", emoji: "👾", help: "pixeliza a imagem preservando blocos nítidos" },
+  { name: "pixel", aliases: ["pixelar"], effect: "pixel", label: "Pixel", emoji: "👾", help: "pixeliza imagens e vídeos preservando blocos nítidos" },
   { name: "red", aliases: ["vermelho"], effect: "red", label: "Vermelho", emoji: "🔴", help: "puxa as cores da imagem para tons vermelhos" },
   { name: "rotate", aliases: ["rotacionar"], effect: "rotate", label: "Rotacionado", emoji: "🔃", help: "rotaciona a imagem em noventa graus" },
   { name: "saturar", aliases: ["saturation", "saturarion"], effect: "saturate", label: "Saturado", emoji: "🌈", help: "aumenta bastante a saturação das cores" },
@@ -51,6 +52,16 @@ const definitions = [
   { name: "neon", aliases: [], effect: "neon", label: "Neon", emoji: "💠", help: "transforma os contornos em linhas coloridas de neon", extra: true },
 ];
 
+const pixelVideoDefinition = Object.freeze({
+  name: "pixel",
+  section: "Vídeo",
+  mediaType: "video",
+  input: "video",
+  output: "video",
+  videoFilter: "scale=iw/14:ih/14:flags=neighbor,scale=iw*14:ih*14:flags=neighbor",
+  help: "pixeliza o vídeo preservando o áudio original",
+});
+
 const extras = definitions.filter((definition) => definition.extra);
 if (extras.length < 13) throw new Error(`Expected at least 13 new image effects, got ${extras.length}`);
 
@@ -66,9 +77,26 @@ module.exports = definitions.map((definition) => ({
   description: sc(definition.help),
   menuCategory: "Alteradores",
   menuSection: "Imagem",
-  usage: `${definition.name} (responda à imagem)`,
+  usage: definition.effect === "pixel"
+    ? `${definition.name} (responda à imagem ou vídeo)`
+    : `${definition.name} (responda à imagem)`,
   imageDefinition: Object.freeze({ ...definition }),
+  videoDefinition: definition.effect === "pixel" ? pixelVideoDefinition : undefined,
   async execute(conn, msg, args, from, axiosInstance, requestedName) {
+    if (definition.effect === "pixel") {
+      const mediaSource = getMediaSource(msg);
+      if (mediaSource?.type === "video") {
+        return runTransform(pixelVideoDefinition, {
+          conn,
+          msg,
+          args,
+          from,
+          axiosInstance,
+          requestedName,
+        });
+      }
+    }
+
     return runImageTransform(definition, { conn, msg, args, from, axiosInstance, requestedName });
   },
 }));
