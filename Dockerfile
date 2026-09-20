@@ -7,6 +7,7 @@ RUN apt-get update \
     && apt-get install -y --no-install-recommends \
       ffmpeg \
       ca-certificates \
+      fonts-noto-color-emoji \
       qrencode \
       zbar-tools \
       tesseract-ocr \
