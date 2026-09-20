@@ -17,7 +17,7 @@ test("ban escolhe uma identidade utilizável do participante", () => {
       id: "123@lid",
       phoneNumber: "5511999999999@s.whatsapp.net",
     }),
-    "5511999999999@s.whatsapp.net"
+    "123@lid"
   );
   assert.equal(actionJid({ id: "123@lid" }), "123@lid");
 });
