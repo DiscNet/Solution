@@ -182,6 +182,7 @@ const aluguel = require("../functions/aluguel");
 // ==============================================
 
 const afk = require("../functions/afk");
+const activitySystem = require("../functions/activitySystem");
 
 // ==============================================
 // ANTIS
@@ -502,6 +503,26 @@ async function startBot() {
     const isMediaCommand = hasMediaInMessage || isReplyingMedia;
 
     try {
+      // ========== ATIVIDADE REAL DO GRUPO ==========
+      // Equivalente ao evento pre da Tokito: registra toda mensagem recebida
+      // e separa comandos, mídia e última atividade por usuário.
+      if (grupo) {
+        const body = msg.message || {};
+        const interactiveCommand = Boolean(
+          body.buttonsResponseMessage ||
+          body.templateButtonReplyMessage ||
+          body.listResponseMessage ||
+          body.interactiveResponseMessage
+        );
+        const detectedForStats = detectCommand(text, commands);
+        activitySystem.recordMessage({
+          groupId: from,
+          msg,
+          sender: msg.key.participantAlt || sender,
+          isCommand: Boolean(detectedForStats) || interactiveCommand,
+        });
+      }
+
       if (await require("../functions/adminPolicy").moderateMessage(conn, msg, from, text)) return;
 
       // ========== EXTRAIR DADOS PARA LOG ==========
@@ -509,55 +530,15 @@ async function startBot() {
       const participantAlt = msg.key.participant ? msg.key.participant.split('@')[0] : null;
       const remoteJidAlt = from ? from.split('@')[0] : null;
 
-      // ========== 🔥 SISTEMA AFK ==========
-      // 🔥 VERIFICA SE QUEM ENVIOU A MENSAGEM ESTÁ EM AFK (REMOVE O AFK)
-      if (afk.isAfk(sender)) {
-        afk.removeAfk(sender);
-        await conn.sendMessage(from, {
-          text: `👋 @${sender.split('@')[0]} ᴠᴏʟᴛᴏᴜ!\n📌 sᴇᴜ ᴀғᴋ ғᴏɪ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`,
-          mentions: [sender],
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: `${config.botName || 'LukaModzz'}`,
-              serverMessageId: 116
-            }
-          }
+      // ========== SISTEMA AFK ==========
+      // O helper ignora os próprios comandos AFK, avisa menções/respostas
+      // e remove automaticamente o estado quando a pessoa volta a conversar.
+      if (grupo) {
+        await afk.processMessage(conn, msg, {
+          from,
+          text,
+          prefix: config.prefix || ".",
         });
-      }
-
-      // 🔥 VERIFICA SE ALGUÉM FOI MARCADO E ESTÁ EM AFK
-      if (text && text.includes('@')) {
-        const mentionedJid = msg.message?.extendedTextMessage?.contextInfo?.mentionedJid;
-        if (mentionedJid && mentionedJid.length > 0) {
-          for (const jid of mentionedJid) {
-            if (afk.isAfk(jid)) {
-              const dadosAfk = afk.getAfk(jid);
-
-              const tempo = Date.now() - dadosAfk.data;
-              const minutos = Math.floor(tempo / 60000);
-              const segundos = Math.floor((tempo % 60000) / 1000);
-              const tempoString = minutos > 0 ? `${minutos}m ${segundos}s` : `${segundos}s`;
-
-              await conn.sendMessage(from, {
-                text: `* ᴏʟá @${sender.split('@')[0]}!* ᴏ ᴘᴀʀᴛɪᴄɪᴘᴀɴᴛᴇ ᴍᴇɴᴄɪᴏɴᴀᴅᴏ sᴇ ᴇɴᴄᴏɴᴛʀᴀ ᴀᴜsᴇɴᴛᴇ ɴᴏ ᴍᴏᴍᴇɴᴛᴏ\n*🙇‍♀️ ᴍᴏᴛɪᴠᴏ*: ${dadosAfk.motivo}\n⏳ *ᴛᴇᴍᴘᴏ:* ${tempoString}`,
-                mentions: [sender, jid],
-                contextInfo: {
-                  forwardingScore: 1,
-                  isForwarded: true,
-                  forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363426698503859@newsletter",
-                    newsletterName: `${config.botName || 'LukaModzz'}`,
-                    serverMessageId: 116
-                  }
-                }
-              });
-              break;
-            }
-          }
-        }
       }
 
       // ========== 🔥 VERIFICAÇÃO DE ALUGUEL ==========
