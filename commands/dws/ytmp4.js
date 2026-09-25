@@ -8,7 +8,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytmp4 link ou pesquisa",
-  description: "Baixa vídeo do YouTube pela Tokito API",
+  description: "Baixa vídeo do YouTube pela API",
   async execute(conn, msg, args, from) {
     const target = args.join(" ").trim();
     if (!target) return conn.sendMessage(from, { text: "❌ Uso: .ytmp4 <link ou pesquisa>" }, { quoted: createStatusQuoted(msg) });
@@ -21,8 +21,8 @@ module.exports = {
       }, { quoted: createStatusQuoted(msg) });
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
     } catch (error) {
-      console.error("[TOKITO YTMP4]", error.message);
-      await conn.sendMessage(from, { text: "❌ Não foi possível baixar o vídeo pela Tokito API." }, { quoted: createStatusQuoted(msg) });
+      console.error("[YTMP4]", error.message);
+      await conn.sendMessage(from, { text: "❌ Não foi possível baixar o vídeo pela API." }, { quoted: createStatusQuoted(msg) });
     }
   },
 };
