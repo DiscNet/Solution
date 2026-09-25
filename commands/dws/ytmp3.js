@@ -1,6 +1,6 @@
 // Menu: Downloads - YouTube | Comando: ytmp3
 const { createStatusQuoted } = require("../../functions/statusCard");
-const tokitoApi = require("../../functions/tokitoApi");
+const { sendYoutubeAudio } = require("../../functions/youtubeMedia");
 
 module.exports = {
   name: "ytmp3",
@@ -8,22 +8,33 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytmp3 link ou pesquisa",
-  description: "Baixa áudio do YouTube pela API",
+  description: "Baixa áudio do YouTube",
+
   async execute(conn, msg, args, from) {
     const target = args.join(" ").trim();
-    if (!target) return conn.sendMessage(from, { text: "❌ Uso: .ytmp3 <link ou pesquisa>" }, { quoted: createStatusQuoted(msg) });
+
+    if (!target) {
+      return conn.sendMessage(from, {
+        text: "❌ Uso: .ytmp3 <link ou pesquisa>",
+      }, { quoted: createStatusQuoted(msg) });
+    }
 
     try {
-      await conn.sendMessage(from, { react: { text: "🎵", key: msg.key } }).catch(() => {});
       await conn.sendMessage(from, {
-        audio: { url: tokitoApi.url("/api/youtube-audio", { q: target }) },
-        mimetype: "audio/mpeg",
-        ptt: false,
-      }, { quoted: createStatusQuoted(msg) });
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
+        react: { text: "🎵", key: msg.key },
+      }).catch(() => {});
+
+      await sendYoutubeAudio(conn, createStatusQuoted(msg), from, target);
+
+      await conn.sendMessage(from, {
+        react: { text: "✅", key: msg.key },
+      }).catch(() => {});
     } catch (error) {
-      console.error("[YTMP3]", error.message);
-      await conn.sendMessage(from, { text: "❌ Não foi possível baixar o áudio pela API." }, { quoted: createStatusQuoted(msg) });
+      console.error("[YTMP3]", error?.message || error);
+
+      await conn.sendMessage(from, {
+        text: "❌ Não foi possível baixar o áudio.",
+      }, { quoted: createStatusQuoted(msg) });
     }
   },
 };
