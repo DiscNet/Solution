@@ -15,7 +15,7 @@ function settings() {
 function ensureConfigured() {
   const cfg = settings();
   if (!cfg.apiKey) {
-    const error = new Error("TOKITO_API não configurada no ambiente.");
+    const error = new Error("Chave da API não configurada no ambiente.");
     error.code = "TOKITO_API_NOT_CONFIGURED";
     throw error;
   }
@@ -40,8 +40,8 @@ function url(route, params = {}) {
 function sanitize(value) {
   const { apiKey } = settings();
   let text = String(value || "");
-  if (apiKey) text = text.split(apiKey).join("[TOKITO_API]");
-  return text.replace(/([?&]apikey=)[^&\s]+/gi, "$1[TOKITO_API]");
+  if (apiKey) text = text.split(apiKey).join("[API_KEY]");
+  return text.replace(/([?&]apikey=)[^&\s]+/gi, "$1[API_KEY]");
 }
 
 function errorInfo(error) {
@@ -51,22 +51,22 @@ function errorInfo(error) {
     ? data
     : data?.resultado || data?.mensagem || data?.message || data?.error || data?.erro || "";
 
-  let message = sanitize(apiMessage || error?.message || "Erro desconhecido na Tokito API.");
-  if (status === 401) message = "Chave Tokito inválida ou não autenticada.";
-  else if (status === 403) message = "A chave Tokito não tem permissão para este endpoint.";
-  else if (status === 404) message = "Endpoint não encontrado na Tokito API.";
-  else if (status === 429) message = "Limite de requisições da Tokito API atingido.";
-  else if (status >= 500) message = "A Tokito API está com erro interno.";
+  let message = sanitize(apiMessage || error?.message || "Erro desconhecido na API.");
+  if (status === 401) message = "Chave da API inválida ou não autenticada.";
+  else if (status === 403) message = "A chave da API não tem permissão para este endpoint.";
+  else if (status === 404) message = "Endpoint não encontrado na API.";
+  else if (status === 429) message = "Limite de requisições da API atingido.";
+  else if (status >= 500) message = "A API está com erro interno.";
 
   return { status, message: String(message).slice(0, 500) };
 }
 
-function userError(error, fallback = "Não foi possível consultar a Tokito API.") {
+function userError(error, fallback = "Não foi possível consultar a API.") {
   if (error?.code === "TOKITO_API_NOT_CONFIGURED") {
-    return "❌ A chave da Tokito API não está configurada no Railway.";
+    return "❌ A chave da API não está configurada no servidor.";
   }
   const info = errorInfo(error);
-  if (info.status) return "❌ Tokito API (" + info.status + "): " + info.message;
+  if (info.status) return "❌ API (" + info.status + "): " + info.message;
   return "❌ " + (info.message || fallback);
 }
 
@@ -75,7 +75,7 @@ async function get(route, params = {}, options = {}) {
   const response = await axios.get(url(route, params), {
     timeout,
     headers: {
-      "user-agent": "TokitoBot/10 Solution",
+      "user-agent": "WhatsAppBot/1.0",
       accept: "application/json",
       ...headers,
     },
@@ -95,7 +95,7 @@ async function post(route, body = {}, options = {}) {
     timeout,
     params: { ...params, apikey: apiKey },
     headers: {
-      "user-agent": "TokitoBot/10 Solution",
+      "user-agent": "WhatsAppBot/1.0",
       accept: "application/json",
       ...headers,
     },
@@ -120,7 +120,7 @@ async function buffer(route, params = {}, options = {}) {
     maxContentLength,
     maxBodyLength,
     headers: {
-      "user-agent": "TokitoBot/10 Solution",
+      "user-agent": "WhatsAppBot/1.0",
       accept: "*/*",
       ...headers,
     },
