@@ -1,5 +1,6 @@
 const tokitoApi = require("./tokitoApi");
 const { normalizeYoutubeList } = require("./youtubeResult");
+const { createStatusQuoted } = require("./statusCard");
 
 function firstMediaUrl(value, depth = 0) {
   if (depth > 7 || value == null) return "";
@@ -25,10 +26,12 @@ function firstMediaUrl(value, depth = 0) {
       "audio",
       "audioUrl",
       "audio_url",
+      "mp3",
       "play",
       "media",
       "file",
       "src",
+      "url",
     ]) {
       const found = firstMediaUrl(value[key], depth + 1);
       if (found) return found;
@@ -65,6 +68,36 @@ async function resolveYoutubeTarget(input) {
   return query;
 }
 
+async function fetchAudioBuffer(url) {
+  const response = await tokitoApi.axios.get(url, {
+    responseType: "arraybuffer",
+    timeout: 120000,
+    maxRedirects: 8,
+    maxContentLength: 80 * 1024 * 1024,
+    maxBodyLength: 80 * 1024 * 1024,
+    headers: {
+      accept: "audio/*,application/octet-stream,*/*",
+      "user-agent": "Mozilla/5.0",
+    },
+    validateStatus: status => status >= 200 && status < 400,
+  });
+
+  const buffer = Buffer.from(response.data || []);
+  const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
+
+  if (!buffer.length) throw new Error("O arquivo de áudio veio vazio.");
+  if (/text\/html|application\/json/i.test(contentType)) {
+    throw new Error("O link resolvido não retornou um arquivo de áudio.");
+  }
+
+  return {
+    buffer,
+    mimetype: contentType.includes("audio/")
+      ? contentType.split(";")[0]
+      : "audio/mpeg",
+  };
+}
+
 async function resolveAudioSource(input) {
   const target = await resolveYoutubeTarget(input);
 
@@ -75,7 +108,14 @@ async function resolveAudioSource(input) {
     }, { timeout: 90000 });
 
     const url = firstMediaUrl(data);
-    if (url) return { type: "url", value: url, target };
+    if (url) {
+      try {
+        const fetched = await fetchAudioBuffer(url);
+        return { ...fetched, target };
+      } catch (error) {
+        console.warn("[YOUTUBE PLAY FILE]", error?.message || error);
+      }
+    }
   } catch (error) {
     console.warn("[YOUTUBE PLAY API]", error?.message || error);
   }
@@ -85,51 +125,64 @@ async function resolveAudioSource(input) {
     query: target,
   }, {
     timeout: 120000,
-    headers: { accept: "audio/*,application/json,*/*" },
+    headers: {
+      accept: "audio/mpeg,audio/*,application/octet-stream,application/json,*/*",
+    },
     maxContentLength: 80 * 1024 * 1024,
     maxBodyLength: 80 * 1024 * 1024,
   });
 
   const contentType = String(result.contentType || "").toLowerCase();
 
-  if (contentType.includes("audio/") || contentType.includes("octet-stream")) {
-    if (!result.buffer?.length) throw new Error("Áudio vazio retornado pela API.");
-    return { type: "buffer", value: result.buffer, target };
+  if (
+    result.buffer?.length &&
+    (
+      contentType.includes("audio/") ||
+      contentType.includes("application/octet-stream")
+    )
+  ) {
+    return {
+      buffer: result.buffer,
+      mimetype: contentType.includes("audio/")
+        ? contentType.split(";")[0]
+        : "audio/mpeg",
+      target,
+    };
   }
 
-  if (contentType.includes("json") || contentType.includes("text")) {
-    let parsed;
+  if (result.buffer?.length) {
+    const raw = result.buffer.toString("utf8").trim();
+    let parsed = raw;
+
     try {
-      parsed = JSON.parse(result.buffer.toString("utf8"));
-    } catch {
-      parsed = result.buffer.toString("utf8");
-    }
+      parsed = JSON.parse(raw);
+    } catch {}
 
     const url = firstMediaUrl(parsed);
-    if (url) return { type: "url", value: url, target };
+    if (url) {
+      const fetched = await fetchAudioBuffer(url);
+      return { ...fetched, target };
+    }
   }
 
-  throw new Error("A API não retornou um áudio utilizável.");
+  throw new Error("A API não retornou um áudio reproduzível.");
 }
 
 async function sendYoutubeAudio(conn, msg, from, input) {
   const source = await resolveAudioSource(input);
 
-  const audio = source.type === "buffer"
-    ? source.value
-    : { url: source.value };
-
   return conn.sendMessage(from, {
-    audio,
-    mimetype: "audio/mpeg",
+    audio: source.buffer,
+    mimetype: source.mimetype || "audio/mpeg",
     fileName: "audio.mp3",
     ptt: false,
-  }, { quoted: msg });
+  }, { quoted: createStatusQuoted(msg) });
 }
 
 module.exports = {
   firstMediaUrl,
   resolveYoutubeTarget,
+  fetchAudioBuffer,
   resolveAudioSource,
   sendYoutubeAudio,
 };
