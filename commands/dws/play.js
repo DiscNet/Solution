@@ -1,6 +1,6 @@
 // Menu: Downloads - YouTube | Comando: play
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { resolveYoutubeVideo, sendYoutubeAudio } = require("../../functions/youtubeResult");
+const { sendYoutubeAudio } = require("../../functions/youtubeMedia");
 
 module.exports = {
   name: "play",
@@ -24,10 +24,7 @@ module.exports = {
         react: { text: "🎧", key: msg.key },
       }).catch(() => {});
 
-      const video = await resolveYoutubeVideo(query);
-      const target = video?.url || query;
-
-      await sendYoutubeAudio(conn, msg, from, target);
+      await sendYoutubeAudio(conn, msg, from, query);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
