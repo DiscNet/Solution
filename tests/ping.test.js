@@ -44,7 +44,7 @@ test("ping sends exactly one complete message with processing as the primary met
 
   assert.equal(calls.length, 1, "ping must make exactly one sendMessage call");
 
-  const report = calls[0].content.text;
+  const report = calls[0].content.caption || calls[0].content.text;
   assert.match(report, /🏓/);
   assert.match(report, /Ping = tempo real de processamento interno/i);
   assert.match(report, /📶/);
@@ -54,6 +54,8 @@ test("ping sends exactly one complete message with processing as the primary met
   assert.match(report, /⚙️/);
   assert.doesNotMatch(report, /medindo\.\.\./i);
   assert.doesNotMatch(report, /Envio WA/i);
+  assert.ok(calls[0].content.image?.url, "ping should send a Tokito canvas image");
+  assert.match(calls[0].content.image.url, /\/canvas\/ping2/);
   assert.equal(calls[0].content.edit, undefined);
   assert.equal(calls[0].content.react, undefined);
 });
