@@ -106,6 +106,15 @@ function tiktokDirectVideoUrl(item) {
   return "";
 }
 
+function isTikTokUrl(value) {
+  try {
+    const parsed = new URL(String(value || ""));
+    return /(^|\.)tiktok\.com$/i.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 function tiktokPageUrl(item) {
   const candidates = [
     item?.url,
@@ -114,11 +123,36 @@ function tiktokPageUrl(item) {
     item?.shareUrl,
     item?.web_url,
     item?.webUrl,
+    item?.share_info?.share_url,
+    item?.shareInfo?.shareUrl,
   ];
 
   for (const candidate of candidates) {
     const found = firstUrl(candidate);
-    if (found) return found;
+    if (found && isTikTokUrl(found)) return found;
+  }
+
+  const id = String(
+    item?.aweme_id ||
+    item?.awemeId ||
+    item?.video_id ||
+    item?.videoId ||
+    item?.id ||
+    ""
+  ).trim();
+
+  const username = String(
+    item?.author?.unique_id ||
+    item?.author?.uniqueId ||
+    item?.author?.username ||
+    item?.unique_id ||
+    item?.uniqueId ||
+    item?.username ||
+    ""
+  ).replace(/^@/, "").trim();
+
+  if (/^\d{8,}$/.test(id) && username) {
+    return "https://www.tiktok.com/@" + encodeURIComponent(username) + "/video/" + id;
   }
 
   return "";
@@ -128,23 +162,44 @@ function tiktokVideoUrl(item) {
   return tiktokDirectVideoUrl(item) || tiktokPageUrl(item);
 }
 
-function collectTikTokItems(value, out = [], depth = 0) {
-  if (depth > 6 || value == null) return out;
+function collectTikTokItems(value, out = [], depth = 0, seen = new WeakSet()) {
+  if (depth > 9 || value == null) return out;
 
   if (Array.isArray(value)) {
-    for (const item of value) collectTikTokItems(item, out, depth + 1);
+    for (const item of value) collectTikTokItems(item, out, depth + 1, seen);
     return out;
   }
 
   if (typeof value !== "object") return out;
+  if (seen.has(value)) return out;
+  seen.add(value);
 
   if (tiktokDirectVideoUrl(value) || tiktokPageUrl(value)) out.push(value);
 
-  for (const key of ["resultado", "resultados", "result", "data", "results", "videos", "items", "item_list", "aweme_list", "feeds", "list"]) {
-    if (value[key] !== undefined) collectTikTokItems(value[key], out, depth + 1);
+  for (const nested of Object.values(value)) {
+    if (nested && typeof nested === "object") {
+      collectTikTokItems(nested, out, depth + 1, seen);
+    }
   }
 
   return out;
+}
+
+function responseShape(value, depth = 0, seen = new WeakSet()) {
+  if (depth > 4) return "...";
+  if (value === null) return "null";
+  if (Array.isArray(value)) {
+    return ["array", value.slice(0, 2).map(item => responseShape(item, depth + 1, seen))];
+  }
+  if (typeof value !== "object") return typeof value;
+  if (seen.has(value)) return "circular";
+  seen.add(value);
+
+  const shape = {};
+  for (const [key, nested] of Object.entries(value).slice(0, 30)) {
+    shape[key] = responseShape(nested, depth + 1, seen);
+  }
+  return shape;
 }
 
 function tiktokItems(data) {
@@ -192,7 +247,9 @@ function tiktokSearchCommand() {
 
         const items = tiktokItems(data);
         if (!items.length) {
-          throw new Error("Nenhum vídeo foi encontrado para essa pesquisa.");
+          console.warn("[TIKTOK SEARCH SHAPE]", JSON.stringify(responseShape(data)));
+          const apiMessage = tokitoApi.text(data);
+          throw new Error(apiMessage || "Nenhum vídeo foi encontrado para essa pesquisa.");
         }
 
         const item = items[Math.floor(Math.random() * items.length)];
@@ -399,8 +456,10 @@ module.exports._test = {
   label,
   summary,
   tiktokDirectVideoUrl,
+  isTikTokUrl,
   tiktokPageUrl,
   tiktokVideoUrl,
   tiktokItems,
   collectTikTokItems,
+  responseShape,
 };
