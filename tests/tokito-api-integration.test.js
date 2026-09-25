@@ -132,6 +132,29 @@ test("tiktoksearch separa link da página de vídeo direto", () => {
   );
 });
 
+test("tiktoksearch percorre wrappers desconhecidos e reconstrói link por id", () => {
+  const data = {
+    payload: {
+      bloco: {
+        resultadosNovos: [
+          {
+            aweme_id: "7481234567890123456",
+            author: { unique_id: "usuario_teste" },
+            desc: "Vídeo teste",
+          },
+        ],
+      },
+    },
+  };
+
+  const items = downloadPack._test.tiktokItems(data);
+  assert.equal(items.length, 1);
+  assert.equal(
+    downloadPack._test.tiktokPageUrl(items[0]),
+    "https://www.tiktok.com/@usuario_teste/video/7481234567890123456"
+  );
+});
+
 test("YouTube normaliza campos objeto sem produzir object Object", () => {
   const video = youtubeResult.normalizeYoutubeItem({
     type: "video",
@@ -151,7 +174,7 @@ test("YouTube normaliza campos objeto sem produzir object Object", () => {
   assert.doesNotMatch(youtubeResult.infoText(video), /\[object Object\]/);
 });
 
-test("play e ytplay usam card com botões de áudio e vídeo", () => {
+test("play e ytplay usam botões nativos de áudio vídeo e documento", () => {
   const playSource = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "play.js"),
     "utf8"
@@ -167,9 +190,23 @@ test("play e ytplay usam card com botões de áudio e vídeo", () => {
 
   assert.match(playSource, /sendYoutubeChoice/);
   assert.match(ytplaySource, /sendYoutubeChoice/);
+  assert.match(helperSource, /nativeFlowMessage/);
+  assert.match(helperSource, /quick_reply/);
   assert.match(helperSource, /🎵 Áudio/);
-  assert.match(helperSource, /📹 Vídeo/);
-  assert.match(helperSource, /sendButtons/);
+  assert.match(helperSource, /🎬 Vídeo/);
+  assert.match(helperSource, /📄 Documento/);
+});
+
+test("ytsearch usa carrossel com botões por resultado", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
+    "utf8"
+  );
+  assert.match(source, /carouselMessage/);
+  assert.match(source, /quick_reply/);
+  assert.match(source, /ytmp3/);
+  assert.match(source, /ytmp4/);
+  assert.match(source, /playdoc/);
 });
 
 test("extras Tokito incluem playdoc TikTok foto e metadinha", () => {
