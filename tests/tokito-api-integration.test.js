@@ -208,6 +208,44 @@ test("ytplay mostra botões de áudio vídeo e documento", () => {
   assert.match(source, /prefix \+ "play " \+ video\.url/);
 });
 
+test("ytsearch usa lista interativa nativa do Baileys", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
+    "utf8"
+  );
+
+  assert.match(source, /generateWAMessageFromContent/);
+  assert.match(source, /single_select/);
+  assert.match(source, /Ver resultados/);
+  assert.doesNotMatch(source, /gifted-btns/);
+});
+
+test("play envia áudio direto usando resolvedor robusto", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "play.js"),
+    "utf8"
+  );
+  const helper = fs.readFileSync(
+    path.join(__dirname, "..", "functions", "youtubeMedia.js"),
+    "utf8"
+  );
+
+  assert.match(source, /sendYoutubeAudio/);
+  assert.match(helper, /\/api\/youtube-play/);
+  assert.match(helper, /\/api\/youtube-audio/);
+  assert.match(helper, /contentType\.includes\("audio\/"\)/);
+});
+
+test("ytplay usa botões nativos compartilhados", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
+    "utf8"
+  );
+
+  assert.match(source, /sendYoutubeChoice/);
+  assert.doesNotMatch(source, /gifted-btns/);
+});
+
 test("extras Tokito incluem playdoc TikTok foto e metadinha", () => {
   const names = extraPack.map(x => x.name);
   assert.ok(names.includes("playdoc"));
