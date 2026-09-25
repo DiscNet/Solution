@@ -1,6 +1,6 @@
 // Menu: Downloads - YouTube | Comando: ytmp3
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { resolveYoutubeVideo, sendYoutubeAudio } = require("../../functions/youtubeResult");
+const { sendYoutubeAudio } = require("../../functions/youtubeMedia");
 
 module.exports = {
   name: "ytmp3",
@@ -24,8 +24,7 @@ module.exports = {
         react: { text: "🎵", key: msg.key },
       }).catch(() => {});
 
-      const video = await resolveYoutubeVideo(query);
-      await sendYoutubeAudio(conn, msg, from, video?.url || query);
+      await sendYoutubeAudio(conn, msg, from, query);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
