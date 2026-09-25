@@ -185,29 +185,6 @@ test("ytsearch usa lista single_select como no fluxo antigo", () => {
   assert.match(source, /prefix \+ "ytplay " \+ video\.url/);
 });
 
-test("play envia áudio diretamente pelo endpoint youtube-audio", () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "play.js"),
-    "utf8"
-  );
-  assert.match(source, /\/api\/youtube-audio/);
-  assert.match(source, /audio: \{ url: audioUrl \}/);
-  assert.match(source, /mimetype: "audio\/mpeg"/);
-  assert.doesNotMatch(source, /sendButtons/);
-});
-
-test("ytplay mostra botões de áudio vídeo e documento", () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
-    "utf8"
-  );
-  assert.match(source, /sendButtons/);
-  assert.match(source, /text: "🎵 Áudio"/);
-  assert.match(source, /text: "📹 Vídeo"/);
-  assert.match(source, /text: "📄 Documento"/);
-  assert.match(source, /prefix \+ "play " \+ video\.url/);
-});
-
 test("ytsearch usa lista interativa nativa do Baileys", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
@@ -244,6 +221,31 @@ test("ytplay usa botões nativos compartilhados", () => {
 
   assert.match(source, /sendYoutubeChoice/);
   assert.doesNotMatch(source, /gifted-btns/);
+});
+
+test("todos os fluxos de áudio YouTube usam resolvedor robusto", () => {
+  const playSource = fs.readFileSync(path.join(__dirname, "..", "commands", "dws", "play.js"), "utf8");
+  const playAudioSource = fs.readFileSync(path.join(__dirname, "..", "commands", "dws", "play_audio.js"), "utf8");
+  const ytmp3Source = fs.readFileSync(path.join(__dirname, "..", "commands", "dws", "ytmp3.js"), "utf8");
+  const playlistSource = fs.readFileSync(path.join(__dirname, "..", "commands", "dws", "playlist.js"), "utf8");
+  const helperSource = fs.readFileSync(path.join(__dirname, "..", "functions", "youtubeResult.js"), "utf8");
+
+  for (const source of [playSource, playAudioSource, ytmp3Source, playlistSource]) {
+    assert.match(source, /sendYoutubeAudio/);
+  }
+
+  assert.match(helperSource, /\/api\/youtube-play/);
+  assert.match(helperSource, /\/api\/youtube-audio/);
+  assert.match(helperSource, /JSON\.parse/);
+  assert.match(helperSource, /findMediaUrl/);
+});
+
+test("play não reaproveita aliases canônicos de play_audio", () => {
+  const play = require("../commands/dws/play");
+  const playAudio = require("../commands/dws/play_audio");
+  assert.deepEqual(play.aliases, ["yta"]);
+  assert.equal(playAudio.name, "play_audio");
+  assert.ok(playAudio.aliases.includes("playaudio"));
 });
 
 test("ytsearch usa lista nativa e seleciona ytplay", () => {
