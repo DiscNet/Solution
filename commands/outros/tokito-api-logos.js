@@ -3,7 +3,6 @@ const { createStatusQuoted } = require("../../functions/statusCard");
 
 const LOGOS = [
   "darkgreen",
-  "glitch",
   "write",
   "advancedglow",
   "typography",
@@ -16,7 +15,6 @@ const LOGOS = [
   "glowing",
   "underwater",
   "logomaker",
-  "cartoon",
   "papercut",
   "watercolor",
   "affectclouds",
@@ -39,7 +37,6 @@ const LOGOS = [
   "sunset",
   "clouds",
   "colorido",
-  "desfoque",
   "naruto",
   "amongus",
   "comic3d",
