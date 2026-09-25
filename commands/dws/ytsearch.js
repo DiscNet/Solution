@@ -19,8 +19,7 @@ async function searchYoutube(query) {
     console.warn("[YTSEARCH API]", error?.message || error);
   }
 
-  const fallback = await searchVideos(query, 10).catch(() => []);
-  return fallback.slice(0, 10);
+  return searchVideos(query, 10).catch(() => []);
 }
 
 module.exports = {
