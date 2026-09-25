@@ -1,228 +1,130 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { extractMessageText } = require("../functions/messageText");
+const fs = require("fs");
+const path = require("path");
 
-test("interactive quick replies are converted back into command text", () => {
-  assert.equal(
-    extractMessageText({
-      message: {
-        interactiveResponseMessage: {
-          nativeFlowResponseMessage: {
-            paramsJson: JSON.stringify({ id: ".akinator sim deadbeef" }),
-          },
-        },
-      },
-    }),
-    ".akinator sim deadbeef",
-  );
+const command = require("../commands/brincadeiras/akinator");
+const tokitoApi = require("../functions/tokitoApi");
 
-  assert.equal(
-    extractMessageText({
-      message: {
-        ephemeralMessage: {
-          message: {
-            listResponseMessage: {
-              singleSelectReply: { selectedRowId: ".akinator voltar deadbeef" },
-            },
-          },
-        },
-      },
-    }),
-    ".akinator voltar deadbeef",
-  );
-});
-
-test("Akinator command exposes the expected game metadata", () => {
-  const command = require("../commands/brincadeiras/akinator");
+test("Akinator usa a arquitetura Tokito V10", () => {
   assert.equal(command.name, "akinator");
   assert.ok(command.aliases.includes("aki"));
   assert.equal(command.menuCategory, "Brincadeiras");
   assert.equal(command.menuSection, "Jogos");
-  assert.match(command.usage, /voltar/);
-  assert.match(command.usage, /provavelmentenao/);
-});
-
-test("Akinator rejects another group member clicking someone else's buttons", async () => {
-  const command = require("../commands/brincadeiras/akinator");
-  const group = "120363000000000000@g.us";
-  const alice = "5511999999999@s.whatsapp.net";
-  const bob = "5511888888888@s.whatsapp.net";
-  const token = "deadbeef";
-  let answerCalls = 0;
-  const sent = [];
-
-  command._sessions.clear();
-  command._sessions.set(token, {
-    token,
-    chat: group,
-    ownerIds: new Set([alice]),
-    phase: "question",
-    busy: false,
-    touchedAt: Date.now(),
-    messageKey: { remoteJid: group, fromMe: true, id: "question-1" },
-    aki: {
-      step: 0,
-      won: false,
-      async answer() {
-        answerCalls++;
-        return { question: "não deveria chegar aqui" };
-      },
-    },
-  });
-
-  const conn = {
-    async sendMessage(from, content) {
-      sent.push({ from, content });
-      return { key: { remoteJid: from, fromMe: true, id: `sent-${sent.length}` } };
-    },
-  };
-  const msg = {
-    key: { remoteJid: group, participant: bob, id: "click-bob" },
-    pushName: "Bob",
-  };
-
-  await command.execute(conn, msg, ["sim", token], group);
-
-  assert.equal(answerCalls, 0, "another member must never advance the Akinator session");
-  assert.ok(command._sessions.has(token), "the owner's session must remain active");
-  assert.match(sent[0]?.content?.text || "", /Só a pessoa que iniciou/i);
-
-  command._sessions.clear();
-});
-
-test("Akinator rotates interface messages and deletes the previous question", async () => {
-  const command = require("../commands/brincadeiras/akinator");
-  const { rotateMessage } = command._internals;
-  const group = "120363000000000000@g.us";
-  const oldKey = { remoteJid: group, fromMe: true, id: "old-question" };
-  const newKey = { remoteJid: group, fromMe: true, id: "new-question" };
-  const deleted = [];
-  const session = { messageKey: oldKey };
-
-  const conn = {
-    async sendMessage(from, content) {
-      if (content.delete) deleted.push({ from, key: content.delete });
-      return { key: { remoteJid: from, fromMe: true, id: "delete-ack" } };
-    },
-  };
-
-  await rotateMessage(session, conn, group, { key: newKey });
-
-  assert.deepEqual(session.messageKey, newKey);
-  assert.equal(deleted.length, 1);
-  assert.deepEqual(deleted[0].key, oldKey);
-});
-
-
-test("Akinator deletes the exact clicked prompt before processing the answer", async () => {
-  const command = require("../commands/brincadeiras/akinator");
-  const group = "120363000000000000@g.us";
-  const alice = "5511999999999@s.whatsapp.net";
-  const token = "cafebabe";
-  const order = [];
-
-  command._sessions.clear();
-  command._sessions.set(token, {
-    token,
-    chat: group,
-    ownerIds: new Set([alice]),
-    phase: "question",
-    busy: false,
-    touchedAt: Date.now(),
-    messageKey: { remoteJid: group, fromMe: true, id: "stored-question" },
-    aki: {
-      step: 0,
-      progression: 10,
-      question: "Pergunta antiga",
-      won: false,
-      ko: false,
-      async answer() {
-        order.push("answer");
-        this.step = 1;
-        this.question = "Pergunta nova";
-        this.progression = 20;
-        return { question: this.question, won: false, ko: false };
-      },
-    },
-  });
-
-  let n = 0;
-  const conn = {
-    user: { id: "5511000000000@s.whatsapp.net" },
-    async sendMessage(from, content) {
-      if (content.delete) order.push(`delete:${content.delete.id}`);
-      else order.push("send");
-      n += 1;
-      return { key: { remoteJid: from, fromMe: true, id: `out-${n}` } };
-    },
-  };
-
-  const msg = {
-    key: { remoteJid: group, participant: alice, id: "click-1" },
-    message: {
-      interactiveResponseMessage: {
-        contextInfo: {
-          stanzaId: "exact-question-from-click",
-          participant: "5511000000000@s.whatsapp.net",
-        },
-        nativeFlowResponseMessage: {
-          paramsJson: JSON.stringify({ id: `.akinator sim ${token}` }),
-        },
-      },
-    },
-  };
-
-  await command.execute(conn, msg, ["sim", token], group);
-
-  assert.equal(order[0], "delete:exact-question-from-click");
-  assert.equal(order[1], "answer");
-  assert.ok(order.includes("send"), "a new question/fallback must be sent after the answer");
-
-  command._sessions.clear();
-});
-
-test("Akinator extracts the original prompt key from interactive context", () => {
-  const command = require("../commands/brincadeiras/akinator");
-  const group = "120363000000000000@g.us";
-  const key = command._internals.interactionSourceKey({
-    message: {
-      interactiveResponseMessage: {
-        contextInfo: { stanzaId: "original-prompt", participant: "bot@s.whatsapp.net" },
-      },
-    },
-  }, group);
-
-  assert.equal(key.id, "original-prompt");
-  assert.equal(key.remoteJid, group);
-  assert.equal(key.fromMe, true);
-});
-
-
-test("Akinator permite apenas uma partida por grupo como a Tokito", () => {
-  const command = require("../commands/brincadeiras/akinator");
-  const group = "120363000000000000@g.us";
-
-  command._sessions.clear();
-  command._sessions.set("aaaa1111", {
-    token: "aaaa1111",
-    chat: group,
-    ownerName: "Alice",
-    ownerIds: new Set(["5511999999999@s.whatsapp.net"]),
-    touchedAt: Date.now(),
-  });
-
-  const session = command._internals.findChatSession(group);
-  assert.ok(session);
-  assert.equal(session.ownerName, "Alice");
-  assert.equal(command._internals.playerName(session), "Alice");
-
-  command._sessions.clear();
-});
-
-test("Akinator usage inclui tela inicial/status e mantém respostas antigas", () => {
-  const command = require("../commands/brincadeiras/akinator");
+  assert.equal(command.permissions.group, true);
   assert.match(command.usage, /iniciar/);
-  assert.match(command.usage, /status/);
   assert.match(command.usage, /voltar/);
   assert.match(command.usage, /provavelmentenao/);
+
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "brincadeiras", "akinator.js"),
+    "utf8"
+  );
+
+  assert.match(source, /\/api\/akinator\/start/);
+  assert.match(source, /\/api\/akinator\/answer/);
+  assert.match(source, /\/api\/akinator\/back/);
+  assert.match(source, /\/api\/akinator\/end/);
+  assert.match(source, /\/canvas\/akinator/);
+  assert.doesNotMatch(source, /akinator-client/);
+});
+
+test("Akinator normaliza respostas e extrai resultado da API", () => {
+  assert.equal(command._internals.norm("  NÃO SEI "), "nao sei");
+
+  const payload = command._internals.payload({
+    status: true,
+    resultado: { pergunta: "É real?" },
+  });
+  assert.equal(payload.pergunta, "É real?");
+
+  const guess = command._internals.guessInfo({
+    personagem: {
+      nome: "Goku",
+      descricao: "Saiyajin",
+      foto: "https://example.com/goku.jpg",
+    },
+  });
+  assert.equal(guess.name, "Goku");
+  assert.equal(guess.desc, "Saiyajin");
+  assert.equal(guess.photo, "https://example.com/goku.jpg");
+});
+
+test("Akinator inicia uma sessão usando a Tokito API", async () => {
+  const originalGet = tokitoApi.get;
+  const originalUrl = tokitoApi.url;
+  const sent = [];
+  const group = "120363000000000000@g.us";
+
+  command._sessions.clear();
+
+  tokitoApi.get = async (route, params) => {
+    assert.equal(route, "/api/akinator/start");
+    assert.match(params.id, /120363000000000000@g\.us_/);
+    return {
+      status: true,
+      resultado: {
+        pergunta: "Seu personagem é real?",
+        etapa: 1,
+        progresso: 12.5,
+      },
+    };
+  };
+  tokitoApi.url = (route) => "https://tokito.test" + route;
+
+  const conn = {
+    async sendMessage(jid, content) {
+      sent.push({ jid, content });
+      return { key: { remoteJid: jid, id: "out-1", fromMe: true } };
+    },
+  };
+
+  const msg = {
+    key: {
+      remoteJid: group,
+      participant: "5511999999999@s.whatsapp.net",
+      id: "in-1",
+    },
+    pushName: "Alice",
+  };
+
+  try {
+    await command.execute(conn, msg, ["iniciar"], group);
+    assert.equal(command._sessions.size, 1);
+    assert.ok(sent.some(item => item.content?.image?.url?.includes("/canvas/akinator")));
+    assert.ok(sent.some(item => /Seu personagem é real/i.test(item.content?.caption || "")));
+  } finally {
+    tokitoApi.get = originalGet;
+    tokitoApi.url = originalUrl;
+    command._sessions.clear();
+  }
+});
+
+test("Akinator impede outro membro de responder a uma partida ativa", async () => {
+  const group = "120363000000000000@g.us";
+  command._sessions.clear();
+  command._sessions.set(group, {
+    sender: "5511999999999@s.whatsapp.net",
+    id: "sessao",
+    startedAt: Date.now(),
+  });
+
+  const sent = [];
+  const conn = {
+    async sendMessage(jid, content) {
+      sent.push({ jid, content });
+      return {};
+    },
+  };
+
+  await command.execute(conn, {
+    key: {
+      remoteJid: group,
+      participant: "5511888888888@s.whatsapp.net",
+    },
+    pushName: "Bob",
+  }, ["sim"], group);
+
+  assert.match(sent[0]?.content?.text || "", /partida de Akinator em andamento/i);
+  command._sessions.clear();
 });
