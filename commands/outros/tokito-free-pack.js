@@ -2,6 +2,7 @@
 const config = require("../../config/config");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const tokitoApi = require("../../functions/tokitoApi");
 
 const velhaGames = new Map();
 const wordGames = new Map();
@@ -98,42 +99,45 @@ const commands = [
     aliases: ["githubzip"],
     section: "Downloads",
     usage: "gitclone https://github.com/usuario/repositorio",
-    description: "Baixa um repositório público do GitHub como ZIP",
+    description: "Baixa repositórios públicos usando a Tokito API",
     async execute(conn, msg, args, from, http) {
+      const raw = String(args[0] || "").trim();
+      if (!/^https?:\/\/(?:www\.)?github\.com\//i.test(raw)) {
+        return kit.reply(conn, msg, from, "❌ Use um link público de repositório do GitHub.");
+      }
       try {
-        const raw = String(args[0] || "").trim();
-        const match = raw.match(/^https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/i);
-        if (!match) throw kit.userError("Use um link público de repositório do GitHub.");
-        const owner = match[1];
-        const repo = match[2];
-
-        const meta = await http.get(`https://api.github.com/repos/${owner}/${repo}`, {
-          timeout: 12000,
-          headers: { "user-agent": "SolutionBot/1.0" },
-          validateStatus: () => true,
-        });
-        if (meta.status !== 200 || meta.data?.private) {
-          throw kit.userError("O repositório não existe ou não é público.");
+        await conn.sendMessage(from, { react: { text: "📦", key: msg.key } }).catch(() => {});
+        let fileUrl = "";
+        let fileName = "repositorio.zip";
+        try {
+          const data = await tokitoApi.get("/api/gitclone", { url: raw });
+          const root = tokitoApi.firstObject(data) || data;
+          fileUrl = root?.download_url || root?.download || root?.url || root?.link || root?.arquivo || "";
+          fileName = String(root?.filename || root?.nome || fileName).replace(/[\\/:*?"<>|]/g, "_").slice(0, 100);
+        } catch {}
+        if (fileUrl && /^https?:\/\//i.test(fileUrl)) {
+          await conn.sendMessage(from, {
+            document: { url: fileUrl },
+            mimetype: "application/zip",
+            fileName,
+          }, { quoted: createStatusQuoted(msg) });
+        } else {
+          const match = raw.match(/^https?:\/\/(?:www\.)?github\.com\/([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+?)(?:\.git)?\/?$/i);
+          if (!match) throw kit.userError("Link de repositório inválido.");
+          const owner = match[1];
+          const repo = match[2];
+          const meta = await http.get("https://api.github.com/repos/" + owner + "/" + repo, {
+            timeout: 12000, headers: { "user-agent": "SolutionBot/1.0" }, validateStatus: () => true,
+          });
+          if (meta.status !== 200 || meta.data?.private) throw kit.userError("O repositório não existe ou não é público.");
+          const branch = meta.data?.default_branch || "main";
+          await conn.sendMessage(from, {
+            document: { url: "https://codeload.github.com/" + owner + "/" + repo + "/zip/refs/heads/" + encodeURIComponent(branch) },
+            mimetype: "application/zip",
+            fileName: repo + "-" + branch + ".zip",
+          }, { quoted: createStatusQuoted(msg) });
         }
-
-        const branch = meta.data?.default_branch || "main";
-        const zipUrl = `https://codeload.github.com/${owner}/${repo}/zip/refs/heads/${encodeURIComponent(branch)}`;
-        const response = await http.get(zipUrl, {
-          responseType: "arraybuffer",
-          timeout: 90000,
-          maxContentLength: 50 * 1024 * 1024,
-          maxBodyLength: 50 * 1024 * 1024,
-        });
-        const buffer = Buffer.from(response.data || []);
-        if (!buffer.length) throw new Error("ZIP vazio");
-        if (buffer.length > 50 * 1024 * 1024) throw kit.userError("O repositório é grande demais para enviar pelo bot.");
-
-        await conn.sendMessage(from, {
-          document: buffer,
-          mimetype: "application/zip",
-          fileName: `${repo}-${branch}.zip`,
-          caption: `📦 *${owner}/${repo}*\nBranch: ${branch}\nTamanho: ${kit.formatBytes(buffer.length)}`,
-        }, { quoted: createStatusQuoted(msg) });
+        await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (e) {
         await kit.fail(conn, msg, from, e, "Não foi possível baixar esse repositório.");
       }
