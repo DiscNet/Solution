@@ -167,6 +167,6 @@ module.exports = {
 
 Object.assign(module.exports, {
   "menuCategory": "RPG",
-  "menuSection": "Personagem",
+  "menuSection": "Sistema RPG",
   "description": "registra seu personagem no rpg"
 });
