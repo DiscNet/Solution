@@ -15,7 +15,7 @@ const axios = require("axios");
 const { createStatusQuoted } = require("../functions/statusCard");
 const { executeCommand } = require("../functions/commandExecutor");
 const runtimeLogger = require("../functions/runtimeLogger");
-const { extractMessageText } = require("../functions/messageText");
+const { extractMessageText, unwrapMessage, isInteractiveReply, interactiveReplyId } = require("../functions/messageText");
 const { registerConnectionEvents } = require("../events/connection");
 const { createReconnectController } = require("../events/reconnect");
 const { registerMessagesEvent } = require("../events/messages");
@@ -553,6 +553,9 @@ async function startBot() {
     const grupo = isGroup(from);
 
     let text = getMessageText(msg);
+    const unwrappedMessage = unwrapMessage(msg);
+    const interactiveReply = isInteractiveReply(msg);
+    const interactiveId = interactiveReplyId(msg);
     const hasMediaInMessage = hasMedia(msg);
     const isReplyingMedia = isReplyingToMedia(msg);
     const isMediaCommand = hasMediaInMessage || isReplyingMedia;
@@ -562,13 +565,8 @@ async function startBot() {
       // Equivalente ao evento pre da Tokito: registra toda mensagem recebida
       // e separa comandos, mídia e última atividade por usuário.
       if (grupo) {
-        const body = msg.message || {};
-        const interactiveCommand = Boolean(
-          body.buttonsResponseMessage ||
-          body.templateButtonReplyMessage ||
-          body.listResponseMessage ||
-          body.interactiveResponseMessage
-        );
+        const body = unwrappedMessage || {};
+        const interactiveCommand = interactiveReply;
         const detectedForStats = detectCommand(text, commands);
         activitySystem.recordMessage({
           groupId: from,
@@ -633,7 +631,7 @@ async function startBot() {
       // ========== 🔥 VERIFICAÇÃO DE CONTEÚDO BLOQUEADO (ANTI) ==========
       if (grupo) {
         // Anti-Link
-        if (text && isAntiAtivo(from, 'link') && contemLink(text)) {
+        if (text && !interactiveReply && isAntiAtivo(from, 'link') && contemLink(text)) {
           const groupMetadata = await conn.groupMetadata(from);
           const isSenderAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
           if (!isSenderAdmin) {
@@ -927,15 +925,33 @@ async function startBot() {
       if (autofiguModule) { await autofiguModule.autoHandler(conn, msg, from, sender); }
 
       // HANDLER DE INTERAÇÕES
-      let buttonId = null, buttonText = null;
-      if (msg.message.buttonsResponseMessage) { const btn = msg.message.buttonsResponseMessage; buttonId = btn.selectedButtonId || btn.id; buttonText = btn.selectedDisplayText; }
-      else if (msg.message.templateButtonReplyMessage) { const btn = msg.message.templateButtonReplyMessage; buttonId = btn.selectedId || btn.id; buttonText = btn.selectedDisplayText; }
-      else if (msg.message.listResponseMessage) { const list = msg.message.listResponseMessage.singleSelectReply; buttonId = list?.selectedRowId; buttonText = list?.selectedTitle; }
-      else if (msg.message.interactiveResponseMessage) {
+      let buttonId = interactiveId || null;
+      let buttonText = null;
+      const interactionMessage = unwrappedMessage || {};
+
+      if (interactionMessage.buttonsResponseMessage) {
+        const btn = interactionMessage.buttonsResponseMessage;
+        buttonText = btn.selectedDisplayText;
+      } else if (interactionMessage.templateButtonReplyMessage) {
+        const btn = interactionMessage.templateButtonReplyMessage;
+        buttonText = btn.selectedDisplayText;
+      } else if (interactionMessage.listResponseMessage) {
+        const list = interactionMessage.listResponseMessage.singleSelectReply;
+        buttonText = list?.selectedTitle;
+      } else if (interactionMessage.interactiveResponseMessage) {
         try {
-          const interactive = msg.message.interactiveResponseMessage;
-          if (interactive.nativeFlowResponseMessage) { const params = JSON.parse(interactive.nativeFlowResponseMessage.paramsJson || '{}'); buttonId = params.id || params.button_id || interactive.nativeFlowResponseMessage.id; buttonText = params.display_text || params.title || interactive.nativeFlowResponseMessage.displayText; }
-          else if (interactive.buttonReply) { buttonId = interactive.buttonReply.id; buttonText = interactive.buttonReply.displayText; }
+          const interactive = interactionMessage.interactiveResponseMessage;
+          if (interactive.nativeFlowResponseMessage) {
+            const params = JSON.parse(interactive.nativeFlowResponseMessage.paramsJson || "{}");
+            buttonText =
+              params.display_text ||
+              params.title ||
+              params.selectedTitle ||
+              params.selected_title ||
+              interactive.nativeFlowResponseMessage.displayText;
+          } else if (interactive.buttonReply) {
+            buttonText = interactive.buttonReply.displayText;
+          }
         } catch (e) {}
       }
 
