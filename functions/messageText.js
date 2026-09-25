@@ -1,6 +1,6 @@
 function unwrapMessage(input) {
   let message = input?.message || input || {};
-  for (let i = 0; i < 6; i++) {
+  for (let i = 0; i < 8; i++) {
     if (message?.ephemeralMessage?.message) {
       message = message.ephemeralMessage.message;
       continue;
@@ -26,22 +26,106 @@ function unwrapMessage(input) {
   return message || {};
 }
 
-function nativeFlowReplyId(message) {
-  const raw = message?.interactiveResponseMessage?.nativeFlowResponseMessage?.paramsJson;
-  if (!raw) return "";
+function nativeFlowParams(message) {
+  const native = message?.interactiveResponseMessage?.nativeFlowResponseMessage;
+  const raw = native?.paramsJson;
+
+  if (!raw) return {};
+
   try {
-    const params = typeof raw === "string" ? JSON.parse(raw) : raw;
-    return String(
-      params?.id ||
-      params?.selectedId ||
-      params?.selected_id ||
-      params?.row_id ||
-      params?.button_id ||
-      "",
-    );
+    const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+    return parsed && typeof parsed === "object" ? parsed : {};
   } catch (_) {
+    return {};
+  }
+}
+
+function findInteractiveId(value, depth = 0) {
+  if (depth > 5 || value == null) return "";
+
+  if (typeof value === "string") {
+    const text = value.trim();
+    return text.startsWith(".") || text.startsWith("!") || text.startsWith("/")
+      ? text
+      : "";
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findInteractiveId(item, depth + 1);
+      if (found) return found;
+    }
     return "";
   }
+
+  if (typeof value !== "object") return "";
+
+  const keys = [
+    "id",
+    "selectedId",
+    "selected_id",
+    "selectedRowId",
+    "selected_row_id",
+    "rowId",
+    "row_id",
+    "buttonId",
+    "button_id",
+    "command",
+    "cmd",
+  ];
+
+  for (const key of keys) {
+    const candidate = value[key];
+    if (typeof candidate === "string" && candidate.trim()) {
+      return candidate.trim();
+    }
+  }
+
+  for (const nested of Object.values(value)) {
+    const found = findInteractiveId(nested, depth + 1);
+    if (found) return found;
+  }
+
+  return "";
+}
+
+function nativeFlowReplyId(message) {
+  const native = message?.interactiveResponseMessage?.nativeFlowResponseMessage;
+  const params = nativeFlowParams(message);
+
+  return String(
+    findInteractiveId(params) ||
+    native?.id ||
+    native?.selectedId ||
+    native?.selectedRowId ||
+    "",
+  ).trim();
+}
+
+function interactiveReplyId(input) {
+  const message = unwrapMessage(input);
+
+  return String(
+    message?.buttonsResponseMessage?.selectedButtonId ||
+    message?.buttonsResponseMessage?.id ||
+    message?.templateButtonReplyMessage?.selectedId ||
+    message?.templateButtonReplyMessage?.id ||
+    message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
+    message?.listResponseMessage?.singleSelectReply?.selectedId ||
+    message?.interactiveResponseMessage?.buttonReply?.id ||
+    nativeFlowReplyId(message) ||
+    "",
+  ).trim();
+}
+
+function isInteractiveReply(input) {
+  const message = unwrapMessage(input);
+  return Boolean(
+    message?.buttonsResponseMessage ||
+    message?.templateButtonReplyMessage ||
+    message?.listResponseMessage ||
+    message?.interactiveResponseMessage
+  );
 }
 
 function extractMessageText(msg) {
@@ -54,12 +138,17 @@ function extractMessageText(msg) {
     message?.videoMessage?.caption ||
     message?.documentMessage?.caption ||
     message?.audioMessage?.caption ||
-    message?.buttonsResponseMessage?.selectedButtonId ||
-    message?.templateButtonReplyMessage?.selectedId ||
-    message?.listResponseMessage?.singleSelectReply?.selectedRowId ||
-    nativeFlowReplyId(message) ||
+    interactiveReplyId(message) ||
     "",
   );
 }
 
-module.exports = { extractMessageText, unwrapMessage, nativeFlowReplyId };
+module.exports = {
+  extractMessageText,
+  unwrapMessage,
+  nativeFlowParams,
+  findInteractiveId,
+  nativeFlowReplyId,
+  interactiveReplyId,
+  isInteractiveReply,
+};
