@@ -6,7 +6,7 @@ function command({ name, aliases = [], route, params, description, validate }) {
     name,
     aliases,
     menuCategory: "IA",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: name + " pergunta",
     description,
     async execute(conn, msg, args, from) {
@@ -26,12 +26,12 @@ function command({ name, aliases = [], route, params, description, validate }) {
             data?.mensagem ||
             data?.message ||
             data?.erro ||
-            "A Tokito API não retornou uma resposta válida."
+            "A API não retornou uma resposta válida."
           );
         }
 
         const answer = tokitoApi.text(data);
-        if (!answer) throw new Error("Resposta vazia da Tokito API.");
+        if (!answer) throw new Error("Resposta vazia da API.");
 
         await conn.sendMessage(from, {
           text: answer.slice(0, 12000),
@@ -40,7 +40,7 @@ function command({ name, aliases = [], route, params, description, validate }) {
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO IA]", name, info.status || "-", info.message);
+        console.error("[API IA]", name, info.status || "-", info.message);
         await conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível consultar a IA da Tokito agora.")
         }, { quoted: createStatusQuoted(msg) });
@@ -60,7 +60,7 @@ async function ttsBuffer(text) {
   });
 
   if (!result.buffer.length || !/audio/i.test(result.contentType)) {
-    let message = "A Tokito API não retornou áudio.";
+    let message = "A API não retornou áudio.";
     try {
       const data = JSON.parse(result.buffer.toString("utf8"));
       message = data?.resultado || data?.message || data?.error || message;
@@ -77,21 +77,21 @@ const commands = [
     aliases: ["geminiia"],
     route: "/api/gemini",
     params: q => ({ texto: q }),
-    description: "Pergunta ao Gemini pela Tokito API",
+    description: "Pergunta ao Gemini pela API",
   }),
   command({
     name: "geminipro",
     aliases: ["gemini-pro"],
     route: "/api/gemini-pro",
     params: q => ({ texto: q }),
-    description: "Pergunta ao Gemini Pro pela Tokito API",
+    description: "Pergunta ao Gemini Pro pela API",
   }),
   command({
     name: "openai",
     aliases: ["gpt", "chatgpt"],
     route: "/api/openai",
     params: q => ({ q }),
-    description: "Pergunta ao endpoint OpenAI da Tokito API",
+    description: "Pergunta ao endpoint OpenAI da API",
     validate: data => data?.status !== false,
   }),
   command({
@@ -99,23 +99,23 @@ const commands = [
     aliases: ["perplexityai", "ppx"],
     route: "/api/perplexity-ai",
     params: q => ({ q, query: q }),
-    description: "Pesquisa com IA pelo endpoint Perplexity da Tokito API",
+    description: "Pesquisa com IA pelo endpoint Perplexity da API",
     validate: data => data?.status !== false,
   }),
   command({
-    name: "tokitoia",
-    aliases: ["tokito-ia"],
+    name: "chatia",
+    aliases: ["assistenteia"],
     route: "/api/tokito-ia",
     params: q => ({ texto: q }),
-    description: "Conversa com a IA da Tokito API",
+    description: "Conversa com a IA da API",
   }),
   {
     name: "geminitts",
     aliases: ["gemini-tts", "ttsgemini"],
     menuCategory: "IA",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: "geminitts texto",
-    description: "Gera voz com Gemini TTS pela Tokito API",
+    description: "Gera voz com Gemini TTS pela API",
     async execute(conn, msg, args, from) {
       const q = args.join(" ").trim();
       if (!q) {
@@ -135,7 +135,7 @@ const commands = [
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO GEMINI TTS]", info.status || "-", info.message);
+        console.error("[API GEMINI TTS]", info.status || "-", info.message);
         await conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível gerar o áudio.")
         }, { quoted: createStatusQuoted(msg) });
@@ -146,9 +146,9 @@ const commands = [
     name: "iaaudio",
     aliases: ["audioia", "voz-ia"],
     menuCategory: "IA",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: "iaaudio pergunta",
-    description: "Pergunta à Tokito IA e recebe a resposta em voz",
+    description: "Pergunta à IA e recebe a resposta em voz",
     async execute(conn, msg, args, from) {
       const q = args.join(" ").trim();
       if (!q) {
@@ -161,7 +161,7 @@ const commands = [
         await conn.sendMessage(from, { react: { text: "🎙️", key: msg.key } }).catch(() => {});
         const data = await tokitoApi.get("/api/tokito-ia", { texto: q }, { timeout: 90000 });
         const answer = tokitoApi.text(data);
-        if (!answer) throw new Error("A Tokito IA não retornou resposta.");
+        if (!answer) throw new Error("A IA não retornou resposta.");
 
         const result = await ttsBuffer(answer);
         await conn.sendMessage(from, {
@@ -172,7 +172,7 @@ const commands = [
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO IA AUDIO]", info.status || "-", info.message);
+        console.error("[API IA AUDIO]", info.status || "-", info.message);
         await conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível gerar a resposta em voz.")
         }, { quoted: createStatusQuoted(msg) });
@@ -180,12 +180,12 @@ const commands = [
     },
   },
   {
-    name: "tokitoapi",
-    aliases: ["apitokito"],
+    name: "apitest",
+    aliases: ["diagnosticoapi"],
     menuCategory: "Utilidades",
-    menuSection: "Tokito API",
-    usage: "tokitoapi",
-    description: "Diagnostica a autenticação da Tokito API sem expor a chave",
+    menuSection: "API",
+    usage: "apitest",
+    description: "Diagnostica a autenticação da API sem expor a chave",
     async execute(conn, msg, args, from) {
       const checks = [
         ["YouTube Search", "/api/youtube-search", { query: "teste" }],
@@ -205,7 +205,7 @@ const commands = [
 
       await conn.sendMessage(from, {
         text:
-          "🧪 *DIAGNÓSTICO TOKITO API*\n\n" +
+          "🧪 *DIAGNÓSTICO DA API*\n\n" +
           rows.join("\n") +
           "\n\nA chave nunca é exibida neste comando.",
       }, { quoted: createStatusQuoted(msg) });
