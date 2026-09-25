@@ -2,6 +2,7 @@ const store = require("../../functions/tokitoPlaylistSystem");
 const tokitoApi = require("../../functions/tokitoApi");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { normalizeYoutubeList } = require("../../functions/youtubeResult");
 const { normalizeYoutubeItem, textValue } = require("../../functions/youtubeResult");
 
 function ownerId(msg, from) {
@@ -13,22 +14,7 @@ function splitPipe(value) {
 }
 
 function trackFromSearch(data) {
-  const items = tokitoApi.list(data);
-
-  for (const item of items) {
-    const video = normalizeYoutubeItem(item);
-    if (!video?.url) continue;
-
-    return {
-      title: textValue(video.title, "Música"),
-      url: video.url,
-      channel: textValue(video.channel, ""),
-      duration: textValue(video.duration, ""),
-      thumbnail: video.thumbnail || "",
-    };
-  }
-
-  return null;
+  return normalizeYoutubeList(data, tokitoApi.list)[0] || null;
 }
 
 async function sendTrack(conn, msg, from, item, index, total) {
