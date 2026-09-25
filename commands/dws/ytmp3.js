@@ -8,7 +8,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytmp3 link ou pesquisa",
-  description: "Baixa áudio do YouTube pela Tokito API",
+  description: "Baixa áudio do YouTube pela API",
   async execute(conn, msg, args, from) {
     const target = args.join(" ").trim();
     if (!target) return conn.sendMessage(from, { text: "❌ Uso: .ytmp3 <link ou pesquisa>" }, { quoted: createStatusQuoted(msg) });
@@ -22,8 +22,8 @@ module.exports = {
       }, { quoted: createStatusQuoted(msg) });
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
     } catch (error) {
-      console.error("[TOKITO YTMP3]", error.message);
-      await conn.sendMessage(from, { text: "❌ Não foi possível baixar o áudio pela Tokito API." }, { quoted: createStatusQuoted(msg) });
+      console.error("[YTMP3]", error.message);
+      await conn.sendMessage(from, { text: "❌ Não foi possível baixar o áudio pela API." }, { quoted: createStatusQuoted(msg) });
     }
   },
 };
