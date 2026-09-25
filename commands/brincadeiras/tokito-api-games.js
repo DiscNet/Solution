@@ -146,7 +146,7 @@ async function sendMines(conn, msg, from, game, finalText = "") {
 const commands = [
   {
     name: "adivinhepalavra",
-    aliases: ["adivinhe", "guessword"],
+    aliases: ["guessword"],
     menuCategory: "Brincadeiras",
     menuSection: "Tokito API",
     usage: "adivinhepalavra [palavra|desistir]",
