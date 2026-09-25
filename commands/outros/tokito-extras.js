@@ -1,6 +1,7 @@
 // Recursos inspirados no catálogo da Tokito V10, reimplementados para o Solution.
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const tokitoApi = require("../../functions/tokitoApi");
 const {
   getMessageProfilePicture,
   targetCandidates,
@@ -178,41 +179,33 @@ const commands = [
     aliases: ["wiki"],
     section: "Pesquisas",
     usage: "wikipedia [assunto]",
-    description: "Pesquisa um assunto na Wikipédia em português",
+    description: "Pesquisa na Wikipédia pela Tokito API",
     async execute(conn, msg, args, from, http) {
+      const query = args.join(" ").trim();
+      if (!query) return kit.reply(conn, msg, from, "❌ Uso: .wikipedia <assunto>");
       try {
-        const query = args.join(" ").trim();
-        if (!query) throw kit.userError("Informe um assunto. Ex.: .wikipedia buraco negro");
-        const search = await http.get("https://pt.wikipedia.org/w/api.php", {
-          params: {
-            action: "query",
-            list: "search",
-            srsearch: query,
-            format: "json",
-            utf8: 1,
-            srlimit: 1,
-          },
-          timeout: 12000,
-          headers: { "user-agent": "SolutionBot/1.0 (WhatsApp bot)" },
+        let data;
+        try {
+          data = await tokitoApi.get("/api/wikipedia-search", { query, q: query });
+        } catch (apiError) {
+          const search = await http.get("https://pt.wikipedia.org/w/api.php", {
+            params: { action: "query", list: "search", srsearch: query, format: "json", utf8: 1, srlimit: 3 },
+            timeout: 12000,
+            headers: { "user-agent": "SolutionBot/1.0" },
+          });
+          const hits = search.data?.query?.search || [];
+          if (!hits.length) throw apiError;
+          data = { resultado: hits.map(x => ({ title: x.title, description: String(x.snippet || "").replace(/<[^>]+>/g, "") })) };
+        }
+        const items = tokitoApi.list(data).slice(0, 5);
+        if (!items.length) throw kit.userError("Nenhum resultado encontrado.");
+        const lines = items.map((item, i) => {
+          const title = item?.title || item?.titulo || item?.name || "Resultado";
+          const desc = item?.extract || item?.summary || item?.description || item?.descricao || item?.text || "";
+          const url = item?.url || item?.link || "";
+          return (i + 1) + ". *" + title + "*" + (desc ? "\n   " + String(desc).slice(0, 500) : "") + (url ? "\n   🔗 " + url : "");
         });
-        const hit = search.data?.query?.search?.[0];
-        if (!hit?.title) throw kit.userError("Não encontrei um artigo para esse assunto.");
-
-        const summary = await http.get(
-          `https://pt.wikipedia.org/api/rest_v1/page/summary/${encodeURIComponent(hit.title)}`,
-          { timeout: 12000, headers: { "user-agent": "SolutionBot/1.0 (WhatsApp bot)" } }
-        );
-        const title = summary.data?.title || hit.title;
-        const extract = String(summary.data?.extract || "").trim();
-        const page = summary.data?.content_urls?.desktop?.page || "";
-        if (!extract) throw kit.userError("O artigo foi encontrado, mas não possui resumo disponível.");
-
-        await kit.reply(
-          conn,
-          msg,
-          from,
-          `📚 *WIKIPÉDIA — ${title}*\n\n${extract.slice(0, 3500)}${page ? `\n\n🔗 ${page}` : ""}`
-        );
+        await kit.reply(conn, msg, from, "📚 *WIKIPÉDIA — " + query + "*\n\n" + lines.join("\n\n"));
       } catch (e) {
         await kit.fail(conn, msg, from, e, "Não foi possível pesquisar na Wikipédia.");
       }
