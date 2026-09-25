@@ -238,6 +238,175 @@ async function resolveYoutubeVideo(query) {
   return null;
 }
 
+function audioUrlFromData(data) {
+  const roots = [
+    data?.resultado,
+    data?.result,
+    data?.data,
+    data,
+  ].filter(Boolean);
+
+  const preferredKeys = [
+    "download",
+    "downloadUrl",
+    "download_url",
+    "audio",
+    "audioUrl",
+    "audio_url",
+    "mp3",
+    "file",
+    "url",
+  ];
+
+  for (const root of roots) {
+    if (!root) continue;
+
+    if (Array.isArray(root)) {
+      for (const item of root) {
+        const found = audioUrlFromData(item);
+        if (found) return found;
+      }
+      continue;
+    }
+
+    if (typeof root === "object") {
+      for (const key of preferredKeys) {
+        const found = firstUrl(root[key]);
+        if (found) return found;
+      }
+    }
+  }
+
+  return "";
+}
+
+async function resolveYoutubeAudio(query) {
+  const input = String(query || "").trim();
+  if (!input) throw new Error("Pesquisa vazia.");
+
+  try {
+    const data = await tokitoApi.get("/api/youtube-play", {
+      query: input,
+      q: input,
+    }, { timeout: 45000 });
+
+    const url = audioUrlFromData(data);
+    if (url) {
+      const root = tokitoApi.firstObject(data) || data;
+      return {
+        url,
+        title: textValue(root?.title || root?.titulo, "audio"),
+      };
+    }
+  } catch (error) {
+    console.warn("[YOUTUBE PLAY API]", error?.message || error);
+  }
+
+  const result = await tokitoApi.buffer("/api/youtube-audio", {
+    q: input,
+    query: input,
+  }, {
+    timeout: 120000,
+    maxContentLength: 80 * 1024 * 1024,
+    maxBodyLength: 80 * 1024 * 1024,
+    headers: { accept: "audio/mpeg,audio/*,application/octet-stream,application/json,*/*" },
+  });
+
+  if (!result.buffer?.length) {
+    throw new Error("A API não retornou áudio.");
+  }
+
+  if (
+    /audio\//i.test(result.contentType) ||
+    /application\/octet-stream/i.test(result.contentType)
+  ) {
+    return {
+      buffer: result.buffer,
+      mimetype: /audio\//i.test(result.contentType)
+        ? result.contentType.split(";")[0]
+        : "audio/mpeg",
+      title: "audio",
+    };
+  }
+
+  if (/json|text/i.test(result.contentType)) {
+    try {
+      const parsed = JSON.parse(result.buffer.toString("utf8"));
+      const url = audioUrlFromData(parsed);
+      if (url) return { url, title: "audio" };
+    } catch {}
+  }
+
+  throw new Error("A API não retornou um MP3 válido.");
+}
+
+async function sendYoutubeAudio(conn, msg, from, query) {
+  const audio = await resolveYoutubeAudio(query);
+  const source = audio.buffer ? audio.buffer : { url: audio.url };
+
+  return conn.sendMessage(from, {
+    audio: source,
+    mimetype: audio.mimetype || "audio/mpeg",
+    fileName: (textValue(audio.title, "audio").replace(/[\\/:*?"<>|]/g, "_").slice(0, 80) || "audio") + ".mp3",
+    ptt: false,
+  }, { quoted: createStatusQuoted(msg) });
+}
+
+async function sendYoutubeSearchList(conn, msg, from, results, query) {
+  const prefix = config.prefix || ".";
+  const rows = results.slice(0, 10).map((video, index) => ({
+    header: "Resultado " + (index + 1),
+    title: textValue(video?.title, "Sem título").slice(0, 70),
+    description: [
+      video?.duration ? "⏱️ " + textValue(video.duration) : "",
+      video?.channel ? "👤 " + textValue(video.channel) : "",
+    ].filter(Boolean).join(" · ").slice(0, 100),
+    id: prefix + "ytplay " + video.url,
+  }));
+
+  if (!rows.length) throw new Error("Nenhum resultado para montar a lista.");
+
+  const out = generateWAMessageFromContent(from, {
+    interactiveMessage: {
+      header: {
+        title: "🔎 YouTube Search",
+        hasMediaAttachment: false,
+      },
+      body: {
+        text:
+          "🔎 *Busca:* " + query + "\n" +
+          "📊 *Resultados:* " + rows.length + "\n\n" +
+          "Toque no botão abaixo para escolher um vídeo.",
+      },
+      footer: {
+        text: botName(),
+      },
+      nativeFlowMessage: {
+        messageParamsJson: "",
+        buttons: [
+          {
+            name: "single_select",
+            buttonParamsJson: JSON.stringify({
+              title: "🎬 Ver resultados",
+              sections: [
+                {
+                  title: "📹 Vídeos encontrados",
+                  rows,
+                },
+              ],
+            }),
+          },
+          quickReply("🎵 Áudio do 1º", prefix + "play " + results[0].url),
+        ],
+      },
+    },
+  }, { quoted: createStatusQuoted(msg) });
+
+  return conn.relayMessage(from, out.message, {
+    messageId: out.key.id,
+  });
+}
+
 function quickReply(text, id) {
   return {
     name: "quick_reply",
