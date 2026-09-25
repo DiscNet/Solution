@@ -104,7 +104,7 @@ async function sendCanvas(conn, msg, from, route, params, caption) {
   });
 
   if (!result.buffer?.length || !/image/i.test(result.contentType)) {
-    throw new Error("A Tokito API não retornou o canvas do jogo.");
+    throw new Error("A API não retornou o canvas do jogo.");
   }
 
   return conn.sendMessage(from, {
@@ -132,7 +132,7 @@ async function sendAdivinhe(conn, msg, from, game, finalText = "") {
   }
 
   const caption = [
-    "🧩 *ADIVINHE A PALAVRA • TOKITO API*",
+    "🧩 *ADIVINHE A PALAVRA • API*",
     "",
     "Tentativas: " + game.attempts.length + "/6",
     finalText || "Envie uma palavra de 5 letras com *.adivinhepalavra palavra*.",
@@ -157,7 +157,7 @@ function minesParams(game) {
 
 async function sendMines(conn, msg, from, game, finalText = "") {
   const caption = [
-    "💣 *MINES • TOKITO API*",
+    "💣 *MINES • API*",
     "",
     "💎 Casas seguras abertas: " + game.safeOpened + "/20",
     finalText || "Escolha uma casa com *.mines 1-25*.",
@@ -249,7 +249,7 @@ function cacaParams(game) {
 async function sendCaca(conn, msg, from, game, finalText = "") {
   const found = game.found.map(word => word.toUpperCase()).join(", ") || "nenhuma";
   const caption = [
-    "🔎 *CAÇA-PALAVRAS • TOKITO API*",
+    "🔎 *CAÇA-PALAVRAS • API*",
     "",
     "📚 Tema: *" + game.theme + "*",
     "✅ Encontradas: *" + game.found.length + "/" + game.words.length + "*",
@@ -267,7 +267,7 @@ function resetCommand(name, map, label) {
     name,
     aliases: [],
     menuCategory: "Brincadeiras",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: name,
     description: "Encerra a partida de " + label + " ativa no grupo",
     permissions: { group: true },
@@ -287,9 +287,9 @@ const commands = [
     name: "adivinhepalavra",
     aliases: ["guessword"],
     menuCategory: "Brincadeiras",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: "adivinhepalavra [palavra|desistir]",
-    description: "Adivinhe uma palavra de 5 letras usando o canvas da Tokito API",
+    description: "Adivinhe uma palavra de 5 letras usando o canvas da API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       const input = normalize(args.join(" "));
@@ -359,7 +359,7 @@ const commands = [
         return sendAdivinhe(conn, msg, from, game);
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO ADIVINHEPALAVRA]", info.status || "-", info.message);
+        console.error("[API ADIVINHEPALAVRA]", info.status || "-", info.message);
         return conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível abrir o jogo Adivinhe.")
         }, { quoted: createStatusQuoted(msg) });
@@ -370,9 +370,9 @@ const commands = [
     name: "mines",
     aliases: ["campominado"],
     menuCategory: "Brincadeiras",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: "mines [1-25|desistir]",
-    description: "Campo minado usando o canvas da Tokito API",
+    description: "Campo minado usando o canvas da API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       const input = String(args[0] || "").trim().toLowerCase();
@@ -459,7 +459,7 @@ const commands = [
         return sendMines(conn, msg, from, game);
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO MINES]", info.status || "-", info.message);
+        console.error("[API MINES]", info.status || "-", info.message);
         return conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível abrir o Mines.")
         }, { quoted: createStatusQuoted(msg) });
@@ -470,9 +470,9 @@ const commands = [
     name: "cacapalavras",
     aliases: ["cacapalavra"],
     menuCategory: "Brincadeiras",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: "cacapalavras [palavra|desistir]",
-    description: "Caça-palavras usando o canvas da Tokito API",
+    description: "Caça-palavras usando o canvas da API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       const input = normalize(args.join(" "));
@@ -529,7 +529,7 @@ const commands = [
         return sendCaca(conn, msg, from, game);
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO CACAPALAVRAS]", info.status || "-", info.message);
+        console.error("[API CACAPALAVRAS]", info.status || "-", info.message);
         return conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível abrir o Caça-Palavras.")
         }, { quoted: createStatusQuoted(msg) });
