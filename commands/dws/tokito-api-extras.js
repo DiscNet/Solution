@@ -29,7 +29,7 @@ module.exports = [
         }
         const safe = String(title).replace(/[\\/:*?"<>|]/g, "").trim().slice(0, 90) || "musica";
         await conn.sendMessage(from, {
-          document: { url: tokitoApi.url("/api/youtube-audio", { q: target }) },
+          document: { url: tokitoApi.url("/api/youtube-doc", { q: target }) },
           mimetype: "audio/mpeg",
           fileName: safe + ".mp3",
         }, { quoted: createStatusQuoted(msg) });
