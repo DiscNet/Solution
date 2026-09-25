@@ -11,8 +11,10 @@ const downloadPack = require("../commands/dws/tokito-api-downloads");
 const extraPack = require("../commands/dws/tokito-api-extras");
 const playlist = require("../commands/dws/playlist");
 const rpgCards = require("../commands/rpg/tokito-cards");
-const akinator = require("../commands/outros/tokito-akinator");
-const totext = require("../commands/outros/tokito-totext");
+const akinator = require("../commands/brincadeiras/akinator");
+const textTools = require("../commands/outros/util-texto");
+const totext = textTools.find(command => command.name === "transcrever");
+const bratPack = require("../commands/dws/brat");
 const stickerPack = require("../commands/sticker/tokito-api-stickers");
 const freeFirePack = require("../commands/outros/tokito-freefire");
 const { loadCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
@@ -39,7 +41,7 @@ test("Pinterest aceita resultados em string ou objeto", () => {
 
 test("pacote IA registra endpoints Tokito esperados", () => {
   const names = aiPack.map(x => x.name);
-  for (const name of ["gemini", "geminipro", "openai", "perplexity", "tokitoia", "geminitts"]) {
+  for (const name of ["gemini", "geminipro", "openai", "perplexity", "tokitoia", "geminitts", "iaaudio", "tokitoapi"]) {
     assert.ok(names.includes(name), name);
   }
 });
@@ -97,7 +99,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
   const required = [
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
-    "akinator", "totext", "figu", "brat", "likes", "criarsala"
+    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -107,15 +109,15 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
 test("Akinator e transcrição usam rotas Tokito dedicadas", () => {
   assert.equal(akinator.name, "akinator");
   assert.ok(akinator.aliases.includes("aki"));
-  assert.equal(totext.name, "totext");
-  assert.ok(totext.aliases.includes("transcrever"));
+  assert.equal(totext.name, "transcrever");
+  assert.ok(totext.aliases.includes("totext"));
 
   const akiSource = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "outros", "tokito-akinator.js"),
+    path.join(__dirname, "..", "commands", "brincadeiras", "akinator.js"),
     "utf8"
   );
   const textSource = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "outros", "tokito-totext.js"),
+    path.join(__dirname, "..", "commands", "outros", "util-texto.js"),
     "utf8"
   );
 
@@ -125,11 +127,14 @@ test("Akinator e transcrição usam rotas Tokito dedicadas", () => {
   assert.match(textSource, /\/api\/outros\/totext/);
 });
 
-test("pacote de stickers Tokito inclui Brat e categorias figu", () => {
+test("pacote de stickers Tokito inclui categorias figu e Brat consolidado", () => {
   const names = stickerPack.map(x => x.name);
-  for (const name of ["figu", "figuemoji", "figuanime", "figuflork", "brat", "bratvid"]) {
+  for (const name of ["figu", "figuemoji", "figuanime", "figuflork"]) {
     assert.ok(names.includes(name), name);
   }
+  const bratNames = bratPack.map(x => x.name);
+  assert.ok(bratNames.includes("brat"));
+  assert.ok(bratNames.includes("bratvid"));
 });
 
 test("Free Fire Tokito inclui likes e controles de sala", () => {
@@ -139,12 +144,13 @@ test("Free Fire Tokito inclui likes e controles de sala", () => {
   }
 });
 
-test("playdoc usa o endpoint youtube-doc da Tokito", () => {
+test("playdoc usa o mesmo youtube-audio do Tokito V10", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "tokito-api-extras.js"),
     "utf8"
   );
-  assert.match(source, /\/api\/youtube-doc/);
+  assert.match(source, /\/api\/youtube-audio/);
+  assert.doesNotMatch(source, /\/api\/youtube-doc/);
 });
 
 test("ping usa o canvas ping2 da Tokito", () => {
