@@ -225,21 +225,18 @@ test("play não reaproveita aliases canônicos de play_audio", () => {
   assert.ok(playAudio.aliases.includes("playaudio"));
 });
 
-test("ytsearch usa lista nativa e seleciona ytplay", () => {
+test("ytsearch usa lista single_select no estilo antigo e seleciona ytplay", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
     "utf8"
   );
-  const helper = fs.readFileSync(
-    path.join(__dirname, "..", "functions", "youtubeResult.js"),
-    "utf8"
-  );
 
-  assert.match(source, /sendYoutubeList/);
-  assert.doesNotMatch(source, /gifted-btns/);
-  assert.match(helper, /single_select/);
-  assert.match(helper, /ytplay /);
-  assert.match(helper, /🎵 Áudio do 1º/);
+  assert.match(source, /sendInteractiveMessage/);
+  assert.match(source, /gifted-btns/);
+  assert.match(source, /name: "single_select"/);
+  assert.match(source, /title: "🎬 Resultados"/);
+  assert.match(source, /prefix \+ "ytplay " \+ video\.url/);
+  assert.match(source, /🎵 Áudio do 1º/);
 });
 
 test("play envia áudio diretamente e ytplay usa botões nativos", () => {
