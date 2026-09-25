@@ -2,15 +2,8 @@
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
-const { normalizeYoutubeList, normalizeYoutubeItem } = require("../../functions/youtubeResult");
+const { normalizeYoutubeList, normalizeYoutubeItem, sendYoutubeChoice } = require("../../functions/youtubeResult");
 const { getVideo } = require("../../functions/youtubeClient");
-const { sendButtons } = require("gifted-btns");
-
-function botName() {
-  return String(config.botName || "Bot")
-    .replace(/[\x00-\x1F\x7F]/g, "")
-    .trim() || "Bot";
-}
 
 async function resolveVideo(query) {
   const input = String(query || "").trim();
@@ -71,50 +64,16 @@ module.exports = {
       const video = await resolveVideo(query);
       if (!video?.url) throw new Error("Vídeo não encontrado.");
 
-      const text = [
-        "🎬 *" + video.title + "*",
-        video.channel ? "👤 " + video.channel : "",
-        video.duration ? "⏱️ " + video.duration : "",
-        video.views ? "👁️ " + video.views : "",
-        "🔗 " + video.url,
-      ].filter(Boolean).join("\n");
-
-      await sendButtons(conn, from, {
-        text,
-        footer: botName(),
-        image: video.thumbnail ? { url: video.thumbnail } : undefined,
-        buttons: [
-          {
-            id: prefix + "play " + video.url,
-            text: "🎵 Áudio",
-          },
-          {
-            id: prefix + "ytmp4 " + video.url,
-            text: "📹 Vídeo",
-          },
-          {
-            id: prefix + "playdoc " + video.url,
-            text: "📄 Documento",
-          },
-        ],
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: botName(),
-            serverMessageId: 116,
-          },
-        },
-      }, { quoted: createStatusQuoted(msg) });
+      await sendYoutubeChoice(conn, msg, from, video);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
       console.error("[YTPLAY]", error?.message || error);
+
       await conn.sendMessage(from, {
-        text: tokitoApi.userError(error, "Não foi possível abrir esse vídeo."),
+        text: "❌ Não foi possível abrir esse vídeo.",
       }, { quoted: createStatusQuoted(msg) });
     }
   },
