@@ -1,4 +1,4 @@
-// Mais recursos gratuitos inspirados no catálogo da Tokito V10.
+// Mais recursos gratuitos inspirados no catálogo da API.
 const config = require("../../config/config");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
@@ -83,7 +83,7 @@ const commands = [
     description: "Mostra informações públicas configuradas sobre o responsável pelo bot",
     async execute(conn, msg, args, from) {
       const ownerName = config.ownerName || "Não configurado";
-      const botName = config.botName || "Solution";
+      const botName = config.botName || "Bot";
       const prefix = config.prefix || ".";
       await kit.reply(
         conn,
@@ -99,7 +99,7 @@ const commands = [
     aliases: ["githubzip"],
     section: "Downloads",
     usage: "gitclone https://github.com/usuario/repositorio",
-    description: "Baixa repositórios públicos usando a Tokito API",
+    description: "Baixa repositórios públicos usando a API",
     async execute(conn, msg, args, from, http) {
       const raw = String(args[0] || "").trim();
       if (!/^https?:\/\/(?:www\.)?github\.com\//i.test(raw)) {
@@ -127,7 +127,7 @@ const commands = [
           const owner = match[1];
           const repo = match[2];
           const meta = await http.get("https://api.github.com/repos/" + owner + "/" + repo, {
-            timeout: 12000, headers: { "user-agent": "SolutionBot/1.0" }, validateStatus: () => true,
+            timeout: 12000, headers: { "user-agent": "WhatsAppBot/1.0" }, validateStatus: () => true,
           });
           if (meta.status !== 200 || meta.data?.private) throw kit.userError("O repositório não existe ou não é público.");
           const branch = meta.data?.default_branch || "main";
