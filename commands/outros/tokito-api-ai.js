@@ -42,7 +42,7 @@ function command({ name, aliases = [], route, params, description, validate }) {
         const info = tokitoApi.errorInfo(error);
         console.error("[API IA]", name, info.status || "-", info.message);
         await conn.sendMessage(from, {
-          text: tokitoApi.userError(error, "Não foi possível consultar a IA da Tokito agora.")
+          text: tokitoApi.userError(error, "Não foi possível consultar a IA agora.")
         }, { quoted: createStatusQuoted(msg) });
       }
     },
