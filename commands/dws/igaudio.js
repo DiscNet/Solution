@@ -4,7 +4,7 @@ const tokitoApi = require("../../functions/tokitoApi");
 
 module.exports = {
   name: "igaudio",
-  aliases: ["instagramaudio"],
+  aliases: ["instagramaudio", "instagram_audio"],
   menuCategory: "Downloads",
   menuSection: "Instagram",
   usage: "igaudio link",
