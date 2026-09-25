@@ -13,14 +13,70 @@ const guessState = new Map();
 const GAME_TTL = 15 * 60 * 1000;
 
 const quizQuestions = [
-  { q: "Qual planeta é conhecido como Planeta Vermelho?", a: "marte", display: "Marte" },
-  { q: "Quanto é 9 × 7?", a: "63", display: "63" },
-  { q: "Qual é a capital do Japão?", a: "toquio", display: "Tóquio" },
-  { q: "Qual linguagem roda nativamente no navegador junto com HTML e CSS?", a: "javascript", display: "JavaScript" },
-  { q: "Qual oceano fica entre as Américas e a Europa/África?", a: "atlantico", display: "Atlântico" },
-  { q: "Qual gás as plantas absorvem principalmente na fotossíntese?", a: "dioxido de carbono", display: "Dióxido de carbono" },
-  { q: "Quem escreveu Dom Casmurro?", a: "machado de assis", display: "Machado de Assis" },
-  { q: "Qual é o maior planeta do Sistema Solar?", a: "jupiter", display: "Júpiter" },
+  {
+    q: "Qual planeta é conhecido como Planeta Vermelho?",
+    options: ["Vênus", "Marte", "Júpiter", "Mercúrio"],
+    correct: 2,
+    category: "Ciência",
+    a: "marte",
+    display: "Marte",
+  },
+  {
+    q: "Quanto é 9 × 7?",
+    options: ["56", "63", "72", "67"],
+    correct: 2,
+    category: "Matemática",
+    a: "63",
+    display: "63",
+  },
+  {
+    q: "Qual é a capital do Japão?",
+    options: ["Seul", "Pequim", "Tóquio", "Osaka"],
+    correct: 3,
+    category: "Geografia",
+    a: "toquio",
+    display: "Tóquio",
+  },
+  {
+    q: "Qual linguagem roda nativamente no navegador junto com HTML e CSS?",
+    options: ["Java", "Python", "JavaScript", "Rust"],
+    correct: 3,
+    category: "Tecnologia",
+    a: "javascript",
+    display: "JavaScript",
+  },
+  {
+    q: "Qual oceano fica entre as Américas e a Europa/África?",
+    options: ["Pacífico", "Índico", "Ártico", "Atlântico"],
+    correct: 4,
+    category: "Geografia",
+    a: "atlantico",
+    display: "Atlântico",
+  },
+  {
+    q: "Qual gás as plantas absorvem principalmente na fotossíntese?",
+    options: ["Oxigênio", "Dióxido de carbono", "Nitrogênio", "Hélio"],
+    correct: 2,
+    category: "Ciência",
+    a: "dioxido de carbono",
+    display: "Dióxido de carbono",
+  },
+  {
+    q: "Quem escreveu Dom Casmurro?",
+    options: ["José de Alencar", "Machado de Assis", "Carlos Drummond", "Clarice Lispector"],
+    correct: 2,
+    category: "Literatura",
+    a: "machado de assis",
+    display: "Machado de Assis",
+  },
+  {
+    q: "Qual é o maior planeta do Sistema Solar?",
+    options: ["Saturno", "Terra", "Júpiter", "Netuno"],
+    correct: 3,
+    category: "Ciência",
+    a: "jupiter",
+    display: "Júpiter",
+  },
 ];
 
 function norm(value) {
@@ -44,6 +100,62 @@ function cleanup(map, key) {
     return null;
   }
   return item || null;
+}
+
+async function sendQuizCard(conn, msg, from, game, state = "jogando", answer = 0) {
+  const options = Array.isArray(game.options) ? game.options : [];
+  const lines = [
+    "🧠 *QUIZ • TOKITO API*",
+    "",
+    "📚 Categoria: *" + (game.category || "Geral") + "*",
+    game.q,
+    "",
+    ...options.map((option, index) => (index + 1) + ". " + option),
+  ];
+
+  if (state === "jogando") {
+    lines.push("", "Responda com *.quiz 1*, *.quiz 2*, *.quiz 3* ou *.quiz 4*.");
+  } else {
+    lines.push(
+      "",
+      state === "acertou" ? "🏆 *Resposta correta!*" : "❌ *Resposta incorreta.*",
+      "Correta: *" + game.correct + ". " + options[game.correct - 1] + "*"
+    );
+  }
+
+  const caption = lines.join("\n");
+
+  try {
+    const card = await tokitoApi.buffer("/canvas/quiz", {
+      pergunta: game.q,
+      op1: options[0] || "",
+      op2: options[1] || "",
+      op3: options[2] || "",
+      op4: options[3] || "",
+      correta: game.correct,
+      categoria: game.category || "Geral",
+      estado: state,
+      resposta: answer,
+      fundo: "https://telegra.ph/file/b5427ea4b8701bc47e751.jpg",
+      t: Date.now(),
+    }, {
+      timeout: 60000,
+      headers: { accept: "image/*,*/*" },
+    });
+
+    if (!card.buffer?.length || !/image/i.test(card.contentType)) {
+      throw new Error("Canvas de quiz inválido.");
+    }
+
+    return conn.sendMessage(from, {
+      image: card.buffer,
+      caption,
+    }, { quoted: createStatusQuoted(msg) });
+  } catch (error) {
+    const info = tokitoApi.errorInfo(error);
+    console.warn("[QUIZ TOKITO]", info.status || "-", info.message);
+    return kit.reply(conn, msg, from, caption);
+  }
 }
 
 function firstTarget(msg, from) {
@@ -274,8 +386,8 @@ const commands = [
   kit.makeCommand({
     name: "quiz",
     section: "Jogos rápidos",
-    usage: "quiz [resposta|novo|desistir]",
-    description: "Quiz simples jogado por mensagens",
+    usage: "quiz [1-4|resposta|novo|desistir]",
+    description: "Quiz usando o canvas da Tokito API",
     async execute(conn, msg, args, from) {
       const input = norm(args.join(" "));
       let game = cleanup(quizState, from);
@@ -284,22 +396,48 @@ const commands = [
         const item = choose(quizQuestions);
         game = { ...item, at: Date.now() };
         quizState.set(from, game);
-        return kit.reply(conn, msg, from, `🧠 *QUIZ*\n\n${item.q}\n\nResponda com *.quiz sua resposta*.`);
+        return sendQuizCard(conn, msg, from, game);
       }
 
-      if (!input) return kit.reply(conn, msg, from, `🧠 *QUIZ*\n\n${game.q}\n\nResponda com *.quiz sua resposta*.`);
-      if (["desistir", "parar"].includes(input)) {
+      if (!input) return sendQuizCard(conn, msg, from, game);
+
+      if (["desistir", "parar", "cancelar"].includes(input)) {
         quizState.delete(from);
         return kit.reply(conn, msg, from, `🏳️ A resposta era *${game.display}*.`);
       }
 
-      if (input === norm(game.a)) {
-        quizState.delete(from);
-        return kit.reply(conn, msg, from, `✅ *Acertou!* A resposta é *${game.display}*.`);
+      let answer = 0;
+      if (/^[1-4]$/.test(input)) {
+        answer = Number(input);
+      } else {
+        const index = game.options.findIndex(option => norm(option) === input);
+        if (index >= 0) answer = index + 1;
+        else if (input === norm(game.a)) answer = game.correct;
       }
 
-      game.at = Date.now();
-      return kit.reply(conn, msg, from, "❌ Não foi dessa vez. Tente novamente ou use *.quiz desistir*.");
+      if (!answer) {
+        return kit.reply(conn, msg, from, "❌ Responda com 1, 2, 3, 4 ou o texto de uma das alternativas.");
+      }
+
+      quizState.delete(from);
+      const state = answer === game.correct ? "acertou" : "errou";
+      return sendQuizCard(conn, msg, from, game, state, answer);
+    },
+  }),
+
+  kit.makeCommand({
+    name: "resetquiz",
+    section: "Jogos rápidos",
+    usage: "resetquiz",
+    description: "Encerra o Quiz ativo no grupo",
+    async execute(conn, msg, args, from) {
+      const existed = quizState.delete(from);
+      return kit.reply(
+        conn,
+        msg,
+        from,
+        existed ? "✅ Quiz encerrado." : "ℹ️ Não há Quiz ativo neste grupo."
+      );
     },
   }),
 
@@ -349,4 +487,4 @@ const commands = [
 ];
 
 module.exports = commands;
-module.exports._test = { norm, ageFromDate, parseStatus, quizQuestions };
+module.exports._test = { norm, ageFromDate, parseStatus, quizQuestions, sendQuizCard, quizState };
