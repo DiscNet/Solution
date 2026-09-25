@@ -67,6 +67,18 @@ test("Pinterest aceita respostas simples e aninhadas", () => {
     "https://example.com/3.jpg",
   ]);
   assert.match(pin._internals.searchCaption("anime", 3), /3/);
+  assert.equal(typeof pin._internals.sendCarousel, "function");
+});
+
+test("pin mantém carrossel como saída principal", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "pinterest.js"),
+    "utf8"
+  );
+  assert.match(source, /carouselMessage/);
+  assert.match(source, /prepareWAMessageMedia/);
+  assert.match(source, /await sendCarousel\(conn, msg, from, urls, query\)/);
+  assert.match(source, /displayBotName\(\)/);
 });
 
 test("pacote IA registra endpoints Tokito esperados", () => {
