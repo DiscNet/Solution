@@ -250,14 +250,14 @@ module.exports = {
           const apiCard = await tokitoApi.buffer("/canvas/perfil", {
             fundo: avatar.url,
             text: pushName,
-            subtext: config.botName || "Solution",
+            subtext: config.botName || "Bot",
             logo: avatar.url,
             cargo,
             bio,
           }, { timeout: 90000 });
           if (apiCard.buffer?.length) imageBuffer = apiCard.buffer;
         } catch (error) {
-          console.log("⚠️ Perfil: Tokito API indisponível, usando card local:", error.message);
+          console.log("⚠️ Perfil: API indisponível, usando card local:", error.message);
         }
       }
 
