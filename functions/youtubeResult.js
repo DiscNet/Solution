@@ -142,6 +142,151 @@ function singleSelectButton(title, sections) {
   };
 }
 
+function findMediaUrl(value, depth = 0) {
+  if (depth > 7 || value == null) return "";
+
+  if (typeof value === "string") {
+    const text = value.trim();
+    return /^https?:\/\//i.test(text) ? text : "";
+  }
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const found = findMediaUrl(item, depth + 1);
+      if (found) return found;
+    }
+    return "";
+  }
+
+  if (typeof value === "object") {
+    for (const key of [
+      "download", "downloadUrl", "download_url", "audio", "video",
+      "url", "link", "play", "media", "file", "src"
+    ]) {
+      const found = findMediaUrl(value[key], depth + 1);
+      if (found) return found;
+    }
+
+    for (const item of Object.values(value)) {
+      const found = findMediaUrl(item, depth + 1);
+      if (found) return found;
+    }
+  }
+
+  return "";
+}
+
+async function youtubePlayAudioUrl(query) {
+  const data = await tokitoApi.get("/api/youtube-play", {
+    query,
+    q: query,
+  }, { timeout: 60000 });
+
+  return findMediaUrl(
+    data?.resultado ||
+    data?.result ||
+    data?.data ||
+    data
+  );
+}
+
+async function sendYoutubeAudio(conn, msg, from, target) {
+  let resolved = String(target || "").trim();
+  if (!resolved) throw new Error("Áudio sem alvo.");
+
+  try {
+    const playUrl = await youtubePlayAudioUrl(resolved);
+    if (playUrl) {
+      return conn.sendMessage(from, {
+        audio: { url: playUrl },
+        mimetype: "audio/mpeg",
+        fileName: "audio.mp3",
+        ptt: false,
+      }, { quoted: createStatusQuoted(msg) });
+    }
+  } catch (error) {
+    console.warn("[YOUTUBE PLAY AUDIO]", error?.message || error);
+  }
+
+  const response = await tokitoApi.buffer("/api/youtube-audio", {
+    q: resolved,
+    query: resolved,
+  }, {
+    timeout: 120000,
+    maxContentLength: 60 * 1024 * 1024,
+    maxBodyLength: 60 * 1024 * 1024,
+    headers: { accept: "audio/*,application/json,*/*" },
+  });
+
+  const type = String(response.contentType || "").toLowerCase();
+
+  if (type.includes("audio/") && response.buffer?.length) {
+    return conn.sendMessage(from, {
+      audio: response.buffer,
+      mimetype: type.split(";")[0] || "audio/mpeg",
+      fileName: "audio.mp3",
+      ptt: false,
+    }, { quoted: createStatusQuoted(msg) });
+  }
+
+  if (response.buffer?.length) {
+    const raw = response.buffer.toString("utf8").trim();
+    try {
+      const parsed = JSON.parse(raw);
+      const url = findMediaUrl(parsed);
+      if (url) {
+        return conn.sendMessage(from, {
+          audio: { url },
+          mimetype: "audio/mpeg",
+          fileName: "audio.mp3",
+          ptt: false,
+        }, { quoted: createStatusQuoted(msg) });
+      }
+    } catch {}
+  }
+
+  throw new Error("A API não retornou um áudio reproduzível.");
+}
+
+async function sendYoutubeVideo(conn, msg, from, target) {
+  const response = await tokitoApi.buffer("/api/youtube-video", {
+    q: target,
+    query: target,
+  }, {
+    timeout: 120000,
+    maxContentLength: 80 * 1024 * 1024,
+    maxBodyLength: 80 * 1024 * 1024,
+    headers: { accept: "video/*,application/json,*/*" },
+  });
+
+  const type = String(response.contentType || "").toLowerCase();
+
+  if (type.includes("video/") && response.buffer?.length) {
+    return conn.sendMessage(from, {
+      video: response.buffer,
+      mimetype: type.split(";")[0] || "video/mp4",
+      fileName: "video.mp4",
+    }, { quoted: createStatusQuoted(msg) });
+  }
+
+  if (response.buffer?.length) {
+    const raw = response.buffer.toString("utf8").trim();
+    try {
+      const parsed = JSON.parse(raw);
+      const url = findMediaUrl(parsed);
+      if (url) {
+        return conn.sendMessage(from, {
+          video: { url },
+          mimetype: "video/mp4",
+          fileName: "video.mp4",
+        }, { quoted: createStatusQuoted(msg) });
+      }
+    } catch {}
+  }
+
+  throw new Error("A API não retornou um vídeo reproduzível.");
+}
+
 function quickReplyButton(text, id) {
   return {
     name: "quick_reply",
@@ -491,4 +636,8 @@ module.exports = {
   sendYoutubeList,
   quickReplyButton,
   singleSelectButton,
+  findMediaUrl,
+  youtubePlayAudioUrl,
+  sendYoutubeAudio,
+  sendYoutubeVideo,
 };
