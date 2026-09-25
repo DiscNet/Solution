@@ -1,3 +1,8 @@
+const config = require("../config/config");
+const tokitoApi = require("./tokitoApi");
+const { createStatusQuoted } = require("./statusCard");
+const { generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
+
 function textValue(value, fallback = "") {
   if (value === undefined || value === null) return fallback;
   if (typeof value === "string" || typeof value === "number" || typeof value === "bigint") {
@@ -119,10 +124,128 @@ function normalizeYoutubeList(data, listFn) {
   return source.map(normalizeYoutubeItem).filter(item => item.url);
 }
 
+
+function botName() {
+  return String(config.botName || "Bot")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .trim() || "Bot";
+}
+
+function infoText(video, title = "🎧 *MÍDIA ENCONTRADA*") {
+  return [
+    title,
+    "",
+    "✏️ *Título:* " + textValue(video?.title, "Sem título"),
+    "👤 *Canal:* " + textValue(video?.channel, "Desconhecido"),
+    "⏱️ *Duração:* " + textValue(video?.duration, "0:00"),
+    video?.views ? "👁️ *Views:* " + textValue(video.views, "") : "",
+    video?.url ? "🔗 " + video.url : "",
+  ].filter(Boolean).join("\n");
+}
+
+async function resolveYoutubeVideo(query) {
+  const input = String(query || "").trim();
+  if (!input) return null;
+
+  try {
+    const data = await tokitoApi.get("/api/youtube-search", { query: input });
+    const results = normalizeYoutubeList(data, tokitoApi.list);
+    if (results.length) return results[0];
+  } catch (error) {
+    if (!/^https?:\/\//i.test(input)) throw error;
+  }
+
+  if (/^https?:\/\//i.test(input)) {
+    return normalizeYoutubeItem({
+      url: input,
+      title: "YouTube",
+      channel: "Desconhecido",
+      duration: "0:00",
+    });
+  }
+
+  return null;
+}
+
+function quickReply(text, id) {
+  return {
+    name: "quick_reply",
+    buttonParamsJson: JSON.stringify({ display_text: text, id }),
+  };
+}
+
+async function sendYoutubeFallback(conn, msg, from, video) {
+  const prefix = config.prefix || ".";
+  const text = [
+    infoText(video),
+    "",
+    "🎵 " + prefix + "ytmp3 " + video.url,
+    "🎬 " + prefix + "ytmp4 " + video.url,
+    "📄 " + prefix + "playdoc " + video.url,
+  ].join("\n");
+
+  if (video.thumbnail) {
+    return conn.sendMessage(from, {
+      image: { url: video.thumbnail },
+      caption: text,
+    }, { quoted: createStatusQuoted(msg) });
+  }
+
+  return conn.sendMessage(from, { text }, { quoted: createStatusQuoted(msg) });
+}
+
+async function sendYoutubeChoice(conn, msg, from, video) {
+  const prefix = config.prefix || ".";
+  let header;
+
+  if (video?.thumbnail) {
+    try {
+      const media = await prepareWAMessageMedia(
+        { image: { url: video.thumbnail } },
+        { upload: conn.waUploadToServer }
+      );
+      header = {
+        hasMediaAttachment: true,
+        imageMessage: media.imageMessage,
+      };
+    } catch {}
+  }
+
+  const interactiveMessage = {
+    ...(header ? { header } : {}),
+    body: {
+      text: infoText(video) + "\n\nEscolha como deseja baixar:",
+    },
+    footer: { text: botName() },
+    nativeFlowMessage: {
+      buttons: [
+        quickReply("🎵 Áudio", prefix + "ytmp3 " + video.url),
+        quickReply("🎬 Vídeo", prefix + "ytmp4 " + video.url),
+        quickReply("📄 Documento", prefix + "playdoc " + video.url),
+      ],
+    },
+  };
+
+  try {
+    const out = generateWAMessageFromContent(from, {
+      interactiveMessage,
+    }, { quoted: createStatusQuoted(msg) });
+
+    return await conn.relayMessage(from, out.message, { messageId: out.key.id });
+  } catch (error) {
+    console.warn("[YOUTUBE BUTTONS]", error?.message || error);
+    return sendYoutubeFallback(conn, msg, from, video);
+  }
+}
+
 module.exports = {
   textValue,
   firstUrl,
   thumbnailUrl,
   normalizeYoutubeItem,
   normalizeYoutubeList,
+  infoText,
+  resolveYoutubeVideo,
+  sendYoutubeChoice,
+  sendYoutubeFallback,
 };
