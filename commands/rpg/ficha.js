@@ -206,6 +206,6 @@ ${barraPatente}
 
 Object.assign(module.exports, {
   "menuCategory": "RPG",
-  "menuSection": "Personagem",
+  "menuSection": "Sistema RPG",
   "description": "mostra sua ficha de rpg"
 });
