@@ -203,32 +203,42 @@ test("play e ytmp3 usam o resolvedor robusto de áudio", () => {
   assert.match(helper, /audio: audio\.buffer/);
 });
 
-test("ytsearch usa lista single_select no estilo antigo", () => {
+test("ytsearch usa lista nativa single_select e seleciona ytplay", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
     "utf8"
   );
+  const helper = fs.readFileSync(
+    path.join(__dirname, "..", "functions", "youtubeResult.js"),
+    "utf8"
+  );
 
-  assert.match(source, /sendInteractiveMessage/);
-  assert.match(source, /name: "single_select"/);
-  assert.match(source, /title: "🎬 Resultados"/);
-  assert.match(source, /aimode: true/);
-  assert.match(source, /prefix \+ "ytplay " \+ video\.url/);
+  assert.match(source, /sendYoutubeList/);
+  assert.doesNotMatch(source, /gifted-btns/);
+  assert.match(helper, /single_select/);
+  assert.match(helper, /🎬 Ver resultados/);
+  assert.match(helper, /prefix \+ "ytplay " \+ video\.url/);
+  assert.match(helper, /viewOnceMessage/);
 });
 
-test("ytplay usa botões interativos de áudio vídeo e documento", () => {
+test("ytplay usa botões nativos de áudio vídeo e documento", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
     "utf8"
   );
+  const helper = fs.readFileSync(
+    path.join(__dirname, "..", "functions", "youtubeResult.js"),
+    "utf8"
+  );
 
-  assert.match(source, /sendInteractiveMessage/);
-  assert.match(source, /name: "quick_reply"/);
-  assert.match(source, /🎵 Áudio/);
-  assert.match(source, /📹 Vídeo/);
-  assert.match(source, /📄 Documento/);
-  assert.match(source, /prefix \+ "play " \+ video\.url/);
-  assert.match(source, /prefix \+ "ytmp4 " \+ video\.url/);
+  assert.match(source, /sendYoutubeChoice/);
+  assert.doesNotMatch(source, /gifted-btns/);
+  assert.match(helper, /quick_reply/);
+  assert.match(helper, /🎵 Áudio/);
+  assert.match(helper, /📹 Vídeo/);
+  assert.match(helper, /📄 Documento/);
+  assert.match(helper, /prefix \+ "play " \+ video\.url/);
+  assert.match(helper, /prefix \+ "ytmp4 " \+ video\.url/);
 });
 
 test("play não reaproveita aliases canônicos de play_audio", () => {
