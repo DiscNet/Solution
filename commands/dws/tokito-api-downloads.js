@@ -1,4 +1,5 @@
 const path = require("path");
+const config = require("../../config/config");
 const tokitoApi = require("../../functions/tokitoApi");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
@@ -47,6 +48,143 @@ function summary(data, query) {
   }).join("\n\n");
 }
 
+function displayBotName() {
+  return String(config.botName || "Bot")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .trim() || "Bot";
+}
+
+function tiktokVideoUrl(item) {
+  const candidates = [
+    item?.video_sem_marca,
+    item?.videoSemMarca,
+    item?.no_watermark,
+    item?.noWatermark,
+    item?.nowm,
+    item?.nwm_video_url,
+    item?.download,
+    item?.play,
+    item?.play_addr,
+    item?.video,
+  ];
+
+  for (const candidate of candidates) {
+    const found = firstUrl(candidate);
+    if (found) return found;
+  }
+
+  const fallback = firstUrl(item?.url);
+  return fallback;
+}
+
+function collectTikTokItems(value, out = [], depth = 0) {
+  if (depth > 6 || value == null) return out;
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectTikTokItems(item, out, depth + 1);
+    return out;
+  }
+
+  if (typeof value !== "object") return out;
+
+  if (tiktokVideoUrl(value)) out.push(value);
+
+  for (const key of ["resultado", "resultados", "result", "data", "results", "videos", "items"]) {
+    if (value[key] !== undefined) collectTikTokItems(value[key], out, depth + 1);
+  }
+
+  return out;
+}
+
+function tiktokItems(data) {
+  const found = collectTikTokItems(data, []);
+  const unique = [];
+  const seen = new Set();
+
+  for (const item of found) {
+    const url = tiktokVideoUrl(item);
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    unique.push(item);
+  }
+
+  return unique;
+}
+
+function tiktokSearchCommand() {
+  return {
+    name: "tiktoksearch",
+    aliases: ["ttsearch"],
+    menuCategory: "Downloads",
+    menuSection: "TikTok",
+    usage: "tiktoksearch termo",
+    description: "Pesquisa vídeos no TikTok e envia um resultado",
+    async execute(conn, msg, args, from) {
+      const query = args.join(" ").trim();
+
+      if (!query) {
+        return conn.sendMessage(from, {
+          text: "❌ Uso: .tiktoksearch <termo>\nEx.: .tiktoksearch edit anime",
+        }, { quoted: createStatusQuoted(msg) });
+      }
+
+      try {
+        await conn.sendMessage(from, {
+          react: { text: "🔎", key: msg.key },
+        }).catch(() => {});
+
+        const data = await tokitoApi.get("/api/tiktok-search", {
+          query,
+          q: query,
+          text: query,
+        });
+
+        const items = tiktokItems(data);
+        if (!items.length) {
+          throw new Error("Nenhum vídeo foi encontrado para essa pesquisa.");
+        }
+
+        const item = items[Math.floor(Math.random() * items.length)];
+        const videoUrl = tiktokVideoUrl(item);
+        if (!videoUrl) throw new Error("O resultado não possui vídeo utilizável.");
+
+        const title = String(
+          item?.titulo || item?.title || item?.desc || item?.description || query
+        ).replace(/\s+/g, " ").trim().slice(0, 220);
+
+        const author = String(
+          item?.autor || item?.author || item?.username || item?.nickname || item?.user?.nickname || ""
+        ).replace(/\s+/g, " ").trim().slice(0, 80);
+
+        const caption = [
+          "🎬 *TIKTOK SEARCH*",
+          "",
+          "🔎 *Busca:* " + query,
+          title ? "📝 *Título:* " + title : "",
+          author ? "👤 *Autor:* " + author : "",
+          "",
+          "> " + displayBotName(),
+        ].filter(Boolean).join("\n");
+
+        await conn.sendMessage(from, {
+          video: { url: videoUrl },
+          mimetype: "video/mp4",
+          caption,
+        }, { quoted: createStatusQuoted(msg) });
+
+        await conn.sendMessage(from, {
+          react: { text: "✅", key: msg.key },
+        }).catch(() => {});
+      } catch (error) {
+        console.error("[TIKTOK SEARCH]", error.message);
+        await conn.sendMessage(from, {
+          text: tokitoApi.userError(error, "Não foi possível pesquisar vídeos no TikTok."),
+        }, { quoted: createStatusQuoted(msg) });
+      }
+    },
+  };
+}
+
 function searchCommand({ name, aliases = [], route, params, section, description }) {
   return {
     name,
@@ -75,7 +213,7 @@ function searchCommand({ name, aliases = [], route, params, section, description
       } catch (error) {
         console.error("[TOKITO SEARCH]", name, error.message);
         await conn.sendMessage(from, {
-          text: "❌ Não foi possível fazer essa pesquisa pela Tokito API."
+          text: "❌ Não foi possível fazer essa pesquisa pela API."
         }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -111,7 +249,7 @@ function mediaCommand({ name, aliases = [], route, type = "video", section, desc
       } catch (error) {
         console.error("[TOKITO MEDIA]", name, error.message);
         await conn.sendMessage(from, {
-          text: "❌ Não foi possível baixar essa mídia pela Tokito API."
+          text: "❌ Não foi possível baixar essa mídia pela API."
         }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -160,7 +298,7 @@ function jsonDownloadCommand({ name, aliases = [], route, param = "url", section
       } catch (error) {
         console.error("[TOKITO DOWNLOAD]", name, error.message);
         await conn.sendMessage(from, {
-          text: "❌ Não foi possível processar esse link pela Tokito API."
+          text: "❌ Não foi possível processar esse link pela API."
         }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -168,34 +306,34 @@ function jsonDownloadCommand({ name, aliases = [], route, param = "url", section
 }
 
 const commands = [
-  searchCommand({ name: "tiktoksearch", aliases: ["ttsearch"], route: "/api/tiktok-search", params: q => ({ query: q }), section: "TikTok", description: "Pesquisa vídeos no TikTok pela Tokito API" }),
-  searchCommand({ name: "spotifysearch", aliases: ["spsearch"], route: "/api/spotify-search", params: q => ({ q, query: q }), section: "Spotify", description: "Pesquisa músicas no Spotify pela Tokito API" }),
-  searchCommand({ name: "soundcloudsearch", aliases: ["scsearch"], route: "/api/soundcloud-search", params: q => ({ q, query: q }), section: "SoundCloud", description: "Pesquisa faixas no SoundCloud pela Tokito API" }),
-  searchCommand({ name: "appstore", route: "/api/appstore-search", params: q => ({ q }), section: "Apps", description: "Pesquisa apps na App Store pela Tokito API" }),
-  searchCommand({ name: "lyrics", aliases: ["letra"], route: "/api/lyrics-search", params: q => ({ q, query: q }), section: "Pesquisas", description: "Pesquisa letras de músicas pela Tokito API" }),
-  searchCommand({ name: "animesearch", aliases: ["anime"], route: "/api/anime-search", params: q => ({ q, query: q }), section: "Pesquisas", description: "Pesquisa animes pela Tokito API" }),
-  searchCommand({ name: "mangasearch", aliases: ["manga"], route: "/api/manga-search", params: q => ({ q, query: q }), section: "Pesquisas", description: "Pesquisa mangás pela Tokito API" }),
-  searchCommand({ name: "playstore", route: "/api/playstore", params: q => ({ query: q }), section: "Apps", description: "Pesquisa apps na Play Store pela Tokito API" }),
-  searchCommand({ name: "aptoide", route: "/api/aptoide", params: q => ({ query: q }), section: "Apps", description: "Pesquisa apps no Aptoide pela Tokito API" }),
-  searchCommand({ name: "happymod", route: "/api/happymod-search", params: q => ({ q }), section: "Apps", description: "Pesquisa resultados no HappyMod pela Tokito API" }),
-  searchCommand({ name: "applemusic", aliases: ["appleplay"], route: "/api/applemusic-play", params: q => ({ text: q }), section: "Música", description: "Pesquisa Apple Music pela Tokito API" }),
-  searchCommand({ name: "deezer", route: "/api/deezer-play", params: q => ({ q, query: q }), section: "Música", description: "Pesquisa Deezer pela Tokito API" }),
-  searchCommand({ name: "soundcloud", route: "/api/soundcloud", params: q => ({ q, query: q }), section: "SoundCloud", description: "Pesquisa SoundCloud pela Tokito API" }),
+  tiktokSearchCommand(),
+  searchCommand({ name: "spotifysearch", aliases: ["spsearch"], route: "/api/spotify-search", params: q => ({ q, query: q }), section: "Spotify", description: "Pesquisa músicas no Spotify pela API" }),
+  searchCommand({ name: "soundcloudsearch", aliases: ["scsearch"], route: "/api/soundcloud-search", params: q => ({ q, query: q }), section: "SoundCloud", description: "Pesquisa faixas no SoundCloud pela API" }),
+  searchCommand({ name: "appstore", route: "/api/appstore-search", params: q => ({ q }), section: "Apps", description: "Pesquisa apps na App Store pela API" }),
+  searchCommand({ name: "lyrics", aliases: ["letra"], route: "/api/lyrics-search", params: q => ({ q, query: q }), section: "Pesquisas", description: "Pesquisa letras de músicas pela API" }),
+  searchCommand({ name: "animesearch", aliases: ["anime"], route: "/api/anime-search", params: q => ({ q, query: q }), section: "Pesquisas", description: "Pesquisa animes pela API" }),
+  searchCommand({ name: "mangasearch", aliases: ["manga"], route: "/api/manga-search", params: q => ({ q, query: q }), section: "Pesquisas", description: "Pesquisa mangás pela API" }),
+  searchCommand({ name: "playstore", route: "/api/playstore", params: q => ({ query: q }), section: "Apps", description: "Pesquisa apps na Play Store pela API" }),
+  searchCommand({ name: "aptoide", route: "/api/aptoide", params: q => ({ query: q }), section: "Apps", description: "Pesquisa apps no Aptoide pela API" }),
+  searchCommand({ name: "happymod", route: "/api/happymod-search", params: q => ({ q }), section: "Apps", description: "Pesquisa resultados no HappyMod pela API" }),
+  searchCommand({ name: "applemusic", aliases: ["appleplay"], route: "/api/applemusic-play", params: q => ({ text: q }), section: "Música", description: "Pesquisa Apple Music pela API" }),
+  searchCommand({ name: "deezer", route: "/api/deezer-play", params: q => ({ q, query: q }), section: "Música", description: "Pesquisa Deezer pela API" }),
+  searchCommand({ name: "soundcloud", route: "/api/soundcloud", params: q => ({ q, query: q }), section: "SoundCloud", description: "Pesquisa SoundCloud pela API" }),
 
-  mediaCommand({ name: "facebook", aliases: ["fb"], route: "/api/facebook", type: "video", section: "Facebook", description: "Baixa vídeo do Facebook pela Tokito API" }),
-  mediaCommand({ name: "faceaudio", aliases: ["fbaudio", "face_audio"], route: "/api/facebook", type: "audio", section: "Facebook", description: "Baixa áudio do Facebook pela Tokito API" }),
-  mediaCommand({ name: "twitter", aliases: ["xvideo"], route: "/api/twitter-video", type: "video", section: "X/Twitter", description: "Baixa vídeo do X/Twitter pela Tokito API" }),
-  mediaCommand({ name: "twitteraudio", aliases: ["xaudio", "twitter_audio"], route: "/api/twitter-video", type: "audio", section: "X/Twitter", description: "Baixa áudio do X/Twitter pela Tokito API" }),
-  mediaCommand({ name: "kwai", route: "/api/kwai-video", type: "video", section: "Kwai", description: "Baixa vídeo do Kwai pela Tokito API" }),
-  mediaCommand({ name: "kwaiaudio", aliases: ["kwai_audio"], route: "/api/kwai-audio", type: "audio", section: "Kwai", description: "Baixa áudio do Kwai pela Tokito API" }),
-  mediaCommand({ name: "pinterestvideo", aliases: ["pinvideo"], route: "/api/pinterest-video", type: "video", section: "Pinterest", description: "Baixa vídeo do Pinterest pela Tokito API" }),
-  mediaCommand({ name: "appleaudio", aliases: ["applemp3", "apple_audio"], route: "/api/applemusic-audio", type: "audio", section: "Música", description: "Baixa áudio de link Apple Music pela Tokito API" }),
-  mediaCommand({ name: "soundaudio", aliases: ["soundcloudaudio", "sound_audio"], route: "/api/soundcloud-audio", type: "audio", section: "SoundCloud", description: "Baixa áudio do SoundCloud pela Tokito API" }),
+  mediaCommand({ name: "facebook", aliases: ["fb"], route: "/api/facebook", type: "video", section: "Facebook", description: "Baixa vídeo do Facebook pela API" }),
+  mediaCommand({ name: "faceaudio", aliases: ["fbaudio", "face_audio"], route: "/api/facebook", type: "audio", section: "Facebook", description: "Baixa áudio do Facebook pela API" }),
+  mediaCommand({ name: "twitter", aliases: ["xvideo"], route: "/api/twitter-video", type: "video", section: "X/Twitter", description: "Baixa vídeo do X/Twitter pela API" }),
+  mediaCommand({ name: "twitteraudio", aliases: ["xaudio", "twitter_audio"], route: "/api/twitter-video", type: "audio", section: "X/Twitter", description: "Baixa áudio do X/Twitter pela API" }),
+  mediaCommand({ name: "kwai", route: "/api/kwai-video", type: "video", section: "Kwai", description: "Baixa vídeo do Kwai pela API" }),
+  mediaCommand({ name: "kwaiaudio", aliases: ["kwai_audio"], route: "/api/kwai-audio", type: "audio", section: "Kwai", description: "Baixa áudio do Kwai pela API" }),
+  mediaCommand({ name: "pinterestvideo", aliases: ["pinvideo"], route: "/api/pinterest-video", type: "video", section: "Pinterest", description: "Baixa vídeo do Pinterest pela API" }),
+  mediaCommand({ name: "appleaudio", aliases: ["applemp3", "apple_audio"], route: "/api/applemusic-audio", type: "audio", section: "Música", description: "Baixa áudio de link Apple Music pela API" }),
+  mediaCommand({ name: "soundaudio", aliases: ["soundcloudaudio", "sound_audio"], route: "/api/soundcloud-audio", type: "audio", section: "SoundCloud", description: "Baixa áudio do SoundCloud pela API" }),
 
-  jsonDownloadCommand({ name: "capcut", route: "/api/capcut-download", section: "Arquivos", description: "Processa link do CapCut pela Tokito API" }),
-  jsonDownloadCommand({ name: "mediafire", route: "/api/mediafire", section: "Arquivos", description: "Baixa arquivo do MediaFire pela Tokito API", asDocument: true }),
-  jsonDownloadCommand({ name: "mega", route: "/api/mega", section: "Arquivos", description: "Baixa arquivo do MEGA pela Tokito API", asDocument: true }),
+  jsonDownloadCommand({ name: "capcut", route: "/api/capcut-download", section: "Arquivos", description: "Processa link do CapCut pela API" }),
+  jsonDownloadCommand({ name: "mediafire", route: "/api/mediafire", section: "Arquivos", description: "Baixa arquivo do MediaFire pela API", asDocument: true }),
+  jsonDownloadCommand({ name: "mega", route: "/api/mega", section: "Arquivos", description: "Baixa arquivo do MEGA pela API", asDocument: true }),
 ];
 
 module.exports = commands;
-module.exports._test = { firstUrl, label, summary };
+module.exports._test = { firstUrl, label, summary, tiktokVideoUrl, tiktokItems, collectTikTokItems };
