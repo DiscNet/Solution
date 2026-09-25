@@ -56,10 +56,10 @@ async function generate(conn, msg, from, route, pair, animated = false) {
     maxBodyLength: 30 * 1024 * 1024,
   });
 
-  if (!result.buffer?.length) throw new Error("A Tokito API retornou um card vazio.");
+  if (!result.buffer?.length) throw new Error("A API retornou um card vazio.");
 
   const caption =
-    "💘 *CASAL TOKITO*\n\n" +
+    "💘 *CASAL*\n\n" +
     "💞 @" + p1.split("@")[0] + " + @" + p2.split("@")[0] +
     "\n📊 Compatibilidade: *" + porcentagem + "%*";
 
@@ -81,7 +81,7 @@ async function generate(conn, msg, from, route, pair, animated = false) {
     }, { quoted: createStatusQuoted(msg) });
   }
 
-  throw new Error("A Tokito API retornou um formato de casal não suportado.");
+  throw new Error("A API retornou um formato de casal não suportado.");
 }
 
 function makeCommand({ name, aliases, route, animated }) {
@@ -89,11 +89,11 @@ function makeCommand({ name, aliases, route, animated }) {
     name,
     aliases,
     menuCategory: "Brincadeiras",
-    menuSection: "Grupo Tokito API",
+    menuSection: "Grupo API",
     usage: name,
     description: animated
-      ? "Sorteia um casal do grupo e gera o card animado da Tokito API"
-      : "Sorteia um casal do grupo e gera o card da Tokito API",
+      ? "Sorteia um casal do grupo e gera o card animado da API"
+      : "Sorteia um casal do grupo e gera o card da API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       try {
@@ -106,7 +106,7 @@ function makeCommand({ name, aliases, route, animated }) {
         return generate(conn, msg, from, route, pair, animated);
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO CASAL]", name, info.status || "-", info.message);
+        console.error("[API CASAL]", name, info.status || "-", info.message);
         return conn.sendMessage(from, {
           text: tokitoApi.userError(error, "Não foi possível gerar o casal agora."),
         }, { quoted: createStatusQuoted(msg) });
