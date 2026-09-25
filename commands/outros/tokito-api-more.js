@@ -7,7 +7,6 @@ const { sameIdentity } = require("../../functions/permissions");
 const DEFAULT_PICTURE = "https://raw.githubusercontent.com/dylanModz/uploads/main/midias/imagens/747wlpa89.jpg";
 const GAME_BACKGROUND = "https://telegra.ph/file/b5427ea4b8701bc47e751.jpg";
 const GAME_TTL = 20 * 60 * 1000;
-
 const minesGames = new Map();
 
 function senderKey(msg, from) {
@@ -21,11 +20,11 @@ function senderKey(msg, from) {
   ].join("|");
 }
 
-function cleanup(map, key) {
-  const game = map.get(key);
+function cleanupMines(key) {
+  const game = minesGames.get(key);
   if (!game) return null;
   if (Date.now() - Number(game.updatedAt || game.createdAt || 0) > GAME_TTL) {
-    map.delete(key);
+    minesGames.delete(key);
     return null;
   }
   return game;
@@ -33,7 +32,13 @@ function cleanup(map, key) {
 
 function participantJid(participant) {
   if (typeof participant === "string") return participant;
-  return participant?.phoneNumber || participant?.id || participant?.jid || participant?.lid || "";
+  return (
+    participant?.phoneNumber ||
+    participant?.id ||
+    participant?.jid ||
+    participant?.lid ||
+    ""
+  );
 }
 
 function uniqueJids(participants = [], botIds = []) {
@@ -50,6 +55,12 @@ function uniqueJids(participants = [], botIds = []) {
 async function pictureFor(conn, jid) {
   const picture = await getProfilePicture(conn, [jid], { fallback: DEFAULT_PICTURE });
   return picture?.url || DEFAULT_PICTURE;
+}
+
+function apiFailure(error, fallback) {
+  const info = tokitoApi.errorInfo(error);
+  console.error("[TOKITO API MORE]", info.status || "-", info.message);
+  return tokitoApi.userError(error, fallback);
 }
 
 async function sendTokitoImage(conn, msg, from, route, params, caption, extra = {}) {
@@ -90,19 +101,6 @@ async function sendTokitoVideo(conn, msg, from, route, params, caption, extra = 
   }, { quoted: createStatusQuoted(msg) });
 }
 
-function apiFailure(error, fallback) {
-  const info = tokitoApi.errorInfo(error);
-  console.error("[TOKITO API MORE]", info.status || "-", info.message);
-  return tokitoApi.userError(error, fallback);
-}
-
-function randomPair(members) {
-  const firstIndex = Math.floor(Math.random() * members.length);
-  let secondIndex = firstIndex;
-  while (secondIndex === firstIndex) secondIndex = Math.floor(Math.random() * members.length);
-  return [members[firstIndex], members[secondIndex]];
-}
-
 function createMinesGame() {
   const bombs = new Set();
   while (bombs.size < 5) bombs.add(Math.floor(Math.random() * 25));
@@ -123,6 +121,22 @@ function minesParams(game) {
   return params;
 }
 
+async function randomPair(conn, from) {
+  const metadata = await conn.groupMetadata(from);
+  const members = uniqueJids(
+    metadata?.participants || [],
+    [conn?.user?.id, conn?.user?.lid].filter(Boolean)
+  );
+
+  if (members.length < 2) return null;
+
+  const first = Math.floor(Math.random() * members.length);
+  let second = first;
+  while (second === first) second = Math.floor(Math.random() * members.length);
+
+  return [members[first], members[second]];
+}
+
 const commands = [
   {
     name: "casal",
@@ -130,34 +144,36 @@ const commands = [
     menuCategory: "Brincadeiras",
     menuSection: "Grupo",
     usage: "casal",
-    description: "Sorteia duas pessoas do grupo e gera um card Tokito",
+    description: "Sorteia duas pessoas e gera o card casal2 da Tokito API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       try {
-        const metadata = await conn.groupMetadata(from);
-        const members = uniqueJids(metadata?.participants || [], [conn?.user?.id, conn?.user?.lid]);
-        if (members.length < 2) {
+        const pair = await randomPair(conn, from);
+        if (!pair) {
           return kit.reply(conn, msg, from, "❌ Preciso de pelo menos 2 membros disponíveis no grupo.");
         }
 
-        const [p1, p2] = randomPair(members);
-        const percent = Math.floor(Math.random() * 101);
-        const [foto1, foto2] = await Promise.all([pictureFor(conn, p1), pictureFor(conn, p2)]);
+        const [p1, p2] = pair;
+        const porcentagem = Math.floor(Math.random() * 101);
+        const [foto1, foto2] = await Promise.all([
+          pictureFor(conn, p1),
+          pictureFor(conn, p2),
+        ]);
 
-        await sendTokitoImage(
+        return sendTokitoImage(
           conn,
           msg,
           from,
           "/canvas/casal2",
-          { foto1, foto2, porcentagem: percent },
+          { foto1, foto2, porcentagem },
           "💘 *CASAL SORTEADO*\n\n" +
             "💞 @" + p1.split("@")[0] + "\n" +
             "💞 @" + p2.split("@")[0] + "\n\n" +
-            "📊 Compatibilidade: *" + percent + "%*",
+            "📊 Compatibilidade: *" + porcentagem + "%*",
           { mentions: [p1, p2] }
         );
       } catch (error) {
-        await kit.reply(conn, msg, from, apiFailure(error, "Não foi possível gerar o casal agora."));
+        return kit.reply(conn, msg, from, apiFailure(error, "Não foi possível gerar o casal agora."));
       }
     },
   },
@@ -167,41 +183,43 @@ const commands = [
     menuCategory: "Brincadeiras",
     menuSection: "Grupo",
     usage: "casalgif",
-    description: "Sorteia duas pessoas e gera o card animado da Tokito",
+    description: "Sorteia duas pessoas e gera o casal2-gif da Tokito API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       try {
-        const metadata = await conn.groupMetadata(from);
-        const members = uniqueJids(metadata?.participants || [], [conn?.user?.id, conn?.user?.lid]);
-        if (members.length < 2) {
+        const pair = await randomPair(conn, from);
+        if (!pair) {
           return kit.reply(conn, msg, from, "❌ Preciso de pelo menos 2 membros disponíveis no grupo.");
         }
 
-        const [p1, p2] = randomPair(members);
-        const percent = Math.floor(Math.random() * 101);
-        const [foto1, foto2] = await Promise.all([pictureFor(conn, p1), pictureFor(conn, p2)]);
+        const [p1, p2] = pair;
+        const porcentagem = Math.floor(Math.random() * 101);
+        const [foto1, foto2] = await Promise.all([
+          pictureFor(conn, p1),
+          pictureFor(conn, p2),
+        ]);
 
-        await sendTokitoVideo(
+        return sendTokitoVideo(
           conn,
           msg,
           from,
           "/canvas/casal2-gif",
-          { foto1, foto2, porcentagem: percent },
+          { foto1, foto2, porcentagem },
           "💘 *CASAL ANIMADO*\n\n" +
             "💞 @" + p1.split("@")[0] + " + @" + p2.split("@")[0] +
-            "\n📊 Compatibilidade: *" + percent + "%*",
+            "\n📊 Compatibilidade: *" + porcentagem + "%*",
           { mentions: [p1, p2] }
         );
       } catch (error) {
-        await kit.reply(conn, msg, from, apiFailure(error, "Não foi possível gerar o casal animado agora."));
+        return kit.reply(conn, msg, from, apiFailure(error, "Não foi possível gerar o casal animado agora."));
       }
     },
   },
   {
     name: "mines",
     aliases: ["minas"],
-    menuCategory: "Brincadeiras",
-    menuSection: "Jogos Tokito API",
+    menuCategory: "Jogos",
+    menuSection: "Tokito API",
     usage: "mines [1-25|novo|parar]",
     description: "Joga Mines usando o canvas da Tokito API",
     async execute(conn, msg, args, from) {
@@ -209,7 +227,7 @@ const commands = [
       const input = String(args[0] || "").trim().toLowerCase();
 
       try {
-        let game = cleanup(minesGames, key);
+        let game = cleanupMines(key);
 
         if (!game || ["novo", "new", "reiniciar"].includes(input)) {
           game = createMinesGame();
@@ -279,7 +297,7 @@ const commands = [
           "💎 Casa *" + number + "* segura. Continue: *.mines 1-25*."
         );
       } catch (error) {
-        await kit.reply(conn, msg, from, apiFailure(error, "Não foi possível jogar Mines agora."));
+        return kit.reply(conn, msg, from, apiFailure(error, "Não foi possível jogar Mines agora."));
       }
     },
   },
