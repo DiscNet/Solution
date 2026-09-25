@@ -8,6 +8,7 @@ const spotify = require("../commands/dws/spotify");
 const pin = require("../commands/dws/pinterest");
 const aiPack = require("../commands/outros/tokito-api-ai");
 const logoPack = require("../commands/outros/tokito-api-logos");
+const morePack = require("../commands/outros/tokito-api-more");
 const downloadPack = require("../commands/dws/tokito-api-downloads");
 const extraPack = require("../commands/dws/tokito-api-extras");
 const playlist = require("../commands/dws/playlist");
@@ -108,7 +109,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
     "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
-    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos", "casal", "casalgif", "mines"
+    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos", "casal", "casalgif", "mines", "casal", "casalgif", "mines"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -170,6 +171,30 @@ test("ping usa o canvas ping2 da Tokito", () => {
   assert.match(source, /\/canvas\/ping2/);
 });
 
+
+test("novos comandos visuais Tokito V10 estão registrados sem duplicar os existentes", () => {
+  const names = morePack.map(command => command.name);
+  assert.deepEqual(names, ["casal", "casalgif", "mines"]);
+
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "tokito-api-more.js"),
+    "utf8"
+  );
+
+  assert.match(source, /\/canvas\/casal2/);
+  assert.match(source, /\/canvas\/casal2-gif/);
+  assert.match(source, /\/canvas\/mines/);
+});
+
+test("forca existente usa o canvas Tokito V10 com fallback de texto", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "brincadeiras", "extras.js"),
+    "utf8"
+  );
+
+  assert.match(source, /\/canvas\/forca/);
+  assert.match(source, /sendForcaCard/);
+});
 
 test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
   const names = logoPack.map(command => command.name);
