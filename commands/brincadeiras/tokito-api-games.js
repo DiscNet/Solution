@@ -1,15 +1,28 @@
 const tokitoApi = require("../../functions/tokitoApi");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { senderCandidates, sameIdentity } = require("../../functions/permissions");
 
 const GAME_TTL = 20 * 60 * 1000;
 const adivinheGames = new Map();
 const minesGames = new Map();
+const cacaGames = new Map();
 
 const ADIVINHE_WORDS = [
   "nuvem", "livro", "pedra", "carta", "vento",
   "praia", "astro", "plano", "robot", "verde",
   "tempo", "sonho", "chave", "mundo", "lunar",
+];
+
+const CACA_WORDS = [
+  { palavra: "codigo", tema: "Tecnologia" },
+  { palavra: "linux", tema: "Tecnologia" },
+  { palavra: "mouse", tema: "Tecnologia" },
+  { palavra: "dados", tema: "Tecnologia" },
+  { palavra: "nuvem", tema: "Tecnologia" },
+  { palavra: "rede", tema: "Tecnologia" },
+  { palavra: "pixel", tema: "Tecnologia" },
+  { palavra: "tecla", tema: "Tecnologia" },
 ];
 
 function normalize(value) {
@@ -43,6 +56,17 @@ function senderId(msg, from) {
     from ||
     ""
   );
+}
+
+function playerCandidates(msg, from) {
+  const values = senderCandidates(msg);
+  const fallback = senderId(msg, from);
+  if (fallback) values.push(fallback);
+  return [...new Set(values.filter(Boolean))];
+}
+
+function samePlayer(saved = [], current = []) {
+  return saved.some(a => current.some(b => sameIdentity(a, b)));
 }
 
 function adivinheStatus(guess, secret) {
@@ -143,6 +167,121 @@ async function sendMines(conn, msg, from, game, finalText = "") {
   return sendCanvas(conn, msg, from, "/canvas/mines", minesParams(game), caption);
 }
 
+function randomLetter() {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  return alphabet[Math.floor(Math.random() * alphabet.length)];
+}
+
+function buildWordSearch(entries, size = 14) {
+  const grid = Array.from({ length: size }, () => Array(size).fill(""));
+  const directions = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+  const words = [];
+
+  function canPlace(word, row, col, dx, dy) {
+    for (let i = 0; i < word.length; i++) {
+      const r = row + i * dy;
+      const c = col + i * dx;
+      if (r < 0 || r >= size || c < 0 || c >= size) return false;
+      if (grid[r][c] && grid[r][c] !== word[i]) return false;
+    }
+    return true;
+  }
+
+  for (const entry of entries) {
+    const word = normalize(entry.palavra).toUpperCase();
+    let placed = false;
+
+    for (let attempt = 0; attempt < 500 && !placed; attempt++) {
+      const [dx, dy] = directions[Math.floor(Math.random() * directions.length)];
+      const row = Math.floor(Math.random() * size);
+      const col = Math.floor(Math.random() * size);
+      if (!canPlace(word, row, col, dx, dy)) continue;
+
+      const positions = [];
+      for (let i = 0; i < word.length; i++) {
+        const r = row + i * dy;
+        const c = col + i * dx;
+        grid[r][c] = word[i];
+        positions.push([r, c]);
+      }
+
+      words.push({
+        palavra: normalize(entry.palavra),
+        tema: entry.tema || "Geral",
+        positions,
+      });
+      placed = true;
+    }
+  }
+
+  for (let row = 0; row < size; row++) {
+    for (let col = 0; col < size; col++) {
+      if (!grid[row][col]) grid[row][col] = randomLetter();
+    }
+  }
+
+  return { grid, words };
+}
+
+function cacaParams(game) {
+  const params = {
+    tamanho: game.size,
+    tema: game.theme,
+    marcadas: "",
+    t: Date.now(),
+  };
+
+  for (let row = 0; row < game.size; row++) {
+    for (let col = 0; col < game.size; col++) {
+      params["c" + row + "_" + col] = game.grid[row][col];
+    }
+  }
+
+  const marked = [];
+  for (const item of game.words) {
+    if (!game.found.includes(item.palavra)) continue;
+    for (const [row, col] of item.positions) marked.push(row + "_" + col);
+  }
+  params.marcadas = marked.join("|");
+  return params;
+}
+
+async function sendCaca(conn, msg, from, game, finalText = "") {
+  const found = game.found.map(word => word.toUpperCase()).join(", ") || "nenhuma";
+  const caption = [
+    "🔎 *CAÇA-PALAVRAS • TOKITO API*",
+    "",
+    "📚 Tema: *" + game.theme + "*",
+    "✅ Encontradas: *" + game.found.length + "/" + game.words.length + "*",
+    "🧩 Palavras encontradas: " + found,
+    "",
+    finalText || "Quando encontrar uma palavra, use *.cacapalavras palavra*.",
+    "Para encerrar: *.cacapalavras desistir*",
+  ].join("\n");
+
+  return sendCanvas(conn, msg, from, "/canvas/cacapalavras", cacaParams(game), caption);
+}
+
+function resetCommand(name, map, label) {
+  return {
+    name,
+    aliases: [],
+    menuCategory: "Brincadeiras",
+    menuSection: "Tokito API",
+    usage: name,
+    description: "Encerra a partida de " + label + " ativa no grupo",
+    permissions: { group: true },
+    async execute(conn, msg, args, from) {
+      const existed = map.delete(from);
+      return conn.sendMessage(from, {
+        text: existed
+          ? "✅ Partida de " + label + " encerrada."
+          : "ℹ️ Não há partida de " + label + " ativa neste grupo.",
+      }, { quoted: createStatusQuoted(msg) });
+    },
+  };
+}
+
 const commands = [
   {
     name: "adivinhepalavra",
@@ -237,7 +376,7 @@ const commands = [
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       const input = String(args[0] || "").trim().toLowerCase();
-      const actor = senderId(msg, from);
+      const actors = playerCandidates(msg, from);
       let game = live(minesGames, from);
 
       try {
@@ -248,7 +387,7 @@ const commands = [
           }
 
           game = {
-            player: actor,
+            playerIds: actors,
             bombs,
             opened: new Set(),
             grid: Array.from({ length: 25 }, (_, i) => String(i + 1)),
@@ -261,7 +400,10 @@ const commands = [
           return sendMines(conn, msg, from, game);
         }
 
-        if (game.player && game.player !== actor) {
+        const savedPlayers = Array.isArray(game.playerIds)
+          ? game.playerIds
+          : (game.player ? [game.player] : []);
+        if (savedPlayers.length && !samePlayer(savedPlayers, actors)) {
           return conn.sendMessage(from, {
             text: "🚫 Essa partida de Mines pertence a outra pessoa do grupo."
           }, { quoted: createStatusQuoted(msg) });
@@ -324,6 +466,79 @@ const commands = [
       }
     },
   },
+  {
+    name: "cacapalavras",
+    aliases: ["cacapalavra"],
+    menuCategory: "Brincadeiras",
+    menuSection: "Tokito API",
+    usage: "cacapalavras [palavra|desistir]",
+    description: "Caça-palavras usando o canvas da Tokito API",
+    permissions: { group: true },
+    async execute(conn, msg, args, from) {
+      const input = normalize(args.join(" "));
+      let game = live(cacaGames, from);
+
+      try {
+        if (!game || ["novo", "iniciar", "start"].includes(input)) {
+          const built = buildWordSearch(CACA_WORDS, 14);
+          if (!built.words.length) throw new Error("Não foi possível montar a grade.");
+
+          game = {
+            size: 14,
+            theme: built.words[0]?.tema || "Tecnologia",
+            grid: built.grid,
+            words: built.words,
+            found: [],
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+
+          cacaGames.set(from, game);
+          return sendCaca(conn, msg, from, game);
+        }
+
+        if (["desistir", "parar", "cancelar", "reset"].includes(input)) {
+          cacaGames.delete(from);
+          return sendCaca(conn, msg, from, game, "🏳️ Caça-palavras encerrado.");
+        }
+
+        if (!input) return sendCaca(conn, msg, from, game);
+
+        const item = game.words.find(entry => entry.palavra === input);
+        if (!item) {
+          return conn.sendMessage(from, {
+            text: "❌ Essa palavra não faz parte desta grade."
+          }, { quoted: createStatusQuoted(msg) });
+        }
+
+        if (game.found.includes(input)) {
+          return conn.sendMessage(from, {
+            text: "⚠️ Essa palavra já foi encontrada."
+          }, { quoted: createStatusQuoted(msg) });
+        }
+
+        game.found.push(input);
+        game.updatedAt = Date.now();
+
+        if (game.found.length >= game.words.length) {
+          cacaGames.delete(from);
+          return sendCaca(conn, msg, from, game, "🏆 Todas as palavras foram encontradas!");
+        }
+
+        cacaGames.set(from, game);
+        return sendCaca(conn, msg, from, game);
+      } catch (error) {
+        const info = tokitoApi.errorInfo(error);
+        console.error("[TOKITO CACAPALAVRAS]", info.status || "-", info.message);
+        return conn.sendMessage(from, {
+          text: tokitoApi.userError(error, "Não foi possível abrir o Caça-Palavras.")
+        }, { quoted: createStatusQuoted(msg) });
+      }
+    },
+  },
+  resetCommand("resetmines", minesGames, "Mines"),
+  resetCommand("resetadivinhe", adivinheGames, "Adivinhe a Palavra"),
+  resetCommand("resetcaca", cacaGames, "Caça-Palavras"),
 ];
 
 module.exports = commands;
@@ -331,6 +546,11 @@ module.exports._test = {
   normalize,
   adivinheStatus,
   minesParams,
+  playerCandidates,
+  samePlayer,
+  buildWordSearch,
+  cacaParams,
   adivinheGames,
   minesGames,
+  cacaGames,
 };
