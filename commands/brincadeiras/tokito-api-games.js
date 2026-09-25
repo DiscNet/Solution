@@ -230,7 +230,7 @@ const commands = [
   {
     name: "mines",
     aliases: ["campominado"],
-    menuCategory: "Jogos",
+    menuCategory: "Brincadeiras",
     menuSection: "Tokito API",
     usage: "mines [1-25|desistir]",
     description: "Campo minado usando o canvas da Tokito API",
@@ -326,7 +326,7 @@ const commands = [
   },
 ];
 
-module.exports = commands.filter(command => command.name === "adivinhepalavra");
+module.exports = commands;
 module.exports._test = {
   normalize,
   adivinheStatus,
