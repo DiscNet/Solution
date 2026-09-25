@@ -4,7 +4,7 @@ const tokitoApi = require("../../functions/tokitoApi");
 
 module.exports = {
   name: "ttkmp3",
-  aliases: ["tiktokaudio", "ttaudio"],
+  aliases: ["tiktokaudio", "tiktok_audio", "ttaudio"],
   menuCategory: "Downloads",
   menuSection: "TikTok",
   usage: "ttkmp3 link",
