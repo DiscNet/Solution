@@ -195,27 +195,6 @@ const commands = [
   jsonDownloadCommand({ name: "capcut", route: "/api/capcut-download", section: "Arquivos", description: "Processa link do CapCut pela Tokito API" }),
   jsonDownloadCommand({ name: "mediafire", route: "/api/mediafire", section: "Arquivos", description: "Baixa arquivo do MediaFire pela Tokito API", asDocument: true }),
   jsonDownloadCommand({ name: "mega", route: "/api/mega", section: "Arquivos", description: "Baixa arquivo do MEGA pela Tokito API", asDocument: true }),
-
-  {
-    name: "printsite",
-    aliases: ["screenshotsite"],
-    menuCategory: "Downloads",
-    menuSection: "Ferramentas",
-    usage: "printsite url",
-    description: "Gera screenshot de site pela Tokito API",
-    async execute(conn, msg, args, from) {
-      const target = args[0];
-      if (!target) return conn.sendMessage(from, { text: "❌ Uso: .printsite https://exemplo.com" }, { quoted: createStatusQuoted(msg) });
-      try {
-        await conn.sendMessage(from, {
-          image: { url: tokitoApi.url("/api/print-site", { url: target }) },
-          caption: "🖼️ Screenshot gerado pela Tokito API",
-        }, { quoted: createStatusQuoted(msg) });
-      } catch (error) {
-        await conn.sendMessage(from, { text: "❌ Não foi possível gerar o print." }, { quoted: createStatusQuoted(msg) });
-      }
-    },
-  },
 ];
 
 module.exports = commands;
