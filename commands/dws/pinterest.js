@@ -1,6 +1,7 @@
 // Menu: Downloads - Pinterest | Comando: pin
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
 const tokitoApi = require("../../functions/tokitoApi");
 
 function displayBotName() {
@@ -91,6 +92,60 @@ function searchCaption(query, count) {
   ].join("\n");
 }
 
+async function sendCarousel(conn, msg, from, urls, query) {
+  const cards = [];
+
+  for (let index = 0; index < urls.length; index++) {
+    const media = await prepareWAMessageMedia(
+      { image: { url: urls[index] } },
+      { upload: conn.waUploadToServer }
+    );
+
+    cards.push({
+      header: {
+        hasMediaAttachment: true,
+        imageMessage: media.imageMessage,
+      },
+      body: {
+        text:
+          "📌 *Pinterest*\n" +
+          "🔎 " + query + "\n" +
+          "🖼️ " + (index + 1) + "/" + urls.length,
+      },
+      footer: {
+        text: displayBotName(),
+      },
+      nativeFlowMessage: {
+        buttons: [],
+      },
+    });
+  }
+
+  if (!cards.length) throw new Error("Nenhum card pôde ser preparado.");
+
+  const generated = generateWAMessageFromContent(from, {
+    interactiveMessage: {
+      body: {
+        text: "🖼️ *RESULTADOS DO PINTEREST*\n\nDeslize para ver as imagens encontradas.",
+      },
+      footer: {
+        text: displayBotName(),
+      },
+      carouselMessage: {
+        cards,
+        messageVersion: 1,
+        carouselCardType: 1,
+      },
+    },
+  }, {
+    quoted: createStatusQuoted(msg),
+  });
+
+  return conn.relayMessage(from, generated.message, {
+    messageId: generated.key.id,
+  });
+}
+
 async function sendAlbum(conn, msg, from, urls, query) {
   const parent = await conn.sendMessage(from, {
     album: {
@@ -123,7 +178,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "Pinterest",
   usage: "pin termo",
-  description: "Pesquisa imagens no Pinterest e envia os resultados em álbum",
+  description: "Pesquisa imagens no Pinterest e envia os resultados em carrossel",
   async execute(conn, msg, args, from) {
     const query = args.join(" ").trim();
 
@@ -150,10 +205,16 @@ module.exports = {
       }
 
       try {
-        await sendAlbum(conn, msg, from, urls, query);
-      } catch (albumError) {
-        console.warn("[PINTEREST ALBUM]", albumError.message);
-        await sendSequentialFallback(conn, msg, from, urls.slice(0, 6), query);
+        await sendCarousel(conn, msg, from, urls, query);
+      } catch (carouselError) {
+        console.warn("[PINTEREST CAROUSEL]", carouselError.message);
+
+        try {
+          await sendAlbum(conn, msg, from, urls, query);
+        } catch (albumError) {
+          console.warn("[PINTEREST ALBUM]", albumError.message);
+          await sendSequentialFallback(conn, msg, from, urls.slice(0, 6), query);
+        }
       }
 
       await conn.sendMessage(from, {
@@ -170,5 +231,6 @@ module.exports = {
     imageUrls,
     collectPinterestImages,
     searchCaption,
+    sendCarousel,
   },
 };
