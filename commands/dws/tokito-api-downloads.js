@@ -54,7 +54,7 @@ function displayBotName() {
     .trim() || "Bot";
 }
 
-function tiktokVideoUrl(item) {
+function tiktokDirectVideoUrl(item) {
   const candidates = [
     item?.video_sem_marca,
     item?.videoSemMarca,
@@ -65,7 +65,9 @@ function tiktokVideoUrl(item) {
     item?.download,
     item?.play,
     item?.play_addr,
+    item?.video?.url,
     item?.video,
+    item?.media?.video,
   ];
 
   for (const candidate of candidates) {
@@ -73,8 +75,29 @@ function tiktokVideoUrl(item) {
     if (found) return found;
   }
 
-  const fallback = firstUrl(item?.url);
-  return fallback;
+  return "";
+}
+
+function tiktokPageUrl(item) {
+  const candidates = [
+    item?.url,
+    item?.link,
+    item?.share_url,
+    item?.shareUrl,
+    item?.web_url,
+    item?.webUrl,
+  ];
+
+  for (const candidate of candidates) {
+    const found = firstUrl(candidate);
+    if (found) return found;
+  }
+
+  return "";
+}
+
+function tiktokVideoUrl(item) {
+  return tiktokDirectVideoUrl(item) || tiktokPageUrl(item);
 }
 
 function collectTikTokItems(value, out = [], depth = 0) {
@@ -87,7 +110,7 @@ function collectTikTokItems(value, out = [], depth = 0) {
 
   if (typeof value !== "object") return out;
 
-  if (tiktokVideoUrl(value)) out.push(value);
+  if (tiktokDirectVideoUrl(value) || tiktokPageUrl(value)) out.push(value);
 
   for (const key of ["resultado", "resultados", "result", "data", "results", "videos", "items"]) {
     if (value[key] !== undefined) collectTikTokItems(value[key], out, depth + 1);
@@ -145,8 +168,15 @@ function tiktokSearchCommand() {
         }
 
         const item = items[Math.floor(Math.random() * items.length)];
-        const videoUrl = tiktokVideoUrl(item);
-        if (!videoUrl) throw new Error("O resultado não possui vídeo utilizável.");
+        const directVideo = tiktokDirectVideoUrl(item);
+        const pageUrl = tiktokPageUrl(item);
+        if (!directVideo && !pageUrl) {
+          throw new Error("O resultado não possui vídeo nem link utilizável.");
+        }
+
+        const videoUrl = directVideo || tokitoApi.url("/api/tiktok-video", {
+          url: pageUrl,
+        });
 
         const title = String(
           item?.titulo || item?.title || item?.desc || item?.description || query
@@ -336,4 +366,13 @@ const commands = [
 ];
 
 module.exports = commands;
-module.exports._test = { firstUrl, label, summary, tiktokVideoUrl, tiktokItems, collectTikTokItems };
+module.exports._test = {
+  firstUrl,
+  label,
+  summary,
+  tiktokDirectVideoUrl,
+  tiktokPageUrl,
+  tiktokVideoUrl,
+  tiktokItems,
+  collectTikTokItems,
+};
