@@ -1,61 +1,90 @@
-// Menu: Downloads - Imagens | Comando: brat
+const sharp = require("sharp");
+const tokitoApi = require("../../functions/tokitoApi");
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/midia/brat.js
-const config = require("../../config/config");
-const axios = require("axios");
 
-module.exports = {
-  name: "brat",
-  description: "🎨 ɢᴇʀᴀ ɪᴍᴀɢᴇᴍ ɴᴏ ᴇsᴛɪʟᴏ ʙʀᴀᴛ ɢᴇɴᴇʀᴀᴛᴏʀ",
-
-  async execute(conn, msg, args, from, axiosInstance) {
-    try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const API_KEY = config.tokitoApi;
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      const text = args.join(' ') || 'brat';
-
-      if (!text.trim()) {
-        return await conn.sendMessage(from, {
-          text: `❌ *ɪɴғᴏʀᴍᴇ ᴏ ᴛᴇxᴛᴏ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ʙʀᴀᴛ ᴏʟᴀ ᴍᴜɴᴅᴏ`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
+const commands = [
+  {
+    name: "brat",
+    aliases: [],
+    menuCategory: "Downloads",
+    menuSection: "Imagens",
+    usage: "brat texto",
+    description: "Cria figurinha Brat pela Tokito API",
+    async execute(conn, msg, args, from) {
+      const text = args.join(" ").trim();
+      if (!text) {
+        return conn.sendMessage(from, {
+          text: "❌ Uso: .brat <texto>"
+        }, { quoted: createStatusQuoted(msg) });
       }
 
-      await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
+      try {
+        const result = await tokitoApi.buffer("/api/stickers/brat-img", { text }, {
+          timeout: 60000,
+          headers: { accept: "image/*,*/*" },
+        });
 
-      // 🔥 API Tokito - brat-img
-      const apiUrl = `https://tokito-apis.com.br/api/stickers/brat-img?text=${encodeURIComponent(text)}&apikey=${API_KEY}`;
+        if (!result.buffer.length || !/image/i.test(result.contentType)) {
+          throw new Error("A Tokito API não retornou uma imagem Brat válida.");
+        }
 
-      await conn.sendMessage(from, {
-        image: { url: apiUrl },
-        caption: `🎨 *ʙʀᴀᴛ*\n📝 ${text}`,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
+        const webp = await sharp(result.buffer)
+          .resize(512, 512, { fit: "inside", withoutEnlargement: true })
+          .webp({ quality: 90 })
+          .toBuffer();
 
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+        await conn.sendMessage(from, {
+          sticker: webp,
+        }, { quoted: createStatusQuoted(msg) });
+      } catch (error) {
+        const info = tokitoApi.errorInfo(error);
+        console.error("[TOKITO BRAT]", info.status || "-", info.message);
+        await conn.sendMessage(from, {
+          text: tokitoApi.userError(error, "Não foi possível criar o Brat.")
+        }, { quoted: createStatusQuoted(msg) });
+      }
+    },
+  },
+  {
+    name: "bratvid",
+    aliases: ["bratvideo"],
+    menuCategory: "Downloads",
+    menuSection: "Imagens",
+    usage: "bratvid texto",
+    description: "Gera Brat animado pela Tokito API",
+    async execute(conn, msg, args, from) {
+      const text = args.join(" ").trim();
+      if (!text) {
+        return conn.sendMessage(from, {
+          text: "❌ Uso: .bratvid <texto>"
+        }, { quoted: createStatusQuoted(msg) });
+      }
 
-    } catch (error) {
-      console.error("ʙʀᴀᴛ:", error);
-      await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ɢᴇʀᴀʀ ɪᴍᴀɢᴇᴍ!*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
-    }
-  }
-};
+      try {
+        const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
+          timeout: 90000,
+          headers: { accept: "video/*,*/*" },
+        });
 
-Object.assign(module.exports, {
-  "menuCategory": "Downloads",
-  "menuSection": "Imagens",
-  "usage": "brat texto",
-  "description": "Uso: .brat texto"
-});
+        if (!result.buffer.length || !/video/i.test(result.contentType)) {
+          throw new Error("A Tokito API não retornou um vídeo Brat válido.");
+        }
+
+        await conn.sendMessage(from, {
+          video: result.buffer,
+          mimetype: result.contentType.split(";")[0] || "video/mp4",
+          gifPlayback: true,
+          caption: "🧊 Brat • Tokito API",
+        }, { quoted: createStatusQuoted(msg) });
+      } catch (error) {
+        const info = tokitoApi.errorInfo(error);
+        console.error("[TOKITO BRATVID]", info.status || "-", info.message);
+        await conn.sendMessage(from, {
+          text: tokitoApi.userError(error, "Não foi possível criar o Brat animado.")
+        }, { quoted: createStatusQuoted(msg) });
+      }
+    },
+  },
+];
+
+module.exports = commands;
