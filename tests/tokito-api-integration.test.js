@@ -11,6 +11,10 @@ const downloadPack = require("../commands/dws/tokito-api-downloads");
 const extraPack = require("../commands/dws/tokito-api-extras");
 const playlist = require("../commands/dws/playlist");
 const rpgCards = require("../commands/rpg/tokito-cards");
+const akinator = require("../commands/outros/tokito-akinator");
+const totext = require("../commands/outros/tokito-totext");
+const stickerPack = require("../commands/sticker/tokito-api-stickers");
+const freeFirePack = require("../commands/outros/tokito-freefire");
 const { loadCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
 
 test("Tokito API client centraliza base URL e chave", () => {
@@ -92,8 +96,61 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
   const built = buildCommandRegistry(loaded.records);
   const required = [
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
-    "playdoc", "tiktokfoto", "playlist", "level", "coinscard"
+    "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
+    "akinator", "totext", "figu", "brat", "likes", "criarsala"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
+});
+
+
+test("Akinator e transcrição usam rotas Tokito dedicadas", () => {
+  assert.equal(akinator.name, "akinator");
+  assert.ok(akinator.aliases.includes("aki"));
+  assert.equal(totext.name, "totext");
+  assert.ok(totext.aliases.includes("transcrever"));
+
+  const akiSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "tokito-akinator.js"),
+    "utf8"
+  );
+  const textSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "tokito-totext.js"),
+    "utf8"
+  );
+
+  assert.match(akiSource, /\/api\/akinator\/start/);
+  assert.match(akiSource, /\/api\/akinator\/answer/);
+  assert.match(akiSource, /\/canvas\/akinator/);
+  assert.match(textSource, /\/api\/outros\/totext/);
+});
+
+test("pacote de stickers Tokito inclui Brat e categorias figu", () => {
+  const names = stickerPack.map(x => x.name);
+  for (const name of ["figu", "figuemoji", "figuanime", "figuflork", "brat", "bratvid"]) {
+    assert.ok(names.includes(name), name);
+  }
+});
+
+test("Free Fire Tokito inclui likes e controles de sala", () => {
+  const names = freeFirePack.map(x => x.name);
+  for (const name of ["likes", "criarsala", "versala", "jogadoressala", "expulsarsala", "iniciarsala", "pararsala", "statussalas"]) {
+    assert.ok(names.includes(name), name);
+  }
+});
+
+test("playdoc usa o endpoint youtube-doc da Tokito", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "tokito-api-extras.js"),
+    "utf8"
+  );
+  assert.match(source, /\/api\/youtube-doc/);
+});
+
+test("ping usa o canvas ping2 da Tokito", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "ping.js"),
+    "utf8"
+  );
+  assert.match(source, /\/canvas\/ping2/);
 });
