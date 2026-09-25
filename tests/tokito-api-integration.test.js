@@ -111,7 +111,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
     "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
     "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos",
-    "casal", "casalgif", "mines", "adivinhepalavra", "logoglitch", "logocartoon", "logodesfoque"
+    "casal", "casalgif", "mines", "adivinhepalavra", "cacapalavras", "resetforca", "resetquiz", "resetmines", "resetadivinhe", "resetcaca", "logoglitch", "logocartoon", "logodesfoque"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -177,7 +177,7 @@ test("ping usa o canvas ping2 da Tokito", () => {
 
 
 test("novos comandos visuais Tokito V10 estão registrados sem duplicação", () => {
-  assert.deepEqual(gamesPack.map(command => command.name), ["adivinhepalavra", "mines"]);
+  assert.deepEqual(gamesPack.map(command => command.name), ["adivinhepalavra", "mines", "cacapalavras", "resetmines", "resetadivinhe", "resetcaca"]);
   assert.deepEqual(couplePack.map(command => command.name), ["casal", "casalgif"]);
 
   const gamesSource = fs.readFileSync(
@@ -191,6 +191,7 @@ test("novos comandos visuais Tokito V10 estão registrados sem duplicação", ()
 
   assert.match(gamesSource, /\/canvas\/adivinhepalavra/);
   assert.match(gamesSource, /\/canvas\/mines/);
+  assert.match(gamesSource, /\/canvas\/cacapalavras/);
   assert.match(coupleSource, /\/canvas\/casal2/);
   assert.match(coupleSource, /\/canvas\/casal2-gif/);
 });
@@ -231,4 +232,31 @@ test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
   );
   assert.match(source, /"\/api\/" \+ route/);
   assert.match(source, /\{ texto: text \}/);
+});
+
+
+test("quiz existente usa o canvas Tokito V10 e possui reset", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "tokito-extras.js"),
+    "utf8"
+  );
+
+  assert.match(source, /\/canvas\/quiz/);
+  assert.match(source, /name: "resetquiz"/);
+});
+
+test("forca e jogos Tokito possuem comandos de reset sem duplicar jogos antigos", () => {
+  const forcaSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "brincadeiras", "extras.js"),
+    "utf8"
+  );
+  const gamesSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "brincadeiras", "tokito-api-games.js"),
+    "utf8"
+  );
+
+  assert.match(forcaSource, /"resetforca"/);
+  assert.match(gamesSource, /resetCommand\("resetmines"/);
+  assert.match(gamesSource, /resetCommand\("resetadivinhe"/);
+  assert.match(gamesSource, /resetCommand\("resetcaca"/);
 });
