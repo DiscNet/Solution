@@ -23,7 +23,7 @@ async function roomGet(route, params = {}) {
 
 function roomCommand(name, aliases, description, handler) {
   return {
-    name, aliases, menuCategory: "Free Fire", menuSection: "Salas Tokito API",
+    name, aliases, menuCategory: "Free Fire", menuSection: "Salas",
     usage: name, description,
     async execute(conn, msg, args, from) {
       try {
@@ -31,7 +31,7 @@ function roomCommand(name, aliases, description, handler) {
         await handler(conn, msg, args, from);
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
-        console.error("[TOKITO FF ROOM]", name, error.message);
+        console.error("[API FF ROOM]", name, error.message);
         await conn.sendMessage(from, { text: "❌ " + String(error.message || "Falha na API de salas.").slice(0, 500) }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -41,8 +41,8 @@ function roomCommand(name, aliases, description, handler) {
 const commands = [
   {
     name: "likes", aliases: ["fflikes"],
-    menuCategory: "Free Fire", menuSection: "Tokito API",
-    usage: "likes UID", description: "Envia likes para um UID de Free Fire pela Tokito API",
+    menuCategory: "Free Fire", menuSection: "API",
+    usage: "likes UID", description: "Envia likes para um UID de Free Fire pela API",
     async execute(conn, msg, args, from) {
       const playerId = String(args[0] || "").replace(/\D/g, "");
       if (!playerId) return conn.sendMessage(from, { text: "❌ Uso: .likes <UID>" }, { quoted: createStatusQuoted(msg) });
@@ -65,13 +65,13 @@ const commands = [
         await conn.sendMessage(from, { text: lines.join("\n") }, { quoted: createStatusQuoted(msg) });
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
-        console.error("[TOKITO FF LIKES]", error.message);
+        console.error("[API FF LIKES]", error.message);
         await conn.sendMessage(from, { text: "❌ " + String(error.message || "Falha no envio de likes.").slice(0, 500) }, { quoted: createStatusQuoted(msg) });
       }
     },
   },
 
-  roomCommand("criarsala", ["ffroom"], "Cria sala de Free Fire pela Tokito API", async (conn, msg, args, from) => {
+  roomCommand("criarsala", ["ffroom"], "Cria sala de Free Fire pela API", async (conn, msg, args, from) => {
     const parts = args.join(" ").split("|").map(x => x.trim());
     const roomName = parts[0], roomPassword = parts[1], maxPlayers = parts[2] || 12, mode = parts[3] || 1, region = parts[4] || "BR";
     if (!roomName || !roomPassword) throw new Error("Uso: .criarsala NOME | SENHA | JOGADORES | MODO | REGIÃO");
@@ -115,7 +115,7 @@ const commands = [
 
   roomCommand("statussalas", ["ffstatus"], "Mostra status da API de salas Free Fire", async (conn, msg, args, from) => {
     const data = await roomGet("status", {});
-    await conn.sendMessage(from, { text: "📊 *STATUS SALAS TOKITO*\n\n" + JSON.stringify(data, null, 2).slice(0, 3500) }, { quoted: createStatusQuoted(msg) });
+    await conn.sendMessage(from, { text: "📊 *STATUS DAS SALAS*\n\n" + JSON.stringify(data, null, 2).slice(0, 3500) }, { quoted: createStatusQuoted(msg) });
   }),
 ];
 
