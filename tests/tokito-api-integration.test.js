@@ -21,6 +21,7 @@ const bratPack = require("../commands/dws/brat");
 const stickerPack = require("../commands/sticker/tokito-api-stickers");
 const freeFirePack = require("../commands/outros/tokito-freefire");
 const { loadCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
+const youtubeResult = require("../functions/youtubeResult");
 
 test("Tokito API client centraliza base URL e chave", () => {
   const old = process.env.TOKITO_API;
@@ -100,16 +101,75 @@ test("catálogo de downloaders Tokito cobre as principais plataformas", () => {
 test("tiktoksearch encontra vídeo reproduzível em respostas aninhadas", () => {
   const items = downloadPack._test.tiktokItems({
     resultado: {
-      videos: [
-        { title: "Vídeo", video_sem_marca: "https://cdn.example.com/video.mp4" },
+      aweme_list: [
+        {
+          desc: "Vídeo",
+          video: {
+            play_addr: {
+              url_list: ["https://cdn.example.com/video-stream"],
+            },
+          },
+        },
       ],
     },
   });
   assert.equal(items.length, 1);
   assert.equal(
-    downloadPack._test.tiktokVideoUrl(items[0]),
-    "https://cdn.example.com/video.mp4"
+    downloadPack._test.tiktokDirectVideoUrl(items[0]),
+    "https://cdn.example.com/video-stream"
   );
+});
+
+test("tiktoksearch separa link da página de vídeo direto", () => {
+  const item = {
+    title: "Teste",
+    url: "https://www.tiktok.com/@usuario/video/123",
+  };
+  assert.equal(downloadPack._test.tiktokDirectVideoUrl(item), "");
+  assert.equal(
+    downloadPack._test.tiktokPageUrl(item),
+    "https://www.tiktok.com/@usuario/video/123"
+  );
+});
+
+test("YouTube normaliza campos objeto sem produzir object Object", () => {
+  const video = youtubeResult.normalizeYoutubeItem({
+    type: "video",
+    videoId: "abcdefghijk",
+    title: { text: "Título teste" },
+    author: { name: "Canal teste" },
+    duration: { timestamp: "3:21" },
+    views: { text: "123 mil" },
+    thumbnail: { url: "https://img.example.com/thumb.jpg" },
+  });
+
+  assert.equal(video.title, "Título teste");
+  assert.equal(video.channel, "Canal teste");
+  assert.equal(video.duration, "3:21");
+  assert.equal(video.views, "123 mil");
+  assert.equal(video.thumbnail, "https://img.example.com/thumb.jpg");
+  assert.doesNotMatch(youtubeResult.infoText(video), /\[object Object\]/);
+});
+
+test("play e ytplay usam card com botões de áudio e vídeo", () => {
+  const playSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "play.js"),
+    "utf8"
+  );
+  const ytplaySource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
+    "utf8"
+  );
+  const helperSource = fs.readFileSync(
+    path.join(__dirname, "..", "functions", "youtubeResult.js"),
+    "utf8"
+  );
+
+  assert.match(playSource, /sendYoutubeChoice/);
+  assert.match(ytplaySource, /sendYoutubeChoice/);
+  assert.match(helperSource, /🎵 Áudio/);
+  assert.match(helperSource, /📹 Vídeo/);
+  assert.match(helperSource, /sendButtons/);
 });
 
 test("extras Tokito incluem playdoc TikTok foto e metadinha", () => {
