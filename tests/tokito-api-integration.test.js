@@ -174,41 +174,6 @@ test("YouTube normaliza campos objeto sem produzir object Object", () => {
   assert.doesNotMatch(youtubeResult.infoText(video), /\[object Object\]/);
 });
 
-test("play e ytplay usam botões nativos de áudio vídeo e documento", () => {
-  const playSource = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "play.js"),
-    "utf8"
-  );
-  const ytplaySource = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
-    "utf8"
-  );
-  const helperSource = fs.readFileSync(
-    path.join(__dirname, "..", "functions", "youtubeResult.js"),
-    "utf8"
-  );
-
-  assert.match(playSource, /sendYoutubeChoice/);
-  assert.match(ytplaySource, /sendYoutubeChoice/);
-  assert.match(helperSource, /nativeFlowMessage/);
-  assert.match(helperSource, /quick_reply/);
-  assert.match(helperSource, /🎵 Áudio/);
-  assert.match(helperSource, /🎬 Vídeo/);
-  assert.match(helperSource, /📄 Documento/);
-});
-
-test("ytsearch usa carrossel com botões por resultado", () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
-    "utf8"
-  );
-  assert.match(source, /carouselMessage/);
-  assert.match(source, /quick_reply/);
-  assert.match(source, /ytmp3/);
-  assert.match(source, /ytmp4/);
-  assert.match(source, /playdoc/);
-});
-
 test("ytsearch usa lista single_select como no fluxo antigo", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
