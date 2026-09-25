@@ -1,4 +1,3 @@
-const sharp = require("sharp");
 const tokitoApi = require("../../functions/tokitoApi");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
@@ -41,49 +40,7 @@ const commands = [
   figuCommand("figuanimais", "figu_animais", "Envia figurinhas de animais da Tokito API"),
   figuCommand("figudesenho", "figu_desenho", "Envia figurinhas de desenho da Tokito API"),
   figuCommand("figurimuru", "figu_rimuru", "Envia figurinhas Rimuru da Tokito API"),
-  {
-    name: "brat",
-    aliases: [],
-    menuCategory: "Stickers",
-    menuSection: "Tokito API",
-    usage: "brat texto",
-    description: "Cria figurinha Brat pela Tokito API",
-    async execute(conn, msg, args, from) {
-      const text = args.join(" ").trim();
-      if (!text) return conn.sendMessage(from, { text: "❌ Uso: .brat <texto>" }, { quoted: createStatusQuoted(msg) });
-      try {
-        const result = await tokitoApi.buffer("/api/stickers/brat-img", { text }, { timeout: 60000 });
-        const webp = await sharp(result.buffer).resize(512, 512, { fit: "inside", withoutEnlargement: true }).webp({ quality: 90 }).toBuffer();
-        await conn.sendMessage(from, { sticker: webp }, { quoted: createStatusQuoted(msg) });
-      } catch (error) {
-        console.error("[TOKITO BRAT]", error.message);
-        await conn.sendMessage(from, { text: "❌ Não foi possível criar o Brat." }, { quoted: createStatusQuoted(msg) });
-      }
-    },
-  },
-  {
-    name: "bratvid",
-    aliases: ["bratvideo"],
-    menuCategory: "Stickers",
-    menuSection: "Tokito API",
-    usage: "bratvid texto",
-    description: "Gera animação Brat pela Tokito API",
-    async execute(conn, msg, args, from) {
-      const text = args.join(" ").trim();
-      if (!text) return conn.sendMessage(from, { text: "❌ Uso: .bratvid <texto>" }, { quoted: createStatusQuoted(msg) });
-      try {
-        await conn.sendMessage(from, {
-          video: { url: tokitoApi.url("/api/stickers/brat-vid", { text }) },
-          mimetype: "video/mp4",
-          gifPlayback: true,
-          caption: "🧊 Brat • Tokito API",
-        }, { quoted: createStatusQuoted(msg) });
-      } catch (error) {
-        console.error("[TOKITO BRATVID]", error.message);
-        await conn.sendMessage(from, { text: "❌ Não foi possível criar o Brat animado." }, { quoted: createStatusQuoted(msg) });
-      }
-    },
-  },
+
 ];
 
 module.exports = commands;
