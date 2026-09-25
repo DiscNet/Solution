@@ -7,6 +7,7 @@ const tokitoApi = require("../functions/tokitoApi");
 const spotify = require("../commands/dws/spotify");
 const pin = require("../commands/dws/pinterest");
 const aiPack = require("../commands/outros/tokito-api-ai");
+const logoPack = require("../commands/outros/tokito-api-logos");
 const downloadPack = require("../commands/dws/tokito-api-downloads");
 const extraPack = require("../commands/dws/tokito-api-extras");
 const playlist = require("../commands/dws/playlist");
@@ -106,7 +107,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
   const required = [
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
-    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi"
+    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -166,4 +167,30 @@ test("ping usa o canvas ping2 da Tokito", () => {
     "utf8"
   );
   assert.match(source, /\/canvas\/ping2/);
+});
+
+
+test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
+  const names = logoPack.map(command => command.name);
+  assert.ok(names.length >= 40);
+  for (const name of [
+    "darkgreen",
+    "glitch",
+    "advancedglow",
+    "neonglitch",
+    "blackpink",
+    "galaxy",
+    "naruto",
+    "amongus",
+    "comic3d"
+  ]) {
+    assert.ok(names.includes(name), name);
+  }
+
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "outros", "tokito-api-logos.js"),
+    "utf8"
+  );
+  assert.match(source, /"\/api\/" \+ name/);
+  assert.match(source, /\{ texto: text \}/);
 });
