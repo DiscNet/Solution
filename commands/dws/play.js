@@ -1,10 +1,6 @@
 // Menu: Downloads - YouTube | Comando: play
 const { createStatusQuoted } = require("../../functions/statusCard");
-const tokitoApi = require("../../functions/tokitoApi");
-
-function first(data) {
-  return tokitoApi.list(data)[0] || tokitoApi.firstObject(data) || {};
-}
+const { resolveYoutubeVideo, sendYoutubeChoice } = require("../../functions/youtubeResult");
 
 module.exports = {
   name: "play",
@@ -12,42 +8,38 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "play música ou link",
-  description: "Pesquisa e envia áudio do YouTube pela Tokito API",
+  description: "Pesquisa no YouTube e mostra botões para baixar áudio ou vídeo",
   async execute(conn, msg, args, from) {
     const query = args.join(" ").trim();
-    if (!query) return conn.sendMessage(from, { text: "❌ Uso: .play <música ou link>" }, { quoted: createStatusQuoted(msg) });
+
+    if (!query) {
+      return conn.sendMessage(from, {
+        text: "❌ Uso: .play <música ou link>",
+      }, { quoted: createStatusQuoted(msg) });
+    }
 
     try {
-      await conn.sendMessage(from, { react: { text: "🎧", key: msg.key } }).catch(() => {});
-      let target = query;
-      let meta = {};
+      await conn.sendMessage(from, {
+        react: { text: "🔎", key: msg.key },
+      }).catch(() => {});
 
-      if (!/^https?:\/\//i.test(query)) {
-        const data = await tokitoApi.get("/api/youtube-search", { query });
-        meta = first(data);
-        target = meta?.url || meta?.link || meta?.video_url || meta?.videoUrl || query;
+      const video = await resolveYoutubeVideo(query);
+
+      if (!video?.url) {
+        throw new Error("Nenhum vídeo encontrado.");
       }
 
-      const title = meta?.title || meta?.titulo || query;
-      const channel = meta?.channel || meta?.canal || meta?.author || meta?.autor || "";
-      const thumb = meta?.thumbnail || meta?.thumb || meta?.image || meta?.capa || "";
-
-      if (thumb) {
-        await conn.sendMessage(from, {
-          image: { url: thumb },
-          caption: `🎵 *${title}*${channel ? `\n👤 ${channel}` : ""}`,
-        }, { quoted: createStatusQuoted(msg) }).catch(() => {});
-      }
+      await sendYoutubeChoice(conn, msg, from, video);
 
       await conn.sendMessage(from, {
-        audio: { url: tokitoApi.url("/api/youtube-audio", { q: target }) },
-        mimetype: "audio/mpeg",
-        ptt: false,
-      }, { quoted: createStatusQuoted(msg) });
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
+        react: { text: "✅", key: msg.key },
+      }).catch(() => {});
     } catch (error) {
-      console.error("[TOKITO PLAY]", error.message);
-      await conn.sendMessage(from, { text: "❌ Não foi possível pesquisar ou baixar pela Tokito API." }, { quoted: createStatusQuoted(msg) });
+      console.error("[YOUTUBE PLAY]", error?.message || error);
+
+      await conn.sendMessage(from, {
+        text: "❌ Não foi possível pesquisar esse vídeo no YouTube.",
+      }, { quoted: createStatusQuoted(msg) });
     }
   },
 };
