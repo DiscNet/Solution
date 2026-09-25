@@ -1,6 +1,6 @@
 // Menu: Downloads - YouTube | Comando: play_audio
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { sendYoutubeAudio } = require("../../functions/youtubeResult");
+const { sendYoutubeAudio } = require("../../functions/youtubeMedia");
 
 module.exports = {
   name: "play_audio",
