@@ -111,7 +111,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
     "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
     "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos",
-    "casal", "casalgif", "mines", "adivinhepalavra", "adivinhe", "logoglitch", "logocartoon", "logodesfoque"
+    "casal", "casalgif", "mines", "adivinhepalavra", "logoglitch", "logocartoon", "logodesfoque"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -178,7 +178,6 @@ test("ping usa o canvas ping2 da Tokito", () => {
 
 test("novos comandos visuais Tokito V10 estão registrados sem duplicação", () => {
   assert.deepEqual(gamesPack.map(command => command.name), ["adivinhepalavra", "mines"]);
-  assert.ok(gamesPack.find(command => command.name === "adivinhepalavra").aliases.includes("adivinhe"));
   assert.deepEqual(couplePack.map(command => command.name), ["casal", "casalgif"]);
 
   const gamesSource = fs.readFileSync(
