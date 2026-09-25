@@ -29,14 +29,15 @@ module.exports = [
         }
         const safe = String(title).replace(/[\\/:*?"<>|]/g, "").trim().slice(0, 90) || "musica";
         await conn.sendMessage(from, {
-          document: { url: tokitoApi.url("/api/youtube-doc", { q: target }) },
+          document: { url: tokitoApi.url("/api/youtube-audio", { q: target }) },
           mimetype: "audio/mpeg",
           fileName: safe + ".mp3",
         }, { quoted: createStatusQuoted(msg) });
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
-        console.error("[TOKITO PLAYDOC]", error.message);
-        await conn.sendMessage(from, { text: "❌ Não foi possível gerar o documento de áudio." }, { quoted: createStatusQuoted(msg) });
+        const info = tokitoApi.errorInfo(error);
+        console.error("[TOKITO PLAYDOC]", info.status || "-", info.message);
+        await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível gerar o documento de áudio.") }, { quoted: createStatusQuoted(msg) });
       }
     },
   },
@@ -66,8 +67,9 @@ module.exports = [
         }
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
-        console.error("[TOKITO TIKTOK FOTO]", error.message);
-        await conn.sendMessage(from, { text: "❌ Não foi possível baixar as fotos desse TikTok." }, { quoted: createStatusQuoted(msg) });
+        const info = tokitoApi.errorInfo(error);
+        console.error("[TOKITO TIKTOK FOTO]", info.status || "-", info.message);
+        await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível baixar as fotos desse TikTok.") }, { quoted: createStatusQuoted(msg) });
       }
     },
   },
@@ -91,8 +93,9 @@ module.exports = [
         if (!image) throw new Error("Imagem não retornada.");
         await conn.sendMessage(from, { image: { url: image }, caption: "💞 *METADINHA*" }, { quoted: createStatusQuoted(msg) });
       } catch (error) {
-        console.error("[TOKITO METADINHA]", error.message);
-        await conn.sendMessage(from, { text: "❌ Não foi possível gerar a metadinha." }, { quoted: createStatusQuoted(msg) });
+        const info = tokitoApi.errorInfo(error);
+        console.error("[TOKITO METADINHA]", info.status || "-", info.message);
+        await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível gerar a metadinha.") }, { quoted: createStatusQuoted(msg) });
       }
     },
   },
