@@ -53,9 +53,9 @@ function makeLogoCommand(definition) {
     name,
     aliases: [],
     menuCategory: "Logos",
-    menuSection: "Tokito API",
+    menuSection: "API",
     usage: name + " texto",
-    description: "Gera logo " + name + " pela Tokito API",
+    description: "Gera logo " + name + " pela API",
     async execute(conn, msg, args, from) {
       const text = args.join(" ").trim();
 
@@ -94,7 +94,7 @@ function makeLogoCommand(definition) {
           } catch {}
 
           throw new Error(
-            String(apiMessage || "A Tokito API não retornou uma imagem válida.")
+            String(apiMessage || "A API não retornou uma imagem válida.")
           );
         }
 
@@ -108,7 +108,7 @@ function makeLogoCommand(definition) {
         }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO LOGO]", name, info.status || "-", info.message);
+        console.error("[API LOGO]", name, info.status || "-", info.message);
 
         await conn.sendMessage(from, {
           text: tokitoApi.userError(
