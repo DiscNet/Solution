@@ -8,7 +8,7 @@ function first(data) {
 
 module.exports = {
   name: "play",
-  aliases: ["yta"],
+  aliases: ["yta", "play_audio", "playaudio"],
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "play música ou link",
