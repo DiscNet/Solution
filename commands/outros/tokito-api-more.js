@@ -9,64 +9,6 @@ const GAME_BACKGROUND = "https://telegra.ph/file/b5427ea4b8701bc47e751.jpg";
 const GAME_TTL = 20 * 60 * 1000;
 
 const minesGames = new Map();
-const hangmanGames = new Map();
-
-const HANGMAN_WORDS = [
-  { word: "computador", theme: "Tecnologia", hint: "Máquina usada para processar dados." },
-  { word: "javascript", theme: "Programação", hint: "Linguagem muito usada na web." },
-  { word: "whatsapp", theme: "Aplicativos", hint: "Mensageiro usado pelo próprio bot." },
-  { word: "cachoeira", theme: "Natureza", hint: "Queda natural de água." },
-  { word: "biblioteca", theme: "Conhecimento", hint: "Lugar cheio de livros." },
-  { word: "astronomia", theme: "Ciência", hint: "Estuda astros e o Universo." },
-  { word: "dinossauro", theme: "Animais", hint: "Grupo de animais extintos muito antigos." },
-  { word: "esmeralda", theme: "Minerais", hint: "Pedra preciosa geralmente verde." },
-  { word: "tempestade", theme: "Clima", hint: "Fenômeno com chuva e vento fortes." },
-  { word: "bicicleta", theme: "Transporte", hint: "Veículo de duas rodas movido por pedais." },
-];
-
-const LOGO_COMMANDS = [
-  "darkgreen",
-  "glitch",
-  "write",
-  "advancedglow",
-  "typography",
-  "pixelglitch",
-  "neonglitch",
-  "flag",
-  "flag3d",
-  "deleting",
-  "blackpink",
-  "glowing",
-  "underwater",
-  "logomaker",
-  "cartoon",
-  "papercut",
-  "watercolor",
-  "affectclouds",
-  "blackpinklogo",
-  "gradient",
-  "summerbeach",
-  "luxurygold",
-  "sandsummer",
-  "galaxywallpaper",
-  "1917",
-  "markingneon",
-  "royal",
-  "freecreate",
-  "galaxy",
-  "lighteffects",
-  "neondevil",
-  "frozen",
-  "metal3d",
-  "ligatures",
-  "sunset",
-  "clouds",
-  "colorido",
-  "desfoque",
-  "naruto",
-  "amongus",
-  "comic3d",
-];
 
 function senderKey(msg, from) {
   return [
@@ -89,25 +31,9 @@ function cleanup(map, key) {
   return game;
 }
 
-function normalizeText(value) {
-  return String(value || "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
 function participantJid(participant) {
   if (typeof participant === "string") return participant;
-  return (
-    participant?.phoneNumber ||
-    participant?.id ||
-    participant?.jid ||
-    participant?.lid ||
-    ""
-  );
+  return participant?.phoneNumber || participant?.id || participant?.jid || participant?.lid || "";
 }
 
 function uniqueJids(participants = [], botIds = []) {
@@ -170,6 +96,13 @@ function apiFailure(error, fallback) {
   return tokitoApi.userError(error, fallback);
 }
 
+function randomPair(members) {
+  const firstIndex = Math.floor(Math.random() * members.length);
+  let secondIndex = firstIndex;
+  while (secondIndex === firstIndex) secondIndex = Math.floor(Math.random() * members.length);
+  return [members[firstIndex], members[secondIndex]];
+}
+
 function createMinesGame() {
   const bombs = new Set();
   while (bombs.size < 5) bombs.add(Math.floor(Math.random() * 25));
@@ -190,83 +123,14 @@ function minesParams(game) {
   return params;
 }
 
-function hangmanDisplay(game) {
-  return [...game.word]
-    .map(char => char === " " ? " " : game.correct.has(char) ? char.toUpperCase() : "_")
-    .join(" ");
-}
-
-function hangmanParams(game) {
-  return {
-    palavra: hangmanDisplay(game),
-    tema: game.theme,
-    dica: game.hint,
-    erros: game.errors,
-    max: 6,
-    fundo: GAME_BACKGROUND,
-    t: Date.now(),
-  };
-}
-
-function createHangmanGame() {
-  const item = HANGMAN_WORDS[Math.floor(Math.random() * HANGMAN_WORDS.length)];
-  return {
-    word: normalizeText(item.word),
-    theme: item.theme,
-    hint: item.hint,
-    correct: new Set(),
-    wrong: new Set(),
-    errors: 0,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
-  };
-}
-
-function wonHangman(game) {
-  return [...game.word]
-    .filter(char => /[a-z0-9]/.test(char))
-    .every(char => game.correct.has(char));
-}
-
 const commands = [
-  {
-    name: "printsite",
-    aliases: ["screenshotsite", "printsitio"],
-    menuCategory: "Downloads",
-    menuSection: "Sites",
-    usage: "printsite https://example.com",
-    description: "Tira print de um site pela Tokito API",
-    async execute(conn, msg, args, from) {
-      const input = String(args[0] || "").trim();
-      if (!input) {
-        return kit.reply(conn, msg, from, "❌ Uso: .printsite <link>");
-      }
-
-      try {
-        const url = (await kit.assertPublicUrl(input)).toString();
-        await conn.sendMessage(from, { react: { text: "📸", key: msg.key } }).catch(() => {});
-        await sendTokitoImage(
-          conn,
-          msg,
-          from,
-          "/api/print-site",
-          { url },
-          "📸 *PRINT DO SITE*\n\n🔗 " + url
-        );
-        await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
-      } catch (error) {
-        const text = error?.userMessage || apiFailure(error, "Não foi possível tirar o print do site.");
-        await kit.reply(conn, msg, from, text.startsWith("❌") ? text : "❌ " + text);
-      }
-    },
-  },
   {
     name: "casal",
     aliases: ["casais"],
     menuCategory: "Brincadeiras",
     menuSection: "Grupo",
     usage: "casal",
-    description: "Sorteia duas pessoas do grupo e gera o card de compatibilidade da Tokito",
+    description: "Sorteia duas pessoas do grupo e gera um card Tokito",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       try {
@@ -276,17 +140,9 @@ const commands = [
           return kit.reply(conn, msg, from, "❌ Preciso de pelo menos 2 membros disponíveis no grupo.");
         }
 
-        const firstIndex = Math.floor(Math.random() * members.length);
-        let secondIndex = firstIndex;
-        while (secondIndex === firstIndex) secondIndex = Math.floor(Math.random() * members.length);
-
-        const p1 = members[firstIndex];
-        const p2 = members[secondIndex];
+        const [p1, p2] = randomPair(members);
         const percent = Math.floor(Math.random() * 101);
-        const [foto1, foto2] = await Promise.all([
-          pictureFor(conn, p1),
-          pictureFor(conn, p2),
-        ]);
+        const [foto1, foto2] = await Promise.all([pictureFor(conn, p1), pictureFor(conn, p2)]);
 
         await sendTokitoImage(
           conn,
@@ -321,17 +177,9 @@ const commands = [
           return kit.reply(conn, msg, from, "❌ Preciso de pelo menos 2 membros disponíveis no grupo.");
         }
 
-        const firstIndex = Math.floor(Math.random() * members.length);
-        let secondIndex = firstIndex;
-        while (secondIndex === firstIndex) secondIndex = Math.floor(Math.random() * members.length);
-
-        const p1 = members[firstIndex];
-        const p2 = members[secondIndex];
+        const [p1, p2] = randomPair(members);
         const percent = Math.floor(Math.random() * 101);
-        const [foto1, foto2] = await Promise.all([
-          pictureFor(conn, p1),
-          pictureFor(conn, p2),
-        ]);
+        const [foto1, foto2] = await Promise.all([pictureFor(conn, p1), pictureFor(conn, p2)]);
 
         await sendTokitoVideo(
           conn,
@@ -352,8 +200,8 @@ const commands = [
   {
     name: "mines",
     aliases: ["minas"],
-    menuCategory: "Jogos",
-    menuSection: "Tokito API",
+    menuCategory: "Brincadeiras",
+    menuSection: "Jogos Tokito API",
     usage: "mines [1-25|novo|parar]",
     description: "Joga Mines usando o canvas da Tokito API",
     async execute(conn, msg, args, from) {
@@ -434,169 +282,14 @@ const commands = [
         await kit.reply(conn, msg, from, apiFailure(error, "Não foi possível jogar Mines agora."));
       }
     },
-    _internals: { minesGames, createMinesGame, minesParams },
-  },
-  {
-    name: "forca",
-    aliases: ["hangman"],
-    menuCategory: "Jogos",
-    menuSection: "Tokito API",
-    usage: "forca [letra|palavra|novo|parar]",
-    description: "Joga forca usando o canvas da Tokito API",
-    async execute(conn, msg, args, from) {
-      const key = senderKey(msg, from);
-      const raw = normalizeText(args.join(" "));
-
-      try {
-        let game = cleanup(hangmanGames, key);
-
-        if (!game || ["novo", "new", "reiniciar"].includes(raw)) {
-          game = createHangmanGame();
-          hangmanGames.set(key, game);
-          return sendTokitoImage(
-            conn,
-            msg,
-            from,
-            "/canvas/forca",
-            hangmanParams(game),
-            "🔤 *FORCA*\n\nTema: *" + game.theme + "*\n💡 Dica: " + game.hint +
-              "\n\nUse *.forca a* ou tente a palavra inteira."
-          );
-        }
-
-        if (["parar", "sair", "desistir", "reset"].includes(raw)) {
-          hangmanGames.delete(key);
-          return kit.reply(conn, msg, from, "🏳️ A palavra era *" + game.word.toUpperCase() + "*.");
-        }
-
-        if (!raw) {
-          return sendTokitoImage(
-            conn,
-            msg,
-            from,
-            "/canvas/forca",
-            hangmanParams(game),
-            "🔤 *FORCA*\n\nTema: *" + game.theme + "*\n💡 Dica: " + game.hint
-          );
-        }
-
-        game.updatedAt = Date.now();
-
-        if (raw.length > 1) {
-          if (raw === game.word) {
-            for (const char of game.word) if (/[a-z0-9]/.test(char)) game.correct.add(char);
-            hangmanGames.delete(key);
-            return sendTokitoImage(
-              conn,
-              msg,
-              from,
-              "/canvas/forca",
-              hangmanParams(game),
-              "🏆 *ACERTOU!* A palavra era *" + game.word.toUpperCase() + "*."
-            );
-          }
-
-          game.errors += 1;
-        } else {
-          if (game.correct.has(raw) || game.wrong.has(raw)) {
-            return kit.reply(conn, msg, from, "⚠️ Você já tentou essa letra.");
-          }
-
-          if (game.word.includes(raw)) game.correct.add(raw);
-          else {
-            game.wrong.add(raw);
-            game.errors += 1;
-          }
-        }
-
-        if (wonHangman(game)) {
-          hangmanGames.delete(key);
-          return sendTokitoImage(
-            conn,
-            msg,
-            from,
-            "/canvas/forca",
-            hangmanParams(game),
-            "🏆 *VOCÊ VENCEU!* Palavra: *" + game.word.toUpperCase() + "*."
-          );
-        }
-
-        if (game.errors >= 6) {
-          hangmanGames.delete(key);
-          return sendTokitoImage(
-            conn,
-            msg,
-            from,
-            "/canvas/forca",
-            hangmanParams(game),
-            "💀 *FIM DE JOGO!* A palavra era *" + game.word.toUpperCase() + "*."
-          );
-        }
-
-        return sendTokitoImage(
-          conn,
-          msg,
-          from,
-          "/canvas/forca",
-          hangmanParams(game),
-          "🔤 *FORCA*\n\n" + hangmanDisplay(game) +
-            "\n❌ Erros: *" + game.errors + "/6*" +
-            "\nLetras erradas: " + ([...game.wrong].join(", ").toUpperCase() || "nenhuma")
-        );
-      } catch (error) {
-        await kit.reply(conn, msg, from, apiFailure(error, "Não foi possível jogar Forca agora."));
-      }
-    },
-    _internals: { hangmanGames, createHangmanGame, hangmanDisplay, hangmanParams, wonHangman },
   },
 ];
 
-for (const name of LOGO_COMMANDS) {
-  commands.push({
-    name,
-    aliases: [],
-    menuCategory: "Logos",
-    menuSection: "Tokito API",
-    usage: name + " texto",
-    description: "Gera o efeito " + name + " usando a Tokito API",
-    async execute(conn, msg, args, from) {
-      const text = args.join(" ").trim();
-      if (!text) {
-        return kit.reply(conn, msg, from, "❌ Uso: ." + name + " <texto>");
-      }
-      if (text.length > 120) {
-        return kit.reply(conn, msg, from, "❌ Use no máximo 120 caracteres.");
-      }
-
-      try {
-        await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } }).catch(() => {});
-        await sendTokitoImage(
-          conn,
-          msg,
-          from,
-          "/api/" + name,
-          { texto: text },
-          "🎨 *" + name.toUpperCase() + "*\n\n✨ Efeito gerado pela Tokito API."
-        );
-        await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
-      } catch (error) {
-        await kit.reply(conn, msg, from, apiFailure(error, "Não foi possível gerar esse efeito agora."));
-      }
-    },
-  });
-}
-
 module.exports = commands;
 module.exports._test = {
-  LOGO_COMMANDS,
   minesGames,
-  hangmanGames,
   createMinesGame,
   minesParams,
-  createHangmanGame,
-  hangmanDisplay,
-  hangmanParams,
-  wonHangman,
-  normalizeText,
   uniqueJids,
+  randomPair,
 };
