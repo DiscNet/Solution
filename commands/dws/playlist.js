@@ -2,7 +2,8 @@ const store = require("../../functions/tokitoPlaylistSystem");
 const tokitoApi = require("../../functions/tokitoApi");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { normalizeYoutubeList, sendYoutubeAudio } = require("../../functions/youtubeResult");
+const { normalizeYoutubeList } = require("../../functions/youtubeResult");
+const { sendYoutubeAudio } = require("../../functions/youtubeMedia");
 
 function ownerId(msg, from) {
   return String(kit.senderId(msg, from) || from);
