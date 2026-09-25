@@ -539,6 +539,23 @@ commands.push(baseCommand(
   }
 ));
 
+
+commands.push(baseCommand(
+  "resetforca",
+  "Jogos rápidos",
+  "resetforca",
+  "encerra a partida de forca ativa no grupo",
+  async (conn, msg, args, from) => {
+    const existed = forcaGames.delete(from);
+    return send(conn, from, msg, {
+      text: existed
+        ? "✅ Partida de Forca encerrada."
+        : "ℹ️ Não há partida de Forca ativa neste grupo."
+    });
+  },
+  { permissions: { group: true } }
+));
+
 module.exports = commands;
 module.exports._test = {
   stablePercent,
@@ -550,4 +567,5 @@ module.exports._test = {
   dares,
   neverHaveI,
   hangmanWords,
+  forcaGames,
 };
