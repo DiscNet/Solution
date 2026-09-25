@@ -4,6 +4,7 @@ const { performance } = require("perf_hooks");
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
+const { getMessageProfilePicture } = require("../../functions/profilePicture");
 
 const NEWSLETTER = {
   newsletterJid: "120363426698503859@newsletter",
@@ -193,12 +194,16 @@ module.exports = {
         now,
       });
 
-      const botJid = String(conn?.user?.id || "")
-        .replace(/:\d+@/, "@");
       const fallbackBackground = "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/922e987a70d.jpg";
-      const avatar = botJid && typeof conn?.profilePictureUrl === "function"
-        ? await conn.profilePictureUrl(botJid, "image").catch(() => fallbackBackground)
-        : fallbackBackground;
+      const requesterPicture = await getMessageProfilePicture(
+        conn,
+        msg,
+        from,
+        [],
+        { fallback: fallbackBackground }
+      ).catch(() => ({ url: fallbackBackground }));
+      const avatar = requesterPicture?.url || fallbackBackground;
+      const background = requesterPicture?.url || fallbackBackground;
       const cpuPercent = Math.min(
         100,
         (metrics.load1m / Math.max(metrics.cpuCores, 1)) * 100
@@ -216,7 +221,7 @@ module.exports = {
           node: metrics.node,
           commands: commandCount == null ? "" : commandCount,
           avatar,
-          fundo: fallbackBackground,
+          fundo: background,
           color: "#1e90ff",
         }, {
           timeout: 20000,
