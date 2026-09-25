@@ -9,6 +9,7 @@ const {
 } = require("../../functions/profileCardV2");
 const contactNameCache = require("../../functions/contactNameCache");
 const { sameIdentity } = require("../../functions/permissions");
+const tokitoApi = require("../../functions/tokitoApi");
 
 function senderCandidates(msg, from) {
   const key = msg?.key || {};
@@ -151,7 +152,7 @@ function resolveCargo(participant) {
   return participant?.admin ? "Admin" : "Membro";
 }
 
-async function resolveAvatarBuffer(conn, msg, from, candidates) {
+async function resolveAvatarData(conn, msg, from, candidates) {
   const profilePicture = await getMessageProfilePicture(
     conn,
     msg,
@@ -160,13 +161,16 @@ async function resolveAvatarBuffer(conn, msg, from, candidates) {
     { fallback: null }
   );
 
-  if (!profilePicture?.url) return null;
+  if (!profilePicture?.url) return { url: "", buffer: null };
 
   try {
-    return await fetchImageBuffer(profilePicture.url);
+    return {
+      url: profilePicture.url,
+      buffer: await fetchImageBuffer(profilePicture.url),
+    };
   } catch (error) {
     console.log("⚠️ Perfil: não foi possível baixar a foto de perfil:", error.message);
-    return null;
+    return { url: profilePicture.url, buffer: null };
   }
 }
 
@@ -227,7 +231,7 @@ module.exports = {
 
       const userNumber = phone(primaryIdentity);
       const gamertag = gamertagFromName(pushName, userNumber || "whatsapp");
-      const avatarBuffer = await resolveAvatarBuffer(conn, msg, from, candidates);
+      const avatar = await resolveAvatarData(conn, msg, from, candidates);
 
       const gadoPercent = Math.floor(Math.random() * 101);
       const gostosuraPercent = Math.floor(Math.random() * 101);
@@ -239,13 +243,33 @@ module.exports = {
         react: { text: "👤", key: msg.key },
       }).catch(() => {});
 
-      const imageBuffer = await generateProfileCardV2({
-        avatarBuffer,
-        name: pushName,
-        gamertag,
-        status: (cargo + (isGroup ? " • " + groupName : "")).slice(0, 42),
-        bio,
-      });
+      let imageBuffer;
+
+      if (avatar.url) {
+        try {
+          const apiCard = await tokitoApi.buffer("/canvas/perfil", {
+            fundo: avatar.url,
+            text: pushName,
+            subtext: config.botName || "Solution",
+            logo: avatar.url,
+            cargo,
+            bio,
+          }, { timeout: 90000 });
+          if (apiCard.buffer?.length) imageBuffer = apiCard.buffer;
+        } catch (error) {
+          console.log("⚠️ Perfil: Tokito API indisponível, usando card local:", error.message);
+        }
+      }
+
+      if (!imageBuffer) {
+        imageBuffer = await generateProfileCardV2({
+          avatarBuffer: avatar.buffer,
+          name: pushName,
+          gamertag,
+          status: (cargo + (isGroup ? " • " + groupName : "")).slice(0, 42),
+          bio,
+        });
+      }
 
       const preview = await generateProfileCardPreview(imageBuffer);
 
@@ -308,6 +332,6 @@ module.exports = {
     fetchBio,
     resolveDisplayName,
     resolveCargo,
-    resolveAvatarBuffer,
+    resolveAvatarData,
   },
 };
