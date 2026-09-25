@@ -8,7 +8,8 @@ const spotify = require("../commands/dws/spotify");
 const pin = require("../commands/dws/pinterest");
 const aiPack = require("../commands/outros/tokito-api-ai");
 const logoPack = require("../commands/outros/tokito-api-logos");
-const morePack = require("../commands/outros/tokito-api-more");
+const gamesPack = require("../commands/brincadeiras/tokito-api-games");
+const couplePack = require("../commands/brincadeiras/tokito-api-couple");
 const downloadPack = require("../commands/dws/tokito-api-downloads");
 const extraPack = require("../commands/dws/tokito-api-extras");
 const playlist = require("../commands/dws/playlist");
@@ -109,7 +110,8 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
     "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
-    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos", "casal", "casalgif", "mines", "casal", "casalgif", "mines"
+    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos",
+    "casal", "casalgif", "mines", "adivinhepalavra", "adivinhe", "logoglitch", "logocartoon", "logodesfoque"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -169,21 +171,29 @@ test("ping usa o canvas ping2 da Tokito", () => {
     "utf8"
   );
   assert.match(source, /\/canvas\/ping2/);
+  assert.match(source, /const background = requesterPicture\?\.url \|\| fallbackBackground/);
+  assert.match(source, /fundo: background/);
 });
 
 
-test("novos comandos visuais Tokito V10 estão registrados sem duplicar os existentes", () => {
-  const names = morePack.map(command => command.name);
-  assert.deepEqual(names, ["casal", "casalgif", "mines"]);
+test("novos comandos visuais Tokito V10 estão registrados sem duplicação", () => {
+  assert.deepEqual(gamesPack.map(command => command.name), ["adivinhepalavra", "mines"]);
+  assert.ok(gamesPack.find(command => command.name === "adivinhepalavra").aliases.includes("adivinhe"));
+  assert.deepEqual(couplePack.map(command => command.name), ["casal", "casalgif"]);
 
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "outros", "tokito-api-more.js"),
+  const gamesSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "brincadeiras", "tokito-api-games.js"),
+    "utf8"
+  );
+  const coupleSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "brincadeiras", "tokito-api-couple.js"),
     "utf8"
   );
 
-  assert.match(source, /\/canvas\/casal2/);
-  assert.match(source, /\/canvas\/casal2-gif/);
-  assert.match(source, /\/canvas\/mines/);
+  assert.match(gamesSource, /\/canvas\/adivinhepalavra/);
+  assert.match(gamesSource, /\/canvas\/mines/);
+  assert.match(coupleSource, /\/canvas\/casal2/);
+  assert.match(coupleSource, /\/canvas\/casal2-gif/);
 });
 
 test("forca existente usa o canvas Tokito V10 com fallback de texto", () => {
@@ -198,10 +208,11 @@ test("forca existente usa o canvas Tokito V10 com fallback de texto", () => {
 
 test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
   const names = logoPack.map(command => command.name);
-  assert.ok(names.length >= 38);
+  assert.ok(names.length >= 41);
   assert.ok(logoPack.every(command => command.menuCategory === "Logos"));
   for (const name of [
     "darkgreen",
+    "logoglitch",
     "advancedglow",
     "neonglitch",
     "blackpink",
@@ -219,6 +230,6 @@ test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
     path.join(__dirname, "..", "commands", "outros", "tokito-api-logos.js"),
     "utf8"
   );
-  assert.match(source, /"\/api\/" \+ name/);
+  assert.match(source, /"\/api\/" \+ route/);
   assert.match(source, /\{ texto: text \}/);
 });
