@@ -40,7 +40,7 @@ module.exports = {
   aliases: ["aki"],
   menuCategory: "Brincadeiras",
   menuSection: "Jogos",
-  usage: "akinator iniciar",
+  usage: "akinator [iniciar|sim|nao|naosei|provavelmente|provavelmentenao|voltar|cancelar]",
   description: "Joga Akinator usando a Tokito API",
   permissions: { group: true },
   async execute(conn, msg, args, from) {
@@ -114,3 +114,5 @@ module.exports = {
   },
   _internals: { sessions, norm, payload, guessInfo },
 };
+
+module.exports._sessions = sessions;
