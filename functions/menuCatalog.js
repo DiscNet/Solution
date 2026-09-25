@@ -49,6 +49,8 @@ const categories = {
   downloads: "Downloads",
   alterar: "Alteradores",
   alteradores: "Alteradores",
+  logo: "Logos",
+  logos: "Logos",
   sticker: "Figurinhas",
   figurinhas: "Figurinhas",
   bn: "Brincadeiras",
