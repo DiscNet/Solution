@@ -4,7 +4,7 @@ const tokitoApi = require("../../functions/tokitoApi");
 
 module.exports = {
   name: "ytmp4",
-  aliases: ["ytvideo"],
+  aliases: ["ytvideo", "playvideo", "play-video", "play_video"],
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytmp4 link ou pesquisa",
