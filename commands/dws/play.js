@@ -1,14 +1,15 @@
 // Menu: Downloads - YouTube | Comando: play
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { resolveYoutubeVideo, sendYoutubeChoice } = require("../../functions/youtubeResult");
+const tokitoApi = require("../../functions/tokitoApi");
 
 module.exports = {
   name: "play",
-  aliases: ["yta"],
+  aliases: ["yta", "play_audio", "playaudio"],
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "play música ou link",
-  description: "Pesquisa no YouTube e mostra botões de áudio, vídeo e documento",
+  description: "Pesquisa e envia o áudio do YouTube diretamente",
+
   async execute(conn, msg, args, from) {
     const query = args.join(" ").trim();
 
@@ -23,18 +24,25 @@ module.exports = {
         react: { text: "🎧", key: msg.key },
       }).catch(() => {});
 
-      const video = await resolveYoutubeVideo(query);
-      if (!video?.url) throw new Error("Nenhum vídeo encontrado.");
+      const audioUrl = tokitoApi.url("/api/youtube-audio", {
+        q: query,
+        query,
+      });
 
-      await sendYoutubeChoice(conn, msg, from, video);
+      await conn.sendMessage(from, {
+        audio: { url: audioUrl },
+        mimetype: "audio/mpeg",
+        fileName: "audio.mp3",
+        ptt: false,
+      }, { quoted: createStatusQuoted(msg) });
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
-      console.error("[PLAY]", error?.message || error);
+      console.error("[YOUTUBE PLAY]", error?.message || error);
       await conn.sendMessage(from, {
-        text: "❌ Não foi possível pesquisar esse conteúdo no YouTube.",
+        text: tokitoApi.userError(error, "Não foi possível enviar o áudio."),
       }, { quoted: createStatusQuoted(msg) });
     }
   },
