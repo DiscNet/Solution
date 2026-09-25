@@ -1,5 +1,6 @@
 const sharp = require("sharp");
 const { generateWelcomeCard } = require("./welcomeCard");
+const tokitoApi = require("./tokitoApi");
 const contactNameCache = require("./contactNameCache");
 
 function normalizeJid(value) {
@@ -305,17 +306,35 @@ async function createGroupWelcomeBanner(conn, options = {}) {
     createFallbackAvatar(displayName),
   ]);
 
-  const image = await generateWelcomeCard({
-    backgroundUrl,
-    backgroundBuffer,
-    mainImageUrl,
-    mainImageBuffer,
-    text1: options.text1 || "SEJA BEM-VINDO(A)!",
-    text2: options.text2 || displayName,
-    text3: options.text3 || groupName,
-  }, {
-    neon: options.neon,
-  });
+  let image = null;
+
+  if (backgroundUrl && mainImageUrl) {
+    try {
+      const apiCard = await tokitoApi.buffer("/canvas/welcome", {
+        fundo: backgroundUrl,
+        avatar: mainImageUrl,
+        titulo: options.text1 || "Bem-vindo(a)!",
+        sub: options.text2 || (displayName + " • " + groupName),
+      }, { timeout: 90000 });
+      if (apiCard.buffer?.length) image = apiCard.buffer;
+    } catch (error) {
+      console.log("⚠️ Welcome: Tokito API indisponível, usando renderer local:", error.message);
+    }
+  }
+
+  if (!image) {
+    image = await generateWelcomeCard({
+      backgroundUrl,
+      backgroundBuffer,
+      mainImageUrl,
+      mainImageBuffer,
+      text1: options.text1 || "SEJA BEM-VINDO(A)!",
+      text2: options.text2 || displayName,
+      text3: options.text3 || groupName,
+    }, {
+      neon: options.neon,
+    });
+  }
 
   return {
     image,
