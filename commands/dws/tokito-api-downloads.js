@@ -63,16 +63,44 @@ function tiktokDirectVideoUrl(item) {
     item?.nowm,
     item?.nwm_video_url,
     item?.download,
+    item?.download_url,
     item?.play,
+    item?.play_url,
+    item?.play_addr?.url_list,
     item?.play_addr,
+    item?.download_addr?.url_list,
+    item?.download_addr,
+    item?.video?.play_addr?.url_list,
+    item?.video?.play_addr,
+    item?.video?.download_addr?.url_list,
+    item?.video?.download_addr,
+    item?.video?.playAddr?.urlList,
+    item?.video?.downloadAddr?.urlList,
     item?.video?.url,
-    item?.video,
+    item?.media?.video?.url,
     item?.media?.video,
   ];
 
   for (const candidate of candidates) {
     const found = firstUrl(candidate);
     if (found) return found;
+  }
+
+  const bitRates = item?.video?.bit_rate || item?.video?.bitRate || [];
+  if (Array.isArray(bitRates)) {
+    for (const rate of bitRates) {
+      const found = firstUrl(
+        rate?.play_addr?.url_list ||
+        rate?.play_addr ||
+        rate?.playAddr?.urlList ||
+        rate?.playAddr
+      );
+      if (found) return found;
+    }
+  }
+
+  if (typeof item?.video === "string") {
+    return firstUrl(item.video);
   }
 
   return "";
@@ -112,7 +140,7 @@ function collectTikTokItems(value, out = [], depth = 0) {
 
   if (tiktokDirectVideoUrl(value) || tiktokPageUrl(value)) out.push(value);
 
-  for (const key of ["resultado", "resultados", "result", "data", "results", "videos", "items"]) {
+  for (const key of ["resultado", "resultados", "result", "data", "results", "videos", "items", "item_list", "aweme_list", "feeds", "list"]) {
     if (value[key] !== undefined) collectTikTokItems(value[key], out, depth + 1);
   }
 
