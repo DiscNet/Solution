@@ -7,6 +7,7 @@ const sharp = require("sharp");
 const FormData = require("form-data");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted, forwardedNewsletterContext } = require("../../functions/statusCard");
+const tokitoApi = require("../../functions/tokitoApi");
 
 function chunks(text, max = 180) {
   const out = [];
@@ -180,25 +181,103 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "transcrever", section: "Áudio", usage: "transcrever (responda ao áudio)",
+    name: "transcrever",
+    aliases: ["totext", "transcricao", "audiotexto"],
+    section: "Áudio",
+    usage: "transcrever (responda ao áudio)",
+    description: "Transcreve áudio pela Tokito API",
     async execute(conn, msg, args, from, http) {
       try {
         const media = await kit.downloadMedia(msg);
-        if (!["audio", "video", "document"].includes(media.type)) throw kit.userError("Responda a um áudio, vídeo ou arquivo de áudio.");
-        const apiKey = process.env.GROQ_API_KEY || process.env.OPENAI_API_KEY;
-        if (!apiKey) throw kit.userError("Configure GROQ_API_KEY ou OPENAI_API_KEY no ambiente para usar transcrição.");
-        if (media.buffer.length > 24 * 1024 * 1024) throw kit.userError("O arquivo deve ter menos de 24 MB.");
+        if (!["audio", "video", "document"].includes(media.type)) {
+          throw kit.userError("Responda a um áudio, vídeo ou arquivo de áudio.");
+        }
+        if (!media.buffer?.length) throw kit.userError("Não consegui baixar a mídia.");
+        if (media.buffer.length > 40 * 1024 * 1024) {
+          throw kit.userError("O arquivo deve ter menos de 40 MB.");
+        }
+
+        const mime = String(media.mimetype || "audio/ogg").toLowerCase();
+        let ext = "ogg";
+        if (mime.includes("mpeg")) ext = "mp3";
+        else if (mime.includes("mp4")) ext = "m4a";
+        else if (mime.includes("wav")) ext = "wav";
+        else if (mime.includes("webm")) ext = "webm";
+
         const form = new FormData();
-        form.append("file", media.buffer, { filename: media.fileName || "audio.ogg", contentType: media.mimetype || "audio/ogg" });
-        const groq = Boolean(process.env.GROQ_API_KEY);
-        form.append("model", groq ? "whisper-large-v3-turbo" : "whisper-1");
-        form.append("language", "pt");
-        const url = groq ? "https://api.groq.com/openai/v1/audio/transcriptions" : "https://api.openai.com/v1/audio/transcriptions";
-        const { data } = await http.post(url, form, { headers: { ...form.getHeaders(), Authorization: `Bearer ${apiKey}` }, timeout: 90000, maxBodyLength: Infinity });
-        const text = String(data?.text || "").trim();
-        if (!text) throw new Error("transcrição vazia");
-        await kit.reply(conn, msg, from, `🎙️ *Transcrição*\n\n${text.slice(0, 12000)}`);
-      } catch (e) { await kit.fail(conn, msg, from, e, "Não foi possível transcrever o áudio."); }
+        form.append("file", media.buffer, {
+          filename: media.fileName || ("solution_" + Date.now() + "." + ext),
+          contentType: media.mimetype || "audio/ogg",
+        });
+
+        const upload = await http.post("https://tmpfile.link/api/upload", form, {
+          headers: { ...form.getHeaders(), Accept: "application/json" },
+          timeout: 120000,
+          maxBodyLength: Infinity,
+          maxContentLength: Infinity,
+          validateStatus: () => true,
+        });
+
+        if (upload.status < 200 || upload.status >= 300) {
+          throw new Error("Falha ao hospedar áudio. HTTP " + upload.status);
+        }
+
+        const url = String(
+          upload.data?.downloadLink ||
+          upload.data?.download_link ||
+          upload.data?.url ||
+          ""
+        ).trim();
+
+        if (!/^https?:\/\//i.test(url)) {
+          throw new Error("O servidor temporário não retornou uma URL válida.");
+        }
+
+        const data = await tokitoApi.get("/api/outros/totext", { url }, {
+          timeout: 180000,
+        });
+
+        if (data?.status === false) {
+          throw new Error(
+            data?.mensagem ||
+            data?.message ||
+            data?.error ||
+            "Falha ao transcrever o áudio."
+          );
+        }
+
+        const result = data?.resultado || data?.result || {};
+        const text = String(
+          result?.texto ||
+          result?.text ||
+          data?.texto ||
+          data?.text ||
+          ""
+        ).trim();
+
+        if (!text) throw new Error("A Tokito API não retornou texto.");
+
+        const meta = [
+          result?.idioma || result?.language,
+          result?.duracao || result?.duration,
+        ].filter(Boolean).join(" • ");
+
+        await kit.reply(
+          conn,
+          msg,
+          from,
+          "🎙️ *Transcrição • Tokito API*\n\n" +
+            text.slice(0, 12000) +
+            (meta ? "\n\nℹ️ " + meta : "")
+        );
+      } catch (e) {
+        const info = tokitoApi.errorInfo(e);
+        if (info.status || e?.code === "TOKITO_API_NOT_CONFIGURED") {
+          await kit.reply(conn, msg, from, tokitoApi.userError(e));
+        } else {
+          await kit.fail(conn, msg, from, e, "Não foi possível transcrever o áudio.");
+        }
+      }
     },
   }),
 
