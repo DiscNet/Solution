@@ -36,22 +36,42 @@ test("Tokito API client centraliza base URL e chave", () => {
   }
 });
 
+test("interface usa o nome configurado e não marcas fixas antigas", () => {
+  const pinSource = fs.readFileSync(path.join(__dirname, "..", "commands", "dws", "pinterest.js"), "utf8");
+  const profileSource = fs.readFileSync(path.join(__dirname, "..", "commands", "outros", "perfil.js"), "utf8");
+  const welcomeSource = fs.readFileSync(path.join(__dirname, "..", "functions", "groupWelcomeBanner.js"), "utf8");
+  assert.doesNotMatch(pinSource, /Solution\s*•\s*Tokito API/);
+  assert.doesNotMatch(profileSource, /config\.botName \|\| "Solution"/);
+  assert.match(pinSource, /config\.botName/);
+  assert.match(welcomeSource, /config\.botName/);
+});
+
 test("Spotify reconhece link e mantém busca textual", () => {
   assert.equal(spotify._internals.isSpotifyUrl("https://open.spotify.com/track/abc"), true);
   assert.equal(spotify._internals.isSpotifyUrl("musica qualquer"), false);
 });
 
-test("Pinterest aceita resultados em string ou objeto", () => {
-  const urls = pin._internals.imageUrls({ resultado: [
+test("Pinterest aceita respostas simples e aninhadas", () => {
+  const urls = pin._internals.imageUrls({
+    resultado: {
+      pins: [
+        "https://example.com/1.jpg",
+        { image: "https://example.com/2.jpg" },
+        { images: { orig: { url: "https://example.com/3.jpg" } } },
+      ],
+    },
+  });
+  assert.deepEqual(urls, [
     "https://example.com/1.jpg",
-    { image: "https://example.com/2.jpg" },
-  ] });
-  assert.deepEqual(urls, ["https://example.com/1.jpg", "https://example.com/2.jpg"]);
+    "https://example.com/2.jpg",
+    "https://example.com/3.jpg",
+  ]);
+  assert.match(pin._internals.searchCaption("anime", 3), /3/);
 });
 
 test("pacote IA registra endpoints Tokito esperados", () => {
   const names = aiPack.map(x => x.name);
-  for (const name of ["gemini", "geminipro", "openai", "perplexity", "tokitoia", "geminitts", "iaaudio", "tokitoapi"]) {
+  for (const name of ["gemini", "geminipro", "openai", "perplexity", "chatia", "geminitts", "iaaudio", "apitest"]) {
     assert.ok(names.includes(name), name);
   }
 });
@@ -63,6 +83,21 @@ test("catálogo de downloaders Tokito cobre as principais plataformas", () => {
     "pinterestvideo", "applemusic", "deezer", "soundcloud", "capcut",
     "mediafire", "mega", "playstore", "aptoide", "happymod"
   ]) assert.ok(names.includes(name), name);
+});
+
+test("tiktoksearch encontra vídeo reproduzível em respostas aninhadas", () => {
+  const items = downloadPack._test.tiktokItems({
+    resultado: {
+      videos: [
+        { title: "Vídeo", video_sem_marca: "https://cdn.example.com/video.mp4" },
+      ],
+    },
+  });
+  assert.equal(items.length, 1);
+  assert.equal(
+    downloadPack._test.tiktokVideoUrl(items[0]),
+    "https://cdn.example.com/video.mp4"
+  );
 });
 
 test("extras Tokito incluem playdoc TikTok foto e metadinha", () => {
@@ -109,7 +144,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
   const required = [
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
-    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
+    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "chatia", "apitest", "darkgreen", "neonglitch", "galaxy",
     "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos",
     "casal", "casalgif", "mines", "adivinhepalavra", "cacapalavras", "resetforca", "resetquiz", "resetmines", "resetadivinhe", "resetcaca", "logoglitch", "logocartoon", "logodesfoque"
   ];
