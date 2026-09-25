@@ -4,7 +4,7 @@ const tokitoApi = require("../../functions/tokitoApi");
 
 module.exports = {
   name: "play",
-  aliases: ["yta", "play_audio", "playaudio"],
+  aliases: ["yta"],
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "play música ou link",
