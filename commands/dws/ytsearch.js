@@ -2,25 +2,92 @@
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
-const { normalizeYoutubeList, sendYoutubeList } = require("../../functions/youtubeResult");
-const { searchVideos } = require("../../functions/youtubeClient");
+const { normalizeYoutubeList } = require("../../functions/youtubeResult");
+const { sendInteractiveMessage } = require("gifted-btns");
+
+function botName() {
+  return String(config.botName || "Bot")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .trim() || "Bot";
+}
+
+function buildRows(results, prefix) {
+  return results.map((video, index) => {
+    const title = String(video.title || "Sem título");
+    const shortTitle = title.length > 48 ? title.slice(0, 45) + "..." : title;
+    const details = [
+      video.duration ? "⏱️ " + video.duration : "",
+      video.channel ? "👤 " + video.channel : "",
+    ].filter(Boolean).join(" · ");
+
+    return {
+      id: prefix + "ytplay " + video.url,
+      title: "🎬 " + (index + 1) + ". " + shortTitle,
+      description: details || "Abrir opções de download",
+      header: "Resultado " + (index + 1),
+    };
+  });
+}
 
 async function searchYoutube(query) {
-  try {
-    const data = await tokitoApi.get("/api/youtube-search", {
-      query,
-      q: query,
-      text: query,
-    }, { timeout: 30000 });
+  const data = await tokitoApi.get("/api/youtube-search", {
+    query,
+    q: query,
+    text: query,
+  }, { timeout: 30000 });
 
-    const results = normalizeYoutubeList(data, tokitoApi.list);
-    if (results.length) return results.slice(0, 10);
-  } catch (error) {
-    console.warn("[YTSEARCH API]", error?.message || error);
-  }
+  return normalizeYoutubeList(data, tokitoApi.list).slice(0, 10);
+}
 
-  const fallback = await searchVideos(query, 10).catch(() => []);
-  return fallback.slice(0, 10);
+async function sendSearchList(conn, msg, from, query, results) {
+  const prefix = config.prefix || ".";
+  const rows = buildRows(results, prefix);
+
+  return sendInteractiveMessage(
+    conn,
+    from,
+    {
+      text:
+        "🔎 *YOUTUBE SEARCH — " + query + "*\n" +
+        "📊 Resultados: " + results.length + "\n\n" +
+        "📌 Toque em *Resultados* para escolher um vídeo.",
+      footer: botName(),
+      image: results[0]?.thumbnail ? { url: results[0].thumbnail } : undefined,
+      aimode: true,
+      contextInfo: {
+        forwardingScore: 1,
+        isForwarded: true,
+        forwardedNewsletterMessageInfo: {
+          newsletterJid: "120363426698503859@newsletter",
+          newsletterName: botName(),
+          serverMessageId: 116,
+        },
+      },
+      interactiveButtons: [
+        {
+          name: "single_select",
+          buttonParamsJson: JSON.stringify({
+            title: "🎬 Resultados",
+            sections: [
+              {
+                title: "📹 Vídeos encontrados",
+                highlight_label: "YouTube",
+                rows,
+              },
+            ],
+          }),
+        },
+        {
+          name: "quick_reply",
+          buttonParamsJson: JSON.stringify({
+            display_text: "🎵 Áudio do 1º",
+            id: prefix + "play " + results[0].url,
+          }),
+        },
+      ],
+    },
+    { quoted: createStatusQuoted(msg) },
+  );
 }
 
 module.exports = {
@@ -29,7 +96,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytsearch termo",
-  description: "Pesquisa vídeos no YouTube e mostra uma lista interativa",
+  description: "Pesquisa vídeos no YouTube e mostra os resultados em lista interativa",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -49,14 +116,9 @@ module.exports = {
       }).catch(() => {});
 
       const results = await searchYoutube(query);
+      if (!results.length) throw new Error("Nenhum resultado encontrado.");
 
-      if (!results.length) {
-        return conn.sendMessage(from, {
-          text: "❌ Nenhum resultado encontrado para *" + query + "*.",
-        }, { quoted: createStatusQuoted(msg) });
-      }
-
-      await sendYoutubeList(conn, msg, from, results, query);
+      await sendSearchList(conn, msg, from, query, results);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
@@ -65,12 +127,14 @@ module.exports = {
       console.error("[YTSEARCH]", error?.message || error);
 
       await conn.sendMessage(from, {
-        text: "❌ Não foi possível pesquisar no YouTube.",
+        text: tokitoApi.userError(error, "Não foi possível pesquisar no YouTube."),
       }, { quoted: createStatusQuoted(msg) });
     }
   },
 
   _internals: {
+    buildRows,
     searchYoutube,
+    sendSearchList,
   },
 };
