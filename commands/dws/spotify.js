@@ -8,7 +8,7 @@ function isSpotifyUrl(value) {
 
 module.exports = {
   name: "spotify",
-  aliases: ["sp"],
+  aliases: ["sp", "spotify_audio", "spotifymp3"],
   menuCategory: "Downloads",
   menuSection: "Spotify",
   usage: "spotify música ou link",
