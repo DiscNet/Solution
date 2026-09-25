@@ -204,24 +204,40 @@ module.exports = {
         (metrics.load1m / Math.max(metrics.cpuCores, 1)) * 100
       ).toFixed(1);
 
-      const cardUrl = tokitoApi.url("/canvas/ping2", {
-        ping: (processingMs / 1000).toFixed(3) + " s",
-        latency: formatMs(processingMs),
-        uptime: formatDuration(metrics.processUptime),
-        memory: formatBytes(metrics.usedRam) + " / " + formatBytes(metrics.totalRam),
-        cpu: cpuPercent + "%",
-        platform: metrics.platform,
-        node: metrics.node,
-        commands: commandCount == null ? "" : commandCount,
-        avatar,
-        fundo: fallbackBackground,
-        color: "#1e90ff",
-      });
+      let cardBuffer = null;
+      try {
+        const card = await tokitoApi.buffer("/canvas/ping2", {
+          ping: (processingMs / 1000).toFixed(3) + " s",
+          latency: formatMs(processingMs),
+          uptime: formatDuration(metrics.processUptime),
+          memory: formatBytes(metrics.usedRam) + " / " + formatBytes(metrics.totalRam),
+          cpu: cpuPercent + "%",
+          platform: metrics.platform,
+          node: metrics.node,
+          commands: commandCount == null ? "" : commandCount,
+          avatar,
+          fundo: fallbackBackground,
+          color: "#1e90ff",
+        }, {
+          timeout: 20000,
+          headers: { accept: "image/*,*/*" },
+        });
 
-      // Exatamente UM envio no fluxo normal: card Tokito + relatório real.
-      await conn.sendMessage(from, {
-        image: { url: cardUrl },
+        if (card.buffer?.length && /image/i.test(card.contentType)) {
+          cardBuffer = card.buffer;
+        }
+      } catch (apiError) {
+        const info = tokitoApi.errorInfo(apiError);
+        console.warn("[PING TOKITO]", info.status || "-", info.message);
+      }
+
+      // Exatamente UM envio: usa o canvas quando disponível e texto como fallback.
+      await conn.sendMessage(from, cardBuffer ? {
+        image: cardBuffer,
         caption: report,
+        contextInfo: contextInfo(),
+      } : {
+        text: report,
         contextInfo: contextInfo(),
       }, { quoted });
     } catch (error) {
