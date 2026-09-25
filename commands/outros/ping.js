@@ -3,6 +3,7 @@ const os = require("os");
 const { performance } = require("perf_hooks");
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const tokitoApi = require("../../functions/tokitoApi");
 
 const NEWSLETTER = {
   newsletterJid: "120363426698503859@newsletter",
@@ -192,10 +193,35 @@ module.exports = {
         now,
       });
 
-      // Exatamente UM envio no fluxo normal: sem mensagem temporária, sem
-      // edição e sem reação separada. Todas as métricas são calculadas antes.
+      const botJid = String(conn?.user?.id || "")
+        .replace(/:\d+@/, "@");
+      const fallbackBackground = "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/922e987a70d.jpg";
+      const avatar = botJid && typeof conn?.profilePictureUrl === "function"
+        ? await conn.profilePictureUrl(botJid, "image").catch(() => fallbackBackground)
+        : fallbackBackground;
+      const cpuPercent = Math.min(
+        100,
+        (metrics.load1m / Math.max(metrics.cpuCores, 1)) * 100
+      ).toFixed(1);
+
+      const cardUrl = tokitoApi.url("/canvas/ping2", {
+        ping: (processingMs / 1000).toFixed(3) + " s",
+        latency: formatMs(processingMs),
+        uptime: formatDuration(metrics.processUptime),
+        memory: formatBytes(metrics.usedRam) + " / " + formatBytes(metrics.totalRam),
+        cpu: cpuPercent + "%",
+        platform: metrics.platform,
+        node: metrics.node,
+        commands: commandCount == null ? "" : commandCount,
+        avatar,
+        fundo: fallbackBackground,
+        color: "#1e90ff",
+      });
+
+      // Exatamente UM envio no fluxo normal: card Tokito + relatório real.
       await conn.sendMessage(from, {
-        text: report,
+        image: { url: cardUrl },
+        caption: report,
         contextInfo: contextInfo(),
       }, { quoted });
     } catch (error) {
