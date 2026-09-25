@@ -107,7 +107,8 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
   const required = [
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
-    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy"
+    "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
+    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -173,6 +174,7 @@ test("ping usa o canvas ping2 da Tokito", () => {
 test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
   const names = logoPack.map(command => command.name);
   assert.ok(names.length >= 40);
+  assert.ok(logoPack.every(command => command.menuCategory === "Logos"));
   for (const name of [
     "darkgreen",
     "glitch",
