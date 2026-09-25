@@ -500,13 +500,12 @@ async function sendYoutubeAudio(conn, msg, from, query) {
 async function sendYoutubeSearchList(conn, msg, from, results, query) {
   const prefix = config.prefix || ".";
   const rows = results.slice(0, 10).map((video, index) => ({
-    header: "Resultado " + (index + 1),
-    title: textValue(video?.title, "Sem título").slice(0, 70),
+    id: prefix + "ytplay " + video.url,
+    title: "🎬 " + (index + 1) + ". " + textValue(video?.title, "Sem título").slice(0, 58),
     description: [
       video?.duration ? "⏱️ " + textValue(video.duration) : "",
       video?.channel ? "👤 " + textValue(video.channel) : "",
-    ].filter(Boolean).join(" · ").slice(0, 100),
-    id: prefix + "ytplay " + video.url,
+    ].filter(Boolean).join(" · ").slice(0, 100) || "Abrir opções de download",
   }));
 
   if (!rows.length) throw new Error("Nenhum resultado para montar a lista.");
@@ -640,4 +639,7 @@ module.exports = {
   youtubePlayAudioUrl,
   sendYoutubeAudio,
   sendYoutubeVideo,
+  sendYoutubeSearchList,
+  resolveYoutubeAudio,
+  audioUrlFromData,
 };
