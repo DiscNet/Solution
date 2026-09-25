@@ -12,15 +12,63 @@ function actor(msg, from) { return String(kit.senderId(msg, from) || from); }
 
 function payload(data) { return data?.resultado || data?.result || data?.data || data || {}; }
 
+function firstText(...values) {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return "";
+}
+
 function guessInfo(r = {}) {
-  const sources = [r, r.resultado, r.result, r.acerto, r.guess, r.win, r.personagem, r.data,
-    Array.isArray(r.guesses) ? r.guesses[0] : null, Array.isArray(r.answers) ? r.answers[0] : null].filter(Boolean);
+  const sources = [
+    r.resultado,
+    r.result,
+    r.acerto,
+    r.guess,
+    r.win,
+    typeof r.personagem === "object" ? r.personagem : null,
+    r.data,
+    Array.isArray(r.guesses) ? r.guesses[0] : null,
+    Array.isArray(r.answers) ? r.answers[0] : null,
+    r,
+  ].filter(item => item && typeof item === "object");
+
   for (const item of sources) {
-    const name = item.personagem || item.nome || item.name || item.character || item.proposition || item.name_proposition || item.suggestion_name || "";
-    const desc = item.descricao || item.description || item.desc || item.pseudo || item.title || item.titulo || item.description_proposition || item.prop_desc || item.suggestion_desc || "";
-    const photo = item.imagem || item.foto || item.image || item.photo || item.picture || item.avatar || item.absolute_picture_path || item.photo_path || item.suggestion_photo || "";
+    const name = firstText(
+      item.personagem,
+      item.nome,
+      item.name,
+      item.character,
+      item.proposition,
+      item.name_proposition,
+      item.suggestion_name
+    );
+    const desc = firstText(
+      item.descricao,
+      item.description,
+      item.desc,
+      item.pseudo,
+      item.title,
+      item.titulo,
+      item.description_proposition,
+      item.prop_desc,
+      item.suggestion_desc
+    );
+    const photo = firstText(
+      item.imagem,
+      item.foto,
+      item.image,
+      item.photo,
+      item.picture,
+      item.avatar,
+      item.absolute_picture_path,
+      item.photo_path,
+      item.suggestion_photo
+    );
+
     if (name || desc || photo) return { name, desc, photo };
   }
+
   return { name: "", desc: "", photo: "" };
 }
 
@@ -113,7 +161,7 @@ module.exports = {
       return conn.sendMessage(from, { text: tokitoApi.userError(error, "Akinator indisponível.") }, { quoted: createStatusQuoted(msg) });
     }
   },
-  _internals: { sessions, norm, payload, guessInfo },
+  _internals: { sessions, norm, payload, firstText, guessInfo },
 };
 
 module.exports._sessions = sessions;
