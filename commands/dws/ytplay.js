@@ -1,42 +1,7 @@
 // Menu: Downloads - YouTube | Comando: ytplay
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
-const tokitoApi = require("../../functions/tokitoApi");
-const { normalizeYoutubeList, normalizeYoutubeItem, sendYoutubeChoice } = require("../../functions/youtubeResult");
-const { getVideo } = require("../../functions/youtubeClient");
-
-async function resolveVideo(query) {
-  const input = String(query || "").trim();
-
-  if (!/^https?:\/\//i.test(input)) {
-    try {
-      const data = await tokitoApi.get("/api/youtube-search", {
-        query: input,
-        q: input,
-        text: input,
-      }, { timeout: 30000 });
-
-      const [first] = normalizeYoutubeList(data, tokitoApi.list);
-      if (first?.url) return first;
-    } catch (error) {
-      console.warn("[YTPLAY SEARCH API]", error?.message || error);
-    }
-  }
-
-  const local = await getVideo(input).catch(() => null);
-  if (local?.url) return normalizeYoutubeItem(local);
-
-  if (/^https?:\/\//i.test(input)) {
-    return normalizeYoutubeItem({
-      url: input,
-      title: "Vídeo do YouTube",
-      channel: "",
-      duration: "",
-    });
-  }
-
-  return null;
-}
+const { resolveYoutubeVideo, sendYoutubeChoice } = require("../../functions/youtubeResult");
 
 module.exports = {
   name: "ytplay",
@@ -61,7 +26,7 @@ module.exports = {
         react: { text: "🎬", key: msg.key },
       }).catch(() => {});
 
-      const video = await resolveVideo(query);
+      const video = await resolveYoutubeVideo(query);
       if (!video?.url) throw new Error("Vídeo não encontrado.");
 
       await sendYoutubeChoice(conn, msg, from, video);
@@ -71,14 +36,9 @@ module.exports = {
       }).catch(() => {});
     } catch (error) {
       console.error("[YTPLAY]", error?.message || error);
-
       await conn.sendMessage(from, {
         text: "❌ Não foi possível abrir esse vídeo.",
       }, { quoted: createStatusQuoted(msg) });
     }
-  },
-
-  _internals: {
-    resolveVideo,
   },
 };
