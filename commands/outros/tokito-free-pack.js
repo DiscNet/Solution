@@ -204,10 +204,10 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "cacapalavras",
+    name: "palavraembaralhada",
     aliases: ["embaralhada", "palavra"],
     section: "Jogos rápidos",
-    usage: "cacapalavras [resposta|novo|desistir]",
+    usage: "palavraembaralhada [resposta|novo|desistir]",
     description: "Adivinhe a palavra a partir das letras embaralhadas",
     async execute(conn, msg, args, from) {
       const key = keyFor(msg, from);
@@ -218,7 +218,7 @@ const commands = [
         const [word, hint] = words[Math.floor(Math.random() * words.length)];
         game = { word, hint, scrambled: shuffleText(word), at: Date.now() };
         wordGames.set(key, game);
-        return kit.reply(conn, msg, from, `🔤 *CAÇA-PALAVRAS*\n\nLetras: *${game.scrambled.toUpperCase()}*\n💡 Dica: ${hint}\n\nUse *.cacapalavras resposta*.`);
+        return kit.reply(conn, msg, from, `🔤 *CAÇA-PALAVRAS*\n\nLetras: *${game.scrambled.toUpperCase()}*\n💡 Dica: ${hint}\n\nUse *.palavraembaralhada resposta*.`);
       }
 
       if (!raw) {
@@ -236,7 +236,7 @@ const commands = [
         return kit.reply(conn, msg, from, `✅ *Acertou!* A palavra era *${game.word.toUpperCase()}*.`);
       }
 
-      return kit.reply(conn, msg, from, "❌ Ainda não. Tente novamente ou use *.cacapalavras desistir*.");
+      return kit.reply(conn, msg, from, "❌ Ainda não. Tente novamente ou use *.palavraembaralhada desistir*.");
     },
   }),
 ];
