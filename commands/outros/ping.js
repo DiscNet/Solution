@@ -4,7 +4,7 @@ const { performance } = require("perf_hooks");
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
-const { getMessageProfilePicture } = require("../../functions/profilePicture");
+const { getProfilePicture, senderCandidates } = require("../../functions/profilePicture");
 
 const NEWSLETTER = {
   newsletterJid: "120363426698503859@newsletter",
@@ -195,11 +195,9 @@ module.exports = {
       });
 
       const fallbackBackground = "https://raw.githubusercontent.com/dylanModz/uploadsgg/main/midias/imagens/922e987a70d.jpg";
-      const requesterPicture = await getMessageProfilePicture(
+      const requesterPicture = await getProfilePicture(
         conn,
-        msg,
-        from,
-        [],
+        senderCandidates(msg, from),
         { fallback: fallbackBackground }
       ).catch(() => ({ url: fallbackBackground }));
       const avatar = requesterPicture?.url || fallbackBackground;
