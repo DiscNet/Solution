@@ -1,95 +1,37 @@
 // Menu: Downloads - YouTube | Comando: ytsearch
 const { createStatusQuoted } = require("../../functions/statusCard");
-const config = require("../../config/config");
-const { sendInteractiveMessage } = require("gifted-btns");
-const { searchVideos } = require("../../functions/youtubeClient");
+const tokitoApi = require("../../functions/tokitoApi");
 
 module.exports = {
   name: "ytsearch",
-  description: "ᴘᴇsǫᴜɪsᴀ ᴠɪ́ᴅᴇᴏs ɴᴏ ʏᴏᴜᴛᴜʙᴇ",
+  aliases: ["yts"],
+  menuCategory: "Downloads",
+  menuSection: "YouTube",
+  usage: "ytsearch termo",
+  description: "Pesquisa vídeos no YouTube pela Tokito API",
   async execute(conn, msg, args, from) {
-    const prefix = config.prefix || ".";
-    const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
+    const query = args.join(" ").trim();
+    if (!query) return conn.sendMessage(from, { text: "❌ Uso: .ytsearch <termo>" }, { quoted: createStatusQuoted(msg) });
 
     try {
-      const query = args.join(" ").trim();
-      if (!query) {
-        return conn.sendMessage(from, {
-          text: `❌ *ᴅɪɢɪᴛᴇ ᴏ ɴᴏᴍᴇ ᴅᴏ ᴠɪ́ᴅᴇᴏ!*\n\n📌 ᴇxᴇᴍᴘʟᴏ: ${prefix}ytsearch matue 1993`,
-          contextInfo: {
-            forwardingScore: 1,
-            isForwarded: true,
-            forwardedNewsletterMessageInfo: {
-              newsletterJid: "120363426698503859@newsletter",
-              newsletterName: bot,
-              serverMessageId: 116
-            }
-          }
-        }, { quoted: createStatusQuoted(msg) });
-      }
+      await conn.sendMessage(from, { react: { text: "🔎", key: msg.key } }).catch(() => {});
+      const data = await tokitoApi.get("/api/youtube-search", { query });
+      const results = tokitoApi.list(data).slice(0, 8);
+      if (!results.length) throw new Error("Nenhum resultado.");
 
-      await conn.sendMessage(from, { react: { text: "🔍", key: msg.key } });
+      const text = results.map((v, i) => {
+        const title = v?.title || v?.titulo || "Sem título";
+        const url = v?.url || v?.link || v?.video_url || v?.videoUrl || "";
+        const channel = v?.channel || v?.canal || v?.author || "";
+        const duration = v?.duration || v?.duracao || "";
+        return `${i + 1}. *${title}*${channel ? `\n👤 ${channel}` : ""}${duration ? ` • ⏱️ ${duration}` : ""}${url ? `\n🔗 ${url}\n🎵 .play ${url}\n📹 .ytmp4 ${url}` : ""}`;
+      }).join("\n\n");
 
-      const results = await searchVideos(query, 5);
-      if (!results.length) {
-        return conn.sendMessage(from, {
-          text: `❌ *ɴᴇɴʜᴜᴍ ʀᴇsᴜʟᴛᴀᴅᴏ ᴘᴀʀᴀ:* ${query}`
-        }, { quoted: createStatusQuoted(msg) });
-      }
-
-      const rows = results.map((video) => {
-        const shortTitle = video.title.length > 45 ? `${video.title.slice(0, 42)}...` : video.title;
-        return {
-          id: `${prefix}ytplay ${video.url}`,
-          title: `🎬 ${shortTitle}`,
-          description: `⏱️ ${video.duration} · 👤 ${video.channel}`
-        };
-      });
-
-      await sendInteractiveMessage(conn, from, {
-        text: `🔎 *ʏᴏᴜᴛᴜʙᴇ sᴇᴀʀᴄʜ — ${query}*\n📊 ʀᴇsᴜʟᴛᴀᴅᴏs: ${results.length}\n\n📌 sᴇʟᴇᴄɪᴏɴᴇ ᴘᴀʀᴀ ᴀʙʀɪʀ:`,
-        footer: "ᴅᴀᴅᴏs ᴏʙᴛɪᴅᴏs ᴘᴇʟᴏ ʏᴏᴜᴛᴜʙᴇɪ.ᴊs",
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: bot,
-            serverMessageId: 116
-          }
-        },
-        interactiveButtons: [
-          {
-            name: "single_select",
-            buttonParamsJson: JSON.stringify({
-              title: "🎬 ʀᴇsᴜʟᴛᴀᴅᴏs",
-              sections: [{ title: "📹 ᴠɪ́ᴅᴇᴏs", rows }]
-            })
-          },
-          {
-            name: "quick_reply",
-            buttonParamsJson: JSON.stringify({
-              display_text: "🎵 ᴍᴘ3 ᴅᴏ 1º",
-              id: `${prefix}ytmp3 ${results[0].url}`
-            })
-          }
-        ]
-      }, { quoted: createStatusQuoted(msg) });
-
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
+      await conn.sendMessage(from, { text: `🔎 *YOUTUBE — ${query}*\n\n${text}` }, { quoted: createStatusQuoted(msg) });
+      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
     } catch (error) {
-      console.error("[ERROR] ytsearch | ERR_YOUTUBE_SEARCH", error);
-      await conn.sendMessage(from, {
-        text: "❌ *ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇ ᴘᴇsǫᴜɪsᴀʀ ɴᴏ ʏᴏᴜᴛᴜʙᴇ.*"
-      }, { quoted: createStatusQuoted(msg) });
+      console.error("[TOKITO YTSEARCH]", error.message);
+      await conn.sendMessage(from, { text: "❌ Não foi possível pesquisar no YouTube pela Tokito API." }, { quoted: createStatusQuoted(msg) });
     }
-  }
+  },
 };
-
-
-Object.assign(module.exports, {
-  "menuCategory": "Downloads",
-  "menuSection": "YouTube",
-  "usage": "ytsearch termo",
-  "description": "Uso: .ytsearch termo"
-});
