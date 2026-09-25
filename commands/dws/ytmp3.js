@@ -1,6 +1,6 @@
 // Menu: Downloads - YouTube | Comando: ytmp3
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { sendYoutubeAudio } = require("../../functions/youtubeResult");
+const { resolveYoutubeVideo, sendYoutubeAudio } = require("../../functions/youtubeResult");
 
 module.exports = {
   name: "ytmp3",
@@ -8,12 +8,12 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytmp3 link ou pesquisa",
-  description: "Baixa áudio do YouTube pela API",
+  description: "Baixa áudio do YouTube",
 
   async execute(conn, msg, args, from) {
-    const target = args.join(" ").trim();
+    const query = args.join(" ").trim();
 
-    if (!target) {
+    if (!query) {
       return conn.sendMessage(from, {
         text: "❌ Uso: .ytmp3 <link ou pesquisa>",
       }, { quoted: createStatusQuoted(msg) });
@@ -24,15 +24,17 @@ module.exports = {
         react: { text: "🎵", key: msg.key },
       }).catch(() => {});
 
-      await sendYoutubeAudio(conn, msg, from, target);
+      const video = await resolveYoutubeVideo(query);
+      await sendYoutubeAudio(conn, msg, from, video?.url || query);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
       console.error("[YTMP3]", error?.message || error);
+
       await conn.sendMessage(from, {
-        text: "❌ Não foi possível baixar o áudio pela API.",
+        text: "❌ Não foi possível baixar o áudio.",
       }, { quoted: createStatusQuoted(msg) });
     }
   },
