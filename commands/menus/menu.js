@@ -116,6 +116,12 @@ async function sendMainCatalog(conn, msg, from) {
                     "🧊 MÍDIA",
                   ),
                   makeRow(
+                    "menulogos",
+                    "   『🎨』𝗠𝗘𝗡𝗨 𝗟𝗢𝗚𝗢𝗦",
+                    "ᴇғᴇɪᴛᴏs ᴅᴇ ᴛᴇxᴛᴏ ᴇ ʟᴏɢᴏs ᴅᴀ ᴛᴏᴋɪᴛᴏ ᴀᴘɪ",
+                    "🎨 LOGOS",
+                  ),
+                  makeRow(
                     "menubn",
                     "   『🧊』𝗠𝗘𝗡𝗨 𝗕𝗥𝗜𝗡𝗖𝗔𝗗𝗘𝗜𝗥𝗔𝗦",
                     "ᴊᴏɢᴏs • ᴀᴋɪɴᴀᴛᴏʀ • ᴄᴏᴍᴀɴᴅᴏs ᴅᴇ ᴅɪᴠᴇʀsᴀ̃ᴏ",
