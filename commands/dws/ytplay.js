@@ -1,5 +1,4 @@
 // Menu: Downloads - YouTube | Comando: ytplay
-const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const { resolveYoutubeVideo, sendYoutubeChoice } = require("../../functions/youtubeResult");
 
@@ -12,12 +11,11 @@ module.exports = {
   description: "Mostra informações do vídeo e botões para áudio ou vídeo",
 
   async execute(conn, msg, args, from) {
-    const prefix = config.prefix || ".";
     const query = args.join(" ").trim();
 
     if (!query) {
       return conn.sendMessage(from, {
-        text: "❌ Uso: " + prefix + "ytplay <nome ou link do vídeo>",
+        text: "❌ Uso: .ytplay <nome ou link do vídeo>",
       }, { quoted: createStatusQuoted(msg) });
     }
 
@@ -36,6 +34,7 @@ module.exports = {
       }).catch(() => {});
     } catch (error) {
       console.error("[YTPLAY]", error?.message || error);
+
       await conn.sendMessage(from, {
         text: "❌ Não foi possível abrir esse vídeo.",
       }, { quoted: createStatusQuoted(msg) });
