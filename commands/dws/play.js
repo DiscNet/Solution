@@ -1,10 +1,10 @@
 // Menu: Downloads - YouTube | Comando: play
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { sendYoutubeAudio } = require("../../functions/youtubeMedia");
+const { sendYoutubeAudio } = require("../../functions/youtubeResult");
 
 module.exports = {
   name: "play",
-  aliases: ["yta"],
+  aliases: ["yta", "play_audio", "playaudio"],
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "play música ou link",
@@ -24,16 +24,15 @@ module.exports = {
         react: { text: "🎧", key: msg.key },
       }).catch(() => {});
 
-      await sendYoutubeAudio(conn, createStatusQuoted(msg), from, query);
+      await sendYoutubeAudio(conn, msg, from, query);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
       console.error("[YOUTUBE PLAY]", error?.message || error);
-
       await conn.sendMessage(from, {
-        text: "❌ Não foi possível obter o áudio desse vídeo.",
+        text: "❌ Não foi possível enviar o áudio agora.",
       }, { quoted: createStatusQuoted(msg) });
     }
   },
