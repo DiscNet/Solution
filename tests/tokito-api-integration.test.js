@@ -246,6 +246,57 @@ test("ytplay usa botões nativos compartilhados", () => {
   assert.doesNotMatch(source, /gifted-btns/);
 });
 
+test("ytsearch usa lista nativa e seleciona ytplay", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
+    "utf8"
+  );
+  const helper = fs.readFileSync(
+    path.join(__dirname, "..", "functions", "youtubeResult.js"),
+    "utf8"
+  );
+
+  assert.match(source, /sendYoutubeList/);
+  assert.doesNotMatch(source, /gifted-btns/);
+  assert.match(helper, /single_select/);
+  assert.match(helper, /ytplay /);
+  assert.match(helper, /🎵 Áudio do 1º/);
+});
+
+test("play envia áudio diretamente e ytplay usa botões nativos", () => {
+  const playSource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "play.js"),
+    "utf8"
+  );
+  const ytplaySource = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
+    "utf8"
+  );
+  const helper = fs.readFileSync(
+    path.join(__dirname, "..", "functions", "youtubeResult.js"),
+    "utf8"
+  );
+
+  assert.match(playSource, /sendYoutubeAudio/);
+  assert.doesNotMatch(playSource, /sendYoutubeChoice/);
+  assert.match(ytplaySource, /sendYoutubeChoice/);
+  assert.doesNotMatch(ytplaySource, /gifted-btns/);
+  assert.match(helper, /\/api\/youtube-play/);
+  assert.match(helper, /\/api\/youtube-audio/);
+  assert.match(helper, /quick_reply/);
+});
+
+test("downloaders YouTube aceitam JSON com link de mídia", () => {
+  assert.equal(
+    youtubeResult.findMediaUrl({
+      resultado: {
+        download: "https://cdn.example.com/audio.mp3",
+      },
+    }),
+    "https://cdn.example.com/audio.mp3"
+  );
+});
+
 test("extras Tokito incluem playdoc TikTok foto e metadinha", () => {
   const names = extraPack.map(x => x.name);
   assert.ok(names.includes("playdoc"));
