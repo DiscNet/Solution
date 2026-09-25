@@ -42,7 +42,10 @@ const LOGOS = [
   "comic3d",
 ];
 
-function makeLogoCommand(name) {
+function makeLogoCommand(definition) {
+  const name = typeof definition === "string" ? definition : definition.name;
+  const route = typeof definition === "string" ? definition : definition.route;
+
   return {
     name,
     aliases: [],
@@ -65,7 +68,7 @@ function makeLogoCommand(name) {
         }).catch(() => {});
 
         const result = await tokitoApi.buffer(
-          "/api/" + name,
+          "/api/" + route,
           { texto: text },
           {
             timeout: 90000,
