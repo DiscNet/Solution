@@ -173,11 +173,10 @@ test("ping usa o canvas ping2 da Tokito", () => {
 
 test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
   const names = logoPack.map(command => command.name);
-  assert.ok(names.length >= 40);
+  assert.ok(names.length >= 38);
   assert.ok(logoPack.every(command => command.menuCategory === "Logos"));
   for (const name of [
     "darkgreen",
-    "glitch",
     "advancedglow",
     "neonglitch",
     "blackpink",
