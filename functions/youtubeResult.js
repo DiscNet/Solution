@@ -135,6 +135,67 @@ function normalizeYoutubeList(data, listFn) {
 }
 
 
+function singleSelectButton(title, sections) {
+  return {
+    name: "single_select",
+    buttonParamsJson: JSON.stringify({ title, sections }),
+  };
+}
+
+function quickReplyButton(text, id) {
+  return {
+    name: "quick_reply",
+    buttonParamsJson: JSON.stringify({
+      display_text: text,
+      id,
+    }),
+  };
+}
+
+async function sendYoutubeList(conn, msg, from, results, query) {
+  const prefix = config.prefix || ".";
+  const rows = results.slice(0, 10).map((video, index) => ({
+    id: prefix + "ytplay " + video.url,
+    title: "🎬 " + (index + 1) + ". " + textValue(video.title, "Sem título").slice(0, 55),
+    description: [
+      video.duration ? "⏱️ " + textValue(video.duration) : "",
+      video.channel ? "👤 " + textValue(video.channel) : "",
+    ].filter(Boolean).join(" · ").slice(0, 90) || "Abrir opções",
+  }));
+
+  if (!rows.length) throw new Error("Nenhum resultado para montar a lista.");
+
+  const interactiveMessage = {
+    body: {
+      text:
+        "🔎 *YOUTUBE SEARCH*\n\n" +
+        "Busca: *" + query + "*\n" +
+        "Resultados: *" + rows.length + "*\n\n" +
+        "Toque em *Resultados* para escolher um vídeo.",
+    },
+    footer: { text: botName() },
+    nativeFlowMessage: {
+      buttons: [
+        singleSelectButton("🎬 Resultados", [
+          {
+            title: "📹 Vídeos encontrados",
+            rows,
+          },
+        ]),
+        quickReplyButton("🎵 Áudio do 1º", prefix + "play " + results[0].url),
+      ],
+    },
+  };
+
+  const out = generateWAMessageFromContent(from, {
+    interactiveMessage,
+  }, { quoted: createStatusQuoted(msg) });
+
+  return conn.relayMessage(from, out.message, {
+    messageId: out.key.id,
+  });
+}
+
 function botName() {
   return String(config.botName || "Bot")
     .replace(/[\x00-\x1F\x7F]/g, "")
@@ -258,4 +319,7 @@ module.exports = {
   resolveYoutubeVideo,
   sendYoutubeChoice,
   sendYoutubeFallback,
+  sendYoutubeList,
+  quickReplyButton,
+  singleSelectButton,
 };
