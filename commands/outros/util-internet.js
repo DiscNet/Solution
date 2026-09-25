@@ -4,6 +4,7 @@ const net = require("net");
 const { performance } = require("perf_hooks");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const tokitoApi = require("../../functions/tokitoApi");
 
 function weatherLabel(code) {
   if (code === 0) return "céu limpo";
@@ -107,18 +108,20 @@ const commands = [
   }),
 
   kit.makeCommand({
-    name: "printsite", section: "Internet", usage: "printsite [url]",
-    async execute(conn, msg, args, from, http) {
+    name: "printsite", aliases: ["screenshotsite"], section: "Internet", usage: "printsite [url]",
+    description: "Captura um site usando a Tokito API",
+    async execute(conn, msg, args, from) {
       try {
         const raw = args[0] || kit.inputText(msg, []);
         if (!raw) throw kit.userError("Informe um site, por exemplo: .printsite example.com");
-        const url = await kit.assertPublicUrl(raw);
-        const capture = `https://image.thum.io/get/width/1200/noanimate/${url.toString()}`;
-        const { data } = await http.get(capture, { responseType: "arraybuffer", timeout: 35000, maxContentLength: 12 * 1024 * 1024 });
-        const buffer = Buffer.from(data);
-        if (!buffer.length) throw new Error("imagem vazia");
-        await conn.sendMessage(from, { image: buffer, caption: `🖥️ ${url.hostname}` }, { quoted: createStatusQuoted(msg) });
-      } catch (e) { await kit.fail(conn, msg, from, e, "Não foi possível capturar esse site."); }
+        const checked = await kit.assertPublicUrl(raw);
+        await conn.sendMessage(from, {
+          image: { url: tokitoApi.url("/api/print-site", { url: checked.toString() }) },
+          caption: "🖥️ " + checked.hostname + "\n• Tokito API",
+        }, { quoted: createStatusQuoted(msg) });
+      } catch (e) {
+        await kit.fail(conn, msg, from, e, "Não foi possível capturar esse site.");
+      }
     },
   }),
 
