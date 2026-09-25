@@ -259,7 +259,7 @@ module.exports = {
 
 Object.assign(module.exports, {
   "menuCategory": "RPG",
-  "menuSection": "Economia e itens",
+  "menuSection": "Loja e Itens",
   "description": "Uso: .loja [comprar item]",
   "usage": "loja [comprar item]"
 });
