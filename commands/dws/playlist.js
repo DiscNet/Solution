@@ -2,6 +2,7 @@ const store = require("../../functions/tokitoPlaylistSystem");
 const tokitoApi = require("../../functions/tokitoApi");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { normalizeYoutubeItem, textValue } = require("../../functions/youtubeResult");
 
 function ownerId(msg, from) {
   return String(kit.senderId(msg, from) || from);
@@ -13,17 +14,21 @@ function splitPipe(value) {
 
 function trackFromSearch(data) {
   const items = tokitoApi.list(data);
-  const item = items.find(x => x?.url || x?.link || x?.videoId) || items[0];
-  if (!item) return null;
-  const url = item.url || item.link || (item.videoId ? "https://www.youtube.com/watch?v=" + item.videoId : "");
-  if (!url) return null;
-  return {
-    title: item.title || item.titulo || "Música",
-    url,
-    channel: item.channel || item.canal || item.author?.name || item.author || "",
-    duration: item.duration?.timestamp || item.duration || item.timestamp || item.duracao || "",
-    thumbnail: item.thumbnail || item.image || item.thumb || "",
-  };
+
+  for (const item of items) {
+    const video = normalizeYoutubeItem(item);
+    if (!video?.url) continue;
+
+    return {
+      title: textValue(video.title, "Música"),
+      url: video.url,
+      channel: textValue(video.channel, ""),
+      duration: textValue(video.duration, ""),
+      thumbnail: video.thumbnail || "",
+    };
+  }
+
+  return null;
 }
 
 async function sendTrack(conn, msg, from, item, index, total) {
@@ -48,7 +53,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "Playlist / Rádio",
   usage: "playlist criar nome",
-  description: "Cria playlists e toca faixas usando a Tokito API",
+  description: "Cria playlists e toca faixas usando a API",
   async execute(conn, msg, args, from) {
     const owner = ownerId(msg, from);
     const commandText = String(args.join(" ") || "").trim();
@@ -161,7 +166,7 @@ module.exports = {
 
       return kit.reply(conn, msg, from, "❌ Ação desconhecida. Use .playlist ajuda.");
     } catch (error) {
-      console.error("[TOKITO PLAYLIST]", error);
+      console.error("[PLAYLIST]", error);
       return kit.fail(conn, msg, from, error, "Não foi possível executar a playlist.");
     }
   },
