@@ -20,10 +20,17 @@ const freeFirePack = require("../commands/outros/tokito-freefire");
 const { loadCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
 
 test("Tokito API client centraliza base URL e chave", () => {
-  const u = new URL(tokitoApi.url("/api/youtube-search", { query: "teste" }));
-  assert.equal(u.origin + u.pathname, "https://tokito-apis.com.br/api/youtube-search");
-  assert.equal(u.searchParams.get("query"), "teste");
-  assert.ok(u.searchParams.get("apikey"));
+  const old = process.env.TOKITO_API;
+  process.env.TOKITO_API = "tokito_test_key";
+  try {
+    const u = new URL(tokitoApi.url("/api/youtube-search", { query: "teste" }));
+    assert.equal(u.origin + u.pathname, "https://tokito-apis.com.br/api/youtube-search");
+    assert.equal(u.searchParams.get("query"), "teste");
+    assert.equal(u.searchParams.get("apikey"), "tokito_test_key");
+  } finally {
+    if (old === undefined) delete process.env.TOKITO_API;
+    else process.env.TOKITO_API = old;
+  }
 });
 
 test("Spotify reconhece link e mantém busca textual", () => {
