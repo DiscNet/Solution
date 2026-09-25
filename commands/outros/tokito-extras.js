@@ -1,4 +1,4 @@
-// Recursos inspirados no catálogo da Tokito V10, reimplementados para o Solution.
+// Recursos inspirados no catálogo da API, integrados ao bot.
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
@@ -105,7 +105,7 @@ function cleanup(map, key) {
 async function sendQuizCard(conn, msg, from, game, state = "jogando", answer = 0) {
   const options = Array.isArray(game.options) ? game.options : [];
   const lines = [
-    "🧠 *QUIZ • TOKITO API*",
+    "🧠 *QUIZ • API*",
     "",
     "📚 Categoria: *" + (game.category || "Geral") + "*",
     game.q,
@@ -153,7 +153,7 @@ async function sendQuizCard(conn, msg, from, game, state = "jogando", answer = 0
     }, { quoted: createStatusQuoted(msg) });
   } catch (error) {
     const info = tokitoApi.errorInfo(error);
-    console.warn("[QUIZ TOKITO]", info.status || "-", info.message);
+    console.warn("[QUIZ API]", info.status || "-", info.message);
     return kit.reply(conn, msg, from, caption);
   }
 }
@@ -291,7 +291,7 @@ const commands = [
     aliases: ["wiki"],
     section: "Pesquisas",
     usage: "wikipedia [assunto]",
-    description: "Pesquisa na Wikipédia pela Tokito API",
+    description: "Pesquisa na Wikipédia pela API",
     async execute(conn, msg, args, from, http) {
       const query = args.join(" ").trim();
       if (!query) return kit.reply(conn, msg, from, "❌ Uso: .wikipedia <assunto>");
@@ -303,7 +303,7 @@ const commands = [
           const search = await http.get("https://pt.wikipedia.org/w/api.php", {
             params: { action: "query", list: "search", srsearch: query, format: "json", utf8: 1, srlimit: 3 },
             timeout: 12000,
-            headers: { "user-agent": "SolutionBot/1.0" },
+            headers: { "user-agent": "WhatsAppBot/1.0" },
           });
           const hits = search.data?.query?.search || [];
           if (!hits.length) throw apiError;
@@ -387,7 +387,7 @@ const commands = [
     name: "quiz",
     section: "Jogos rápidos",
     usage: "quiz [1-4|resposta|novo|desistir]",
-    description: "Quiz usando o canvas da Tokito API",
+    description: "Quiz usando o canvas da API",
     async execute(conn, msg, args, from) {
       const input = norm(args.join(" "));
       let game = cleanup(quizState, from);
