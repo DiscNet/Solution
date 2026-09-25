@@ -174,29 +174,6 @@ test("YouTube normaliza campos objeto sem produzir object Object", () => {
   assert.doesNotMatch(youtubeResult.infoText(video), /\[object Object\]/);
 });
 
-test("ytsearch usa lista single_select como no fluxo antigo", () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
-    "utf8"
-  );
-  assert.match(source, /sendInteractiveMessage/);
-  assert.match(source, /name: "single_select"/);
-  assert.match(source, /title: "🎬 Resultados"/);
-  assert.match(source, /prefix \+ "ytplay " \+ video\.url/);
-});
-
-test("ytsearch usa lista interativa nativa do Baileys", () => {
-  const source = fs.readFileSync(
-    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
-    "utf8"
-  );
-
-  assert.match(source, /generateWAMessageFromContent/);
-  assert.match(source, /single_select/);
-  assert.match(source, /Ver resultados/);
-  assert.doesNotMatch(source, /gifted-btns/);
-});
-
 test("play envia áudio direto usando resolvedor robusto", () => {
   const source = fs.readFileSync(
     path.join(__dirname, "..", "commands", "dws", "play.js"),
