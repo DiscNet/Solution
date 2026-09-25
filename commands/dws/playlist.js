@@ -2,8 +2,7 @@ const store = require("../../functions/tokitoPlaylistSystem");
 const tokitoApi = require("../../functions/tokitoApi");
 const kit = require("../../functions/utilityKit");
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { normalizeYoutubeList } = require("../../functions/youtubeResult");
-const { normalizeYoutubeItem, textValue } = require("../../functions/youtubeResult");
+const { normalizeYoutubeList, sendYoutubeAudio } = require("../../functions/youtubeResult");
 
 function ownerId(msg, from) {
   return String(kit.senderId(msg, from) || from);
@@ -26,11 +25,7 @@ async function sendTrack(conn, msg, from, item, index, total) {
   if (item.thumbnail) {
     await conn.sendMessage(from, { image: { url: item.thumbnail }, caption }, { quoted: createStatusQuoted(msg) }).catch(() => {});
   }
-  return conn.sendMessage(from, {
-    audio: { url: tokitoApi.url("/api/youtube-audio", { q: item.url }) },
-    mimetype: "audio/mpeg",
-    ptt: false,
-  }, { quoted: createStatusQuoted(msg) });
+  return sendYoutubeAudio(conn, msg, from, item.url);
 }
 
 module.exports = {
