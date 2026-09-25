@@ -45,7 +45,7 @@ test("catálogo de downloaders Tokito cobre as principais plataformas", () => {
   for (const name of [
     "tiktoksearch", "spotifysearch", "facebook", "twitter", "kwai",
     "pinterestvideo", "applemusic", "deezer", "soundcloud", "capcut",
-    "mediafire", "mega", "playstore", "aptoide", "happymod", "printsite"
+    "mediafire", "mega", "playstore", "aptoide", "happymod"
   ]) assert.ok(names.includes(name), name);
 });
 
@@ -95,4 +95,5 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
+  assert.ok(built.registry.printsite, "printsite");
 });
