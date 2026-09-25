@@ -48,7 +48,7 @@ module.exports = [
     menuCategory: "RPG",
     menuSection: "Rankings",
     usage: "level",
-    description: "Mostra seu level em card da Tokito API",
+    description: "Mostra seu level em card da API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       try {
@@ -86,7 +86,7 @@ module.exports = [
     menuCategory: "RPG",
     menuSection: "Economia",
     usage: "coinscard",
-    description: "Mostra a carteira em card da Tokito API",
+    description: "Mostra a carteira em card da API",
     permissions: { group: true },
     async execute(conn, msg, args, from) {
       try {
