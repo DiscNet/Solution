@@ -3,7 +3,7 @@ const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
 const { normalizeYoutubeList } = require("../../functions/youtubeResult");
-const { sendInteractiveMessage } = require("gifted-btns");
+const { generateWAMessageFromContent } = require("@whiskeysockets/baileys");
 
 function botName() {
   return String(config.botName || "Bot")
@@ -35,7 +35,58 @@ async function searchYoutube(query) {
     text: query,
   }, { timeout: 30000 });
 
-  return normalizeYoutubeList(data, tokitoApi.list).slice(0, 8);
+  return normalizeYoutubeList(data, tokitoApi.list).slice(0, 10);
+}
+
+async function sendNativeList(conn, msg, from, query, results) {
+  const prefix = config.prefix || ".";
+  const rows = buildRows(results, prefix);
+
+  const interactiveMessage = {
+    body: {
+      text:
+        "🔎 *YOUTUBE SEARCH — " + query + "*\n" +
+        "📊 Resultados: " + results.length + "\n\n" +
+        "Toque no botão abaixo para escolher um vídeo.",
+    },
+    footer: {
+      text: botName(),
+    },
+    nativeFlowMessage: {
+      buttons: [
+        {
+          name: "single_select",
+          buttonParamsJson: JSON.stringify({
+            title: "🎬 Ver resultados",
+            sections: [
+              {
+                title: "📹 Vídeos encontrados",
+                highlight_label: "YouTube",
+                rows,
+              },
+            ],
+          }),
+        },
+        {
+          name: "quick_reply",
+          buttonParamsJson: JSON.stringify({
+            display_text: "🎵 Áudio do 1º",
+            id: prefix + "play " + results[0].url,
+          }),
+        },
+      ],
+    },
+  };
+
+  const out = generateWAMessageFromContent(from, {
+    interactiveMessage,
+  }, {
+    quoted: createStatusQuoted(msg),
+  });
+
+  return conn.relayMessage(from, out.message, {
+    messageId: out.key.id,
+  });
 }
 
 module.exports = {
@@ -44,7 +95,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytsearch termo",
-  description: "Pesquisa vídeos no YouTube e mostra os resultados em uma lista",
+  description: "Pesquisa vídeos no YouTube e mostra uma lista interativa",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -64,57 +115,21 @@ module.exports = {
       }).catch(() => {});
 
       const results = await searchYoutube(query);
+
       if (!results.length) {
         return conn.sendMessage(from, {
           text: "❌ Nenhum resultado encontrado para *" + query + "*.",
         }, { quoted: createStatusQuoted(msg) });
       }
 
-      const rows = buildRows(results, prefix);
-
-      await sendInteractiveMessage(conn, from, {
-        text:
-          "🔎 *YOUTUBE SEARCH — " + query + "*\n" +
-          "📊 Resultados: " + results.length + "\n\n" +
-          "📌 Toque no botão abaixo e escolha um vídeo:",
-        footer: botName(),
-        contextInfo: {
-          forwardingScore: 1,
-          isForwarded: true,
-          forwardedNewsletterMessageInfo: {
-            newsletterJid: "120363426698503859@newsletter",
-            newsletterName: botName(),
-            serverMessageId: 116,
-          },
-        },
-        interactiveButtons: [
-          {
-            name: "single_select",
-            buttonParamsJson: JSON.stringify({
-              title: "🎬 Resultados",
-              sections: [
-                {
-                  title: "📹 Vídeos encontrados",
-                  rows,
-                },
-              ],
-            }),
-          },
-          {
-            name: "quick_reply",
-            buttonParamsJson: JSON.stringify({
-              display_text: "🎵 Áudio do 1º",
-              id: prefix + "play " + results[0].url,
-            }),
-          },
-        ],
-      }, { quoted: createStatusQuoted(msg) });
+      await sendNativeList(conn, msg, from, query, results);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
       console.error("[YTSEARCH]", error?.message || error);
+
       await conn.sendMessage(from, {
         text: tokitoApi.userError(error, "Não foi possível pesquisar no YouTube."),
       }, { quoted: createStatusQuoted(msg) });
@@ -124,5 +139,6 @@ module.exports = {
   _internals: {
     buildRows,
     searchYoutube,
+    sendNativeList,
   },
 };
