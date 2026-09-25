@@ -146,8 +146,8 @@ async function sendMines(conn, msg, from, game, finalText = "") {
 const commands = [
   {
     name: "adivinhepalavra",
-    aliases: ["guessword"],
-    menuCategory: "Jogos",
+    aliases: ["adivinhe", "guessword"],
+    menuCategory: "Brincadeiras",
     menuSection: "Tokito API",
     usage: "adivinhepalavra [palavra|desistir]",
     description: "Adivinhe uma palavra de 5 letras usando o canvas da Tokito API",
@@ -326,7 +326,7 @@ const commands = [
   },
 ];
 
-module.exports = commands;
+module.exports = commands.filter(command => command.name === "adivinhepalavra");
 module.exports._test = {
   normalize,
   adivinheStatus,
