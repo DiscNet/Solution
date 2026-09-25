@@ -7,6 +7,7 @@ function imageUrls(data) {
   const items = tokitoApi.list(data);
   const urls = [];
   for (const item of items) {
+    if (typeof item === "string" && /^https?:\/\//i.test(item) && !urls.includes(item)) urls.push(item);
     const candidates = [
       item?.image, item?.imagem, item?.url, item?.link, item?.src,
       item?.thumbnail, item?.thumb, item?.media?.url, item?.images?.[0]?.url,
