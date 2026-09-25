@@ -231,7 +231,7 @@ module.exports = {
         }
       } catch (apiError) {
         const info = tokitoApi.errorInfo(apiError);
-        console.warn("[PING TOKITO]", info.status || "-", info.message);
+        console.warn("[PING API]", info.status || "-", info.message);
       }
 
       // Exatamente UM envio: usa o canvas quando disponível e texto como fallback.
