@@ -12,7 +12,7 @@ module.exports = [
     menuCategory: "Downloads",
     menuSection: "YouTube",
     usage: "playdoc música ou link",
-    description: "Baixa áudio do YouTube como documento pela Tokito API",
+    description: "Baixa áudio do YouTube como documento pela API",
     async execute(conn, msg, args, from) {
       const input = args.join(" ").trim();
       if (!input) return conn.sendMessage(from, { text: "❌ Uso: .playdoc <música ou link>" }, { quoted: createStatusQuoted(msg) });
@@ -36,7 +36,7 @@ module.exports = [
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO PLAYDOC]", info.status || "-", info.message);
+        console.error("[API PLAYDOC]", info.status || "-", info.message);
         await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível gerar o documento de áudio.") }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -47,7 +47,7 @@ module.exports = [
     menuCategory: "Downloads",
     menuSection: "TikTok",
     usage: "tiktokfoto link",
-    description: "Baixa fotos de publicação do TikTok pela Tokito API",
+    description: "Baixa fotos de publicação do TikTok pela API",
     async execute(conn, msg, args, from) {
       const input = String(args[0] || "").trim();
       if (!input) return conn.sendMessage(from, { text: "❌ Uso: .tiktokfoto <link>" }, { quoted: createStatusQuoted(msg) });
@@ -68,7 +68,7 @@ module.exports = [
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO TIKTOK FOTO]", info.status || "-", info.message);
+        console.error("[API TIKTOK FOTO]", info.status || "-", info.message);
         await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível baixar as fotos desse TikTok.") }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -79,7 +79,7 @@ module.exports = [
     menuCategory: "Brincadeiras",
     menuSection: "Imagens",
     usage: "metadinha",
-    description: "Obtém uma metadinha pela Tokito API",
+    description: "Obtém uma metadinha pela API",
     async execute(conn, msg, args, from) {
       try {
         const result = await tokitoApi.buffer("/api/metadinha", {}, { timeout: 60000 });
@@ -94,7 +94,7 @@ module.exports = [
         await conn.sendMessage(from, { image: { url: image }, caption: "💞 *METADINHA*" }, { quoted: createStatusQuoted(msg) });
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO METADINHA]", info.status || "-", info.message);
+        console.error("[API METADINHA]", info.status || "-", info.message);
         await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível gerar a metadinha.") }, { quoted: createStatusQuoted(msg) });
       }
     },
