@@ -2,6 +2,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 
 const ping = require("../commands/outros/ping");
+const tokitoApi = require("../functions/tokitoApi");
 
 test("ping command has menu metadata", () => {
   assert.equal(ping.name, "ping");
@@ -60,4 +61,53 @@ test("ping sends exactly one complete message with processing as the primary met
   );
   assert.equal(calls[0].content.edit, undefined);
   assert.equal(calls[0].content.react, undefined);
+});
+
+
+test("ping usa a foto de perfil do solicitante como avatar e fundo do canvas", async () => {
+  const originalBuffer = tokitoApi.buffer;
+  const profileUrl = "https://example.com/perfil-usuario.jpg";
+  let capturedParams = null;
+
+  tokitoApi.buffer = async (route, params) => {
+    assert.equal(route, "/canvas/ping2");
+    capturedParams = params;
+    return {
+      buffer: Buffer.from("fake-image"),
+      contentType: "image/png",
+    };
+  };
+
+  const from = "120363000000000000@g.us";
+  const msg = {
+    key: {
+      remoteJid: from,
+      participant: "5511999999999@s.whatsapp.net",
+      id: "incoming-ping-profile",
+    },
+    pushName: "Usuário Teste",
+  };
+
+  const sent = [];
+  const conn = {
+    async profilePictureUrl(jid, type) {
+      assert.equal(jid, "5511999999999@s.whatsapp.net");
+      assert.equal(type, "image");
+      return profileUrl;
+    },
+    async sendMessage(jid, content, options) {
+      sent.push({ jid, content, options });
+      return { key: { remoteJid: jid, fromMe: true, id: "ping-profile-out" } };
+    },
+  };
+
+  try {
+    await ping.execute(conn, msg, [], from);
+    assert.equal(capturedParams.avatar, profileUrl);
+    assert.equal(capturedParams.fundo, profileUrl);
+    assert.equal(sent.length, 1);
+    assert.ok(Buffer.isBuffer(sent[0].content.image));
+  } finally {
+    tokitoApi.buffer = originalBuffer;
+  }
 });
