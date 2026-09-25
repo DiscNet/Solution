@@ -1,4 +1,5 @@
 const sharp = require("sharp");
+const config = require("../config/config");
 const { generateWelcomeCard } = require("./welcomeCard");
 const tokitoApi = require("./tokitoApi");
 const contactNameCache = require("./contactNameCache");
@@ -318,7 +319,7 @@ async function createGroupWelcomeBanner(conn, options = {}) {
       }, { timeout: 90000 });
       if (apiCard.buffer?.length) image = apiCard.buffer;
     } catch (error) {
-      console.log("⚠️ Welcome: Tokito API indisponível, usando renderer local:", error.message);
+      console.log("⚠️ Welcome: API indisponível, usando renderer local:", error.message);
     }
   }
 
@@ -359,7 +360,7 @@ function createWelcomeQuoted(groupName) {
           "BEGIN:VCARD\n" +
           "VERSION:3.0\n" +
           "FN:" + groupName + "\n" +
-          "ORG:LukaModzz;\n" +
+          "ORG:" + String(config.botName || "Bot").replace(/[\r\n;:]/g, " ") + ";\n" +
           "TEL;type=CELL;type=VOICE;waid=13135550002:556384673123\n" +
           "END:VCARD",
       },
@@ -390,7 +391,7 @@ async function sendGroupWelcomeBanner(conn, options = {}) {
       isForwarded: true,
       forwardedNewsletterMessageInfo: {
         newsletterJid: "120363426698503859@newsletter",
-        newsletterName: options.botName || "LukaModzz",
+        newsletterName: options.botName || config.botName || "Bot",
         serverMessageId: 116,
       },
     },
