@@ -108,7 +108,7 @@ test("todos os novos comandos carregam no registry sem erro de módulo", () => {
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
     "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
     "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "tokitoapi", "darkgreen", "neonglitch", "galaxy",
-    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos"
+    "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos", "casal", "casalgif", "mines"
   ];
   for (const name of required) assert.ok(built.registry[name], name);
   assert.ok(built.registry.printsite, "printsite");
@@ -183,7 +183,9 @@ test("pacote de logos Tokito V10 registra os endpoints de arte", () => {
     "galaxy",
     "naruto",
     "amongus",
-    "comic3d"
+    "comic3d",
+    "logocartoon",
+    "logodesfoque"
   ]) {
     assert.ok(names.includes(name), name);
   }
