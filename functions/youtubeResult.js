@@ -119,6 +119,16 @@ function normalizeYoutubeItem(item = {}) {
   };
 }
 
+function infoText(video = {}) {
+  return [
+    "🎬 *" + textValue(video.title, "Vídeo do YouTube") + "*",
+    video.channel ? "👤 " + textValue(video.channel, "") : "",
+    video.duration ? "⏱️ " + textValue(video.duration, "") : "",
+    video.views ? "👁️ " + textValue(video.views, "") : "",
+    video.url ? "🔗 " + String(video.url) : "",
+  ].filter(Boolean).join("\n");
+}
+
 function normalizeYoutubeList(data, listFn) {
   const source = typeof listFn === "function" ? listFn(data) : [];
   return source.map(normalizeYoutubeItem).filter(item => item.url);
