@@ -65,7 +65,7 @@ test("profileCardV2 preserva os elementos visuais centrais do Card 2.0", () => {
   assert.match(overlay, /WHATSAPP/);
 });
 
-test("comando perfil usa o renderer Card 2.0 local e não a Tokito API", () => {
+test("comando perfil usa Tokito canvas com renderer local como fallback", () => {
   assert.equal(perfil.name, "perfil");
   assert.ok(perfil.aliases.includes("profile"));
 
@@ -74,9 +74,9 @@ test("comando perfil usa o renderer Card 2.0 local e não a Tokito API", () => {
     "utf8"
   );
 
+  assert.match(source, /tokitoApi/);
+  assert.match(source, /\/canvas\/perfil/);
   assert.match(source, /generateProfileCardV2/);
-  assert.doesNotMatch(source, /tokito-apis\.com\.br/i);
-  assert.doesNotMatch(source, /tokitoApi/);
 });
 
 test("perfil reconhece a mesma pessoa entre phoneNumber e LID", () => {
