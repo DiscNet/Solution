@@ -1,6 +1,6 @@
 // Menu: Downloads - YouTube | Comando: ytmp4
 const { createStatusQuoted } = require("../../functions/statusCard");
-const tokitoApi = require("../../functions/tokitoApi");
+const { resolveYoutubeVideo, sendYoutubeVideo } = require("../../functions/youtubeResult");
 
 module.exports = {
   name: "ytmp4",
@@ -8,21 +8,34 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytmp4 link ou pesquisa",
-  description: "Baixa vídeo do YouTube pela API",
+  description: "Baixa vídeo do YouTube",
+
   async execute(conn, msg, args, from) {
-    const target = args.join(" ").trim();
-    if (!target) return conn.sendMessage(from, { text: "❌ Uso: .ytmp4 <link ou pesquisa>" }, { quoted: createStatusQuoted(msg) });
+    const query = args.join(" ").trim();
+
+    if (!query) {
+      return conn.sendMessage(from, {
+        text: "❌ Uso: .ytmp4 <link ou pesquisa>",
+      }, { quoted: createStatusQuoted(msg) });
+    }
 
     try {
-      await conn.sendMessage(from, { react: { text: "📹", key: msg.key } }).catch(() => {});
       await conn.sendMessage(from, {
-        video: { url: tokitoApi.url("/api/youtube-video", { q: target }) },
-        mimetype: "video/mp4",
-      }, { quoted: createStatusQuoted(msg) });
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
+        react: { text: "📹", key: msg.key },
+      }).catch(() => {});
+
+      const video = await resolveYoutubeVideo(query);
+      await sendYoutubeVideo(conn, msg, from, video?.url || query);
+
+      await conn.sendMessage(from, {
+        react: { text: "✅", key: msg.key },
+      }).catch(() => {});
     } catch (error) {
-      console.error("[YTMP4]", error.message);
-      await conn.sendMessage(from, { text: "❌ Não foi possível baixar o vídeo pela API." }, { quoted: createStatusQuoted(msg) });
+      console.error("[YTMP4]", error?.message || error);
+
+      await conn.sendMessage(from, {
+        text: "❌ Não foi possível baixar o vídeo.",
+      }, { quoted: createStatusQuoted(msg) });
     }
   },
 };
