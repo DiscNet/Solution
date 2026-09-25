@@ -3,100 +3,39 @@ const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
 const { normalizeYoutubeList } = require("../../functions/youtubeResult");
-const { generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
+const { sendInteractiveMessage } = require("gifted-btns");
 
 function botName() {
-  return String(config.botName || "Bot").replace(/[\x00-\x1F\x7F]/g, "").trim() || "Bot";
+  return String(config.botName || "Bot")
+    .replace(/[\x00-\x1F\x7F]/g, "")
+    .trim() || "Bot";
 }
 
-function quickReply(text, id) {
-  return {
-    name: "quick_reply",
-    buttonParamsJson: JSON.stringify({
-      display_text: text,
-      id,
-    }),
-  };
+function buildRows(results, prefix) {
+  return results.map((video, index) => {
+    const title = String(video.title || "Sem título");
+    const shortTitle = title.length > 48 ? title.slice(0, 45) + "..." : title;
+    const details = [
+      video.duration ? "⏱️ " + video.duration : "",
+      video.channel ? "👤 " + video.channel : "",
+    ].filter(Boolean).join(" · ");
+
+    return {
+      id: prefix + "ytplay " + video.url,
+      title: "🎬 " + (index + 1) + ". " + shortTitle,
+      description: details || "Abrir opções de download",
+    };
+  });
 }
 
-async function sendCarousel(conn, msg, from, results, query) {
-  const prefix = config.prefix || ".";
-  const cards = [];
+async function searchYoutube(query) {
+  const data = await tokitoApi.get("/api/youtube-search", {
+    query,
+    q: query,
+    text: query,
+  }, { timeout: 30000 });
 
-  for (let index = 0; index < results.length; index++) {
-    const item = results[index];
-    let header;
-
-    if (item.thumbnail) {
-      try {
-        const media = await prepareWAMessageMedia(
-          { image: { url: item.thumbnail } },
-          { upload: conn.waUploadToServer }
-        );
-        header = {
-          hasMediaAttachment: true,
-          imageMessage: media.imageMessage,
-        };
-      } catch {}
-    }
-
-    const lines = [
-      "🎬 *" + item.title + "*",
-      "👤 " + item.channel,
-      "⏱️ " + item.duration,
-      item.views ? "👁️ " + item.views : "",
-      "📌 " + (index + 1) + "/" + results.length,
-    ].filter(Boolean);
-
-    cards.push({
-      ...(header ? { header } : {}),
-      body: { text: lines.join("\n") },
-      footer: { text: botName() },
-      nativeFlowMessage: {
-        buttons: [
-          quickReply("🎵 Áudio", prefix + "ytmp3 " + item.url),
-          quickReply("🎬 Vídeo", prefix + "ytmp4 " + item.url),
-          quickReply("📄 Documento", prefix + "playdoc " + item.url),
-        ],
-      },
-    });
-  }
-
-  if (!cards.length) throw new Error("Nenhum card foi preparado.");
-
-  const out = generateWAMessageFromContent(from, {
-    interactiveMessage: {
-      body: {
-        text: "🔎 *YOUTUBE — " + query + "*\n\nDeslize para escolher um resultado.",
-      },
-      footer: { text: botName() },
-      carouselMessage: {
-        cards,
-        messageVersion: 1,
-        carouselCardType: 1,
-      },
-    },
-  }, { quoted: createStatusQuoted(msg) });
-
-  return conn.relayMessage(from, out.message, { messageId: out.key.id });
-}
-
-async function sendTextFallback(conn, msg, from, results, query) {
-  const prefix = config.prefix || ".";
-  const text = results.map((item, index) => [
-    (index + 1) + ". *" + item.title + "*",
-    "👤 " + item.channel,
-    "⏱️ " + item.duration,
-    item.views ? "👁️ " + item.views : "",
-    "🔗 " + item.url,
-    "🎵 " + prefix + "ytmp3 " + item.url,
-    "🎬 " + prefix + "ytmp4 " + item.url,
-    "📄 " + prefix + "playdoc " + item.url,
-  ].filter(Boolean).join("\n")).join("\n\n");
-
-  return conn.sendMessage(from, {
-    text: "🔎 *YOUTUBE — " + query + "*\n\n" + text,
-  }, { quoted: createStatusQuoted(msg) });
+  return normalizeYoutubeList(data, tokitoApi.list).slice(0, 8);
 }
 
 module.exports = {
@@ -105,12 +44,17 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytsearch termo",
-  description: "Pesquisa vídeos no YouTube e mostra opções de download",
+  description: "Pesquisa vídeos no YouTube e mostra os resultados em uma lista",
+
   async execute(conn, msg, args, from) {
+    const prefix = config.prefix || ".";
     const query = args.join(" ").trim();
+
     if (!query) {
       return conn.sendMessage(from, {
-        text: "❌ Uso: .ytsearch <termo>",
+        text:
+          "❌ *Digite o nome do vídeo.*\n\n" +
+          "📌 Exemplo: " + prefix + "ytsearch matue 1993",
       }, { quoted: createStatusQuoted(msg) });
     }
 
@@ -119,27 +63,66 @@ module.exports = {
         react: { text: "🔎", key: msg.key },
       }).catch(() => {});
 
-      const data = await tokitoApi.get("/api/youtube-search", { query });
-      const results = normalizeYoutubeList(data, tokitoApi.list).slice(0, 5);
-
-      if (!results.length) throw new Error("Nenhum resultado.");
-
-      try {
-        await sendCarousel(conn, msg, from, results, query);
-      } catch (carouselError) {
-        console.warn("[YTSEARCH CAROUSEL]", carouselError.message);
-        await sendTextFallback(conn, msg, from, results, query);
+      const results = await searchYoutube(query);
+      if (!results.length) {
+        return conn.sendMessage(from, {
+          text: "❌ Nenhum resultado encontrado para *" + query + "*.",
+        }, { quoted: createStatusQuoted(msg) });
       }
+
+      const rows = buildRows(results, prefix);
+
+      await sendInteractiveMessage(conn, from, {
+        text:
+          "🔎 *YOUTUBE SEARCH — " + query + "*\n" +
+          "📊 Resultados: " + results.length + "\n\n" +
+          "📌 Toque no botão abaixo e escolha um vídeo:",
+        footer: botName(),
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: botName(),
+            serverMessageId: 116,
+          },
+        },
+        interactiveButtons: [
+          {
+            name: "single_select",
+            buttonParamsJson: JSON.stringify({
+              title: "🎬 Resultados",
+              sections: [
+                {
+                  title: "📹 Vídeos encontrados",
+                  rows,
+                },
+              ],
+            }),
+          },
+          {
+            name: "quick_reply",
+            buttonParamsJson: JSON.stringify({
+              display_text: "🎵 Áudio do 1º",
+              id: prefix + "play " + results[0].url,
+            }),
+          },
+        ],
+      }, { quoted: createStatusQuoted(msg) });
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
-      console.error("[YTSEARCH]", error.message);
+      console.error("[YTSEARCH]", error?.message || error);
       await conn.sendMessage(from, {
         text: tokitoApi.userError(error, "Não foi possível pesquisar no YouTube."),
       }, { quoted: createStatusQuoted(msg) });
     }
   },
-  _internals: { sendCarousel, sendTextFallback },
+
+  _internals: {
+    buildRows,
+    searchYoutube,
+  },
 };
