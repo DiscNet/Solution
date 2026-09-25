@@ -23,6 +23,7 @@ const freeFirePack = require("../commands/outros/tokito-freefire");
 const { loadCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
 const youtubeResult = require("../functions/youtubeResult");
 const youtubeMedia = require("../functions/youtubeMedia");
+const messageText = require("../functions/messageText");
 
 test("Tokito API client centraliza base URL e chave", () => {
   const old = process.env.TOKITO_API;
@@ -216,6 +217,40 @@ test("ytsearch usa lista single_select pelo mesmo wrapper do menu", () => {
   assert.match(source, /prefix \+ "ytplay " \+ video\.url/);
   assert.match(source, /sendFallback/);
   assert.match(source, /\[YTSEARCH LIST\]/);
+});
+
+test("single_select do ytsearch vira comando mesmo dentro de viewOnce", () => {
+  const msg = {
+    message: {
+      viewOnceMessage: {
+        message: {
+          interactiveResponseMessage: {
+            nativeFlowResponseMessage: {
+              paramsJson: JSON.stringify({
+                selected_row_id: ".ytplay https://www.youtube.com/watch?v=abcdefghijk",
+              }),
+            },
+          },
+        },
+      },
+    },
+  };
+
+  assert.equal(
+    messageText.extractMessageText(msg),
+    ".ytplay https://www.youtube.com/watch?v=abcdefghijk"
+  );
+  assert.equal(messageText.isInteractiveReply(msg), true);
+  assert.equal(
+    messageText.interactiveReplyId(msg),
+    ".ytplay https://www.youtube.com/watch?v=abcdefghijk"
+  );
+
+  const startBotSource = fs.readFileSync(
+    path.join(__dirname, "..", "core", "startBot.js"),
+    "utf8"
+  );
+  assert.match(startBotSource, /!interactiveReply && isAntiAtivo\(from, 'link'\)/);
 });
 
 test("ytplay usa botões nativos de áudio vídeo e documento", () => {
