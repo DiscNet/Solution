@@ -108,7 +108,8 @@ module.exports = {
       }
       return sendQuestion(conn, msg, from, r);
     } catch (error) {
-      const info = tokitoApi.errorInfo(error);\n      console.error("[TOKITO AKINATOR]", info.status || "-", info.message);
+      const info = tokitoApi.errorInfo(error);
+      console.error("[TOKITO AKINATOR]", info.status || "-", info.message);
       return conn.sendMessage(from, { text: tokitoApi.userError(error, "Akinator indisponível.") }, { quoted: createStatusQuoted(msg) });
     }
   },
