@@ -2,16 +2,25 @@
 const config = require("../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/tokitoApi");
-const { normalizeYoutubeList, sendYoutubeSearchList } = require("../../functions/youtubeResult");
+const { normalizeYoutubeList, sendYoutubeList } = require("../../functions/youtubeResult");
+const { searchVideos } = require("../../functions/youtubeClient");
 
 async function searchYoutube(query) {
-  const data = await tokitoApi.get("/api/youtube-search", {
-    query,
-    q: query,
-    text: query,
-  }, { timeout: 30000 });
+  try {
+    const data = await tokitoApi.get("/api/youtube-search", {
+      query,
+      q: query,
+      text: query,
+    }, { timeout: 30000 });
 
-  return normalizeYoutubeList(data, tokitoApi.list).slice(0, 10);
+    const results = normalizeYoutubeList(data, tokitoApi.list);
+    if (results.length) return results.slice(0, 10);
+  } catch (error) {
+    console.warn("[YTSEARCH API]", error?.message || error);
+  }
+
+  const fallback = await searchVideos(query, 10).catch(() => []);
+  return fallback.slice(0, 10);
 }
 
 module.exports = {
@@ -20,7 +29,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "YouTube",
   usage: "ytsearch termo",
-  description: "Pesquisa vídeos no YouTube e mostra os resultados em lista interativa",
+  description: "Pesquisa vídeos no YouTube e mostra uma lista interativa",
 
   async execute(conn, msg, args, from) {
     const prefix = config.prefix || ".";
@@ -40,19 +49,23 @@ module.exports = {
       }).catch(() => {});
 
       const results = await searchYoutube(query);
+
       if (!results.length) {
-        throw new Error("Nenhum resultado encontrado.");
+        return conn.sendMessage(from, {
+          text: "❌ Nenhum resultado encontrado para *" + query + "*.",
+        }, { quoted: createStatusQuoted(msg) });
       }
 
-      await sendYoutubeSearchList(conn, msg, from, results, query);
+      await sendYoutubeList(conn, msg, from, results, query);
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
       console.error("[YTSEARCH]", error?.message || error);
+
       await conn.sendMessage(from, {
-        text: tokitoApi.userError(error, "Não foi possível pesquisar no YouTube."),
+        text: "❌ Não foi possível pesquisar no YouTube.",
       }, { quoted: createStatusQuoted(msg) });
     }
   },
