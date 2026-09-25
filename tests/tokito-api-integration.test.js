@@ -209,6 +209,40 @@ test("ytsearch usa carrossel com botões por resultado", () => {
   assert.match(source, /playdoc/);
 });
 
+test("ytsearch usa lista single_select como no fluxo antigo", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytsearch.js"),
+    "utf8"
+  );
+  assert.match(source, /sendInteractiveMessage/);
+  assert.match(source, /name: "single_select"/);
+  assert.match(source, /title: "🎬 Resultados"/);
+  assert.match(source, /prefix \+ "ytplay " \+ video\.url/);
+});
+
+test("play envia áudio diretamente pelo endpoint youtube-audio", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "play.js"),
+    "utf8"
+  );
+  assert.match(source, /\/api\/youtube-audio/);
+  assert.match(source, /audio: \{ url: audioUrl \}/);
+  assert.match(source, /mimetype: "audio\/mpeg"/);
+  assert.doesNotMatch(source, /sendButtons/);
+});
+
+test("ytplay mostra botões de áudio vídeo e documento", () => {
+  const source = fs.readFileSync(
+    path.join(__dirname, "..", "commands", "dws", "ytplay.js"),
+    "utf8"
+  );
+  assert.match(source, /sendButtons/);
+  assert.match(source, /text: "🎵 Áudio"/);
+  assert.match(source, /text: "📹 Vídeo"/);
+  assert.match(source, /text: "📄 Documento"/);
+  assert.match(source, /prefix \+ "play " \+ video\.url/);
+});
+
 test("extras Tokito incluem playdoc TikTok foto e metadinha", () => {
   const names = extraPack.map(x => x.name);
   assert.ok(names.includes("playdoc"));
