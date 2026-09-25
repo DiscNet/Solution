@@ -2,6 +2,7 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
 const config = require("../../config/config");
 const { getMessageProfilePicture } = require("../../functions/profilePicture");
+const tokitoApi = require("../../functions/tokitoApi");
 
 const forcaGames = new Map();
 const FORCA_TTL = 15 * 60 * 1000;
@@ -440,6 +441,37 @@ function forcaStatus(game) {
   return `🧩 *FORCA*\n\nPalavra: ${forcaMask(game)}\nDica: ${game.hint}\nErros: ${game.errors}/${FORCA_MAX_ERRORS}\nLetras erradas: ${wrong}\n\nUse ${prefix()}forca <letra> ou tente a palavra inteira.`;
 }
 
+async function sendForcaCard(conn, from, msg, game, extra = "") {
+  const caption = [forcaStatus(game), extra].filter(Boolean).join("\n\n");
+  try {
+    const card = await tokitoApi.buffer("/canvas/forca", {
+      palavra: forcaMask(game),
+      tema: "Palavra",
+      dica: game.hint,
+      erros: game.errors,
+      max: FORCA_MAX_ERRORS,
+      fundo: "https://telegra.ph/file/b5427ea4b8701bc47e751.jpg",
+      t: Date.now(),
+    }, {
+      timeout: 60000,
+      headers: { accept: "image/*,*/*" },
+    });
+
+    if (!card.buffer?.length || !/image/i.test(card.contentType)) {
+      throw new Error("Canvas de forca inválido.");
+    }
+
+    return send(conn, from, msg, {
+      image: card.buffer,
+      caption,
+    });
+  } catch (error) {
+    const info = tokitoApi.errorInfo(error);
+    console.warn("[FORCA TOKITO]", info.status || "-", info.message);
+    return send(conn, from, msg, { text: caption });
+  }
+}
+
 commands.push(baseCommand(
   "forca", "Jogos rápidos", "forca [letra|palavra|novo|desistir]", "jogo da forca por mensagens, sem desenho gráfico",
   async (conn, msg, args, from) => {
@@ -458,12 +490,12 @@ commands.push(baseCommand(
         touchedAt: Date.now()
       };
       forcaGames.set(from, game);
-      return send(conn, from, msg, { text: `${forcaStatus(game)}\n\n💡 Um novo jogo começou!` });
+      return sendForcaCard(conn, from, msg, game, "💡 Um novo jogo começou!");
     }
 
     if (!inputRaw) {
       game.touchedAt = Date.now();
-      return send(conn, from, msg, { text: forcaStatus(game) });
+      return sendForcaCard(conn, from, msg, game);
     }
 
     if (input === "desistir" || input === "parar") {
@@ -477,7 +509,7 @@ commands.push(baseCommand(
 
     if (input.length === 1) {
       if (game.guessed.has(input) || game.wrong.has(input)) {
-        return send(conn, from, msg, { text: `ℹ️ Você já tentou a letra *${input.toUpperCase()}*.\n\n${forcaStatus(game)}` });
+        return sendForcaCard(conn, from, msg, game, `ℹ️ Você já tentou a letra *${input.toUpperCase()}*.`);
       }
       if (game.word.includes(input)) game.guessed.add(input);
       else {
@@ -494,16 +526,16 @@ commands.push(baseCommand(
     if (won) {
       const answer = game.word.toUpperCase();
       forcaGames.delete(from);
-      return send(conn, from, msg, { text: `🎉 *ACERTOU!* A palavra era *${answer}*.` });
+      return sendForcaCard(conn, from, msg, game, `🎉 *ACERTOU!* A palavra era *${answer}*.`);
     }
 
     if (game.errors >= FORCA_MAX_ERRORS) {
       const answer = game.word.toUpperCase();
       forcaGames.delete(from);
-      return send(conn, from, msg, { text: `⌛ Acabaram as tentativas. A palavra era *${answer}*.` });
+      return sendForcaCard(conn, from, msg, game, `⌛ Acabaram as tentativas. A palavra era *${answer}*.`);
     }
 
-    return send(conn, from, msg, { text: forcaStatus(game) });
+    return sendForcaCard(conn, from, msg, game);
   }
 ));
 
@@ -513,6 +545,7 @@ module.exports._test = {
   resolvePair,
   normalizeGuess,
   forcaMask,
+  sendForcaCard,
   truths,
   dares,
   neverHaveI,
