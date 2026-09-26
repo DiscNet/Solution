@@ -24,7 +24,7 @@ const { handlePrivateInbox } = require("../events/privateInbox");
 const contactNameCache = require("../functions/contactNameCache");
 const {
   normalizeCommandName,
-  loadCommandModules,
+  loadProjectCommandModules,
   buildCommandRegistry,
   replaceRegistry,
   formatRegistryIssue
@@ -338,8 +338,7 @@ let comandosFalhos = [];
 let conflitosComandos = [];
 
 function reloadCommandsFromDisk() {
-  const commandsPath = path.join(ROOT_DIR, "commands");
-  const { records, errors } = loadCommandModules(commandsPath, { clearCache: true });
+  const { records, errors } = loadProjectCommandModules(ROOT_DIR, { clearCache: true });
   const { registry, collisions } = buildCommandRegistry(records);
 
   replaceRegistry(commands, registry);
