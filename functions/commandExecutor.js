@@ -4,7 +4,7 @@ const runtimeLogger = require("./runtimeLogger");
 const modLog = require("./modLog");
 const ui = require("./ui");
 const policy = require("./adminPolicy");
-const rpgIdentity = require("./rpgIdentity");
+const kxlynErrors = require("../DADOS_KXLYN/mensagens/erros");
 
 function senderFromMessage(msg) {
   return msg?.key?.participantAlt || msg?.key?.participant || msg?.key?.remoteJidAlt || msg?.key?.remoteJid || "";
@@ -39,12 +39,6 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
       return true;
     }
 
-    // Compatibilidade Baileys 7: comandos RPG antigos persistem o jogador
-    // pela chave participant. Quando participant/participantAlt alternam entre
-    // LID e número, reapontamos participant para a identidade já registrada.
-    if (command.menuCategory === "RPG") {
-      rpgIdentity.normalizeMessageIdentity(msg, from);
-    }
 
     const result = await command.execute(conn, msg, args, from, axiosInstance, requestedName || name);
     if (result === false) { policy.record(name, "denied", performance.now() - started); return true; }
@@ -90,7 +84,7 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
       await ui.errorReply(
         conn,
         msg,
-        `❌ ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇʟ ᴇxᴇᴄᴜᴛᴀʀ ᴏ ᴄᴏᴍᴀɴᴅᴏ.\n\n• ᴄᴏ́ᴅɪɢᴏ: ${code}`,
+        kxlynErrors.commandExecution(code),
         { from }
       ).catch(() => {});
     }
