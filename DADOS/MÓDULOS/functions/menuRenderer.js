@@ -6,44 +6,6 @@ const catalog = require("./menuCatalog");
 const config = require("../../config/config");
 const menus = require("../mensagens/menus");
 
-// Mantém a arte do submenu e divide apenas legendas grandes demais para mídia.
-function splitCaption(value, limit = 3500) {
-  const chunks = [];
-  let current = "";
-  for (const line of String(value).split("\n")) {
-    if (current && current.length + line.length + 1 > limit) {
-      chunks.push(current);
-      current = "";
-    }
-    current += (current ? "\n" : "") + line;
-  }
-  if (current) chunks.push(current);
-  return chunks;
-}
-
-function getFraseFilosofica() {
-  try {
-    const file = path.join(__dirname, "..", "..", "database", "frases.json");
-    if (!fs.existsSync(file)) return "";
-
-    const data = JSON.parse(fs.readFileSync(file, "utf8"));
-    const frases = Array.isArray(data.frases) ? data.frases : [];
-    if (!frases.length) return "";
-
-    const item = frases[Math.floor(Math.random() * frases.length)];
-
-    return (
-      "\n\n╭─🪐〔 𝙵𝚁𝙰𝚂𝙴 𝙳𝙾 𝙳𝙸𝙰 〕🪐─╮\n" +
-      "┃ ✦ \"" + item.frase + "\"\n" +
-      "┃ ✦ — " + item.autor + "\n" +
-      "╰─🪐━━━━━━━━━━━━━🪐─╯"
-    );
-  } catch (error) {
-    console.error("Erro ao carregar frase do menu:", error.message);
-    return "";
-  }
-}
-
 function contextInfo() {
   return {
     forwardingScore: 1,
@@ -77,45 +39,28 @@ async function sendStyledMenu(
 ) {
   const prefix = config.prefix || ".";
 
-  const caption =
-    menus.header(title, prefix, page, pages) +
-    "\n" +
-    body +
-    (next
-      ? "\n\n╭─┄─🧊〔 𝙽𝙰𝚅𝙴𝙶𝙰𝙲̧𝙰̃𝙾 〕\n├̬⌑ؔ͟ " +
-        next +
-        "\n╰─┄─🧊"
-      : "") +
-    getFraseFilosofica();
+  // Cada categoria segue a mesma moldura do menu principal e é enviada
+  // em uma única mensagem, sem paginação ou blocos adicionais.
+  const caption = menus.header(title, prefix, page, pages) + "\n" + body;
 
   const img = imagePath(name);
   const quoted = createStatusQuoted(msg);
-  const chunks = splitCaption(caption);
 
-  if (fs.existsSync(img)) {
-    await conn.sendMessage(
-      from,
-      {
-        image: fs.readFileSync(img),
-        caption: chunks.shift(),
-        contextInfo: contextInfo(),
-      },
-      { quoted }
-    );
-  } else {
-    await conn.sendMessage(
-      from,
-      {
-        text: chunks.shift(),
-        contextInfo: contextInfo(),
-      },
-      { quoted }
-    );
-  }
+  // O arquivo local é preferido quando existir; caso contrário, todas as
+  // categorias usam exatamente a mesma arte remota do menu principal.
+  const image = fs.existsSync(img)
+    ? fs.readFileSync(img)
+    : { url: menus.IMAGE_URL };
 
-  for (const text of chunks) {
-    await conn.sendMessage(from, { text, contextInfo: contextInfo() });
-  }
+  await conn.sendMessage(
+    from,
+    {
+      image,
+      caption,
+      contextInfo: contextInfo(),
+    },
+    { quoted }
+  );
 
   await conn.sendMessage(from, {
     react: {
@@ -130,12 +75,13 @@ async function sendMainMenu(conn, msg, from) {
 
   if (isTextOnly(from)) {
     const img = imagePath("menugeral");
-    const image = fs.existsSync(img) ? fs.readFileSync(img) : null;
+    const image = fs.existsSync(img)
+      ? fs.readFileSync(img)
+      : { url: menus.IMAGE_URL };
     const caption = menus.textGeneral(prefix);
-    await conn.sendMessage(from,
-      image
-        ? { image, caption, contextInfo: contextInfo() }
-        : { text: caption, contextInfo: contextInfo() },
+    await conn.sendMessage(
+      from,
+      { image, caption, contextInfo: contextInfo() },
       { quoted: createStatusQuoted(msg) }
     );
     await conn.sendMessage(from, { react: { text: "🧊", key: msg.key } });
@@ -227,21 +173,17 @@ function createMenu(name, category, aliases = []) {
           return sendStyledMenu(conn, msg, from, {
             name,
             title: chosen || "Todos os comandos",
-            body:
-              "╭─┄─💎〔 𝚂𝙴𝙲̧𝙾̃𝙴𝚂 〕\n" +
-              "├̬⌑ؔ͟ 「🧊」Seção não encontrada.\n" +
-              "├̬⌑ؔ͟ 「🧊」Disponíveis: " +
-              available +
-              "\n╰─┄─💎",
+            body: menus.decorateCategory(
+              "Seção não encontrada.\nDisponíveis: " + available,
+              chosen || "Comandos"
+            ),
           });
         }
 
         return sendStyledMenu(conn, msg, from, {
           name,
           title: chosen || "Todos os comandos",
-          body: menus.decoratePage(
-            parts.join("\n")
-          ),
+          body: menus.decorateCategory(parts.join("\n"), chosen || "Comandos"),
         });
       } catch (error) {
         console.error("Erro no " + name + ":", error);
@@ -264,5 +206,6 @@ module.exports = {
   createMenu,
   index: prefix => menus.index(prefix, catalog),
   decoratePage: menus.decoratePage,
+  decorateCategory: menus.decorateCategory,
   sendMainMenu,
 };

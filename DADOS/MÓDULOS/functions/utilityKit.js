@@ -224,11 +224,11 @@ function parseDuration(value) {
   return ms;
 }
 
-function makeCommand({ name, aliases = [], section, usage, description, execute }) {
+function makeCommand({ name, aliases = [], section, usage, description, execute, menuCategory = "Utilidades" }) {
   return {
     name,
     aliases,
-    menuCategory: "Utilidades",
+    menuCategory,
     menuSection: section,
     usage,
     description: description || `Uso: .${usage}`,

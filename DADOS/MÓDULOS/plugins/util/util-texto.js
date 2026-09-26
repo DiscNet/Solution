@@ -183,6 +183,7 @@ const commands = [
   kit.makeCommand({
     name: "transcrever",
     aliases: ["totext", "transcricao", "audiotexto"],
+    menuCategory: "IA",
     section: "Áudio",
     usage: "transcrever (responda ao áudio)",
     description: "Transcreve áudio pela Tokito API",

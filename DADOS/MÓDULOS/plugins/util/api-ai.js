@@ -104,7 +104,7 @@ const commands = [
   }),
   command({
     name: "chatia",
-    aliases: ["assistenteia"],
+    aliases: ["ia", "assistenteia", "tokito-ia", "tokitoia"],
     route: "/api/tokito-ia",
     params: q => ({ texto: q }),
     description: "Conversa com a IA da API",

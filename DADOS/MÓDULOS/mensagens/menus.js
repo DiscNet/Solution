@@ -13,6 +13,7 @@ const routes = Object.freeze({
   Grupos: "menuadm",
   Dono: "menudono",
   Downloads: "menudws",
+  IA: "menuia",
   Alteradores: "menualterar",
   Logos: "menulogos",
   Figurinhas: "menusticker",
@@ -22,17 +23,18 @@ const routes = Object.freeze({
 });
 
 const menuImages = Object.freeze({
-  menuadm: "menuadm.jpg",
-  menudono: "menudono.jpg",
-  menurpg: "menurpg.jpg",
+  menuadm: "menu.jpg",
+  menudono: "menu.jpg",
+  menurpg: "menu.jpg",
   menucoins: "menu.jpg",
   menupokemon: "menu.jpg",
-  menudws: "menudws.jpg",
-  menualterar: "menualterar.jpg",
+  menudws: "menu.jpg",
+  menuia: "menu.jpg",
+  menualterar: "menu.jpg",
   menulogos: "menu.jpg",
-  menusticker: "menusticker.jpg",
-  menubn: "menubn.jpg",
-  menuoutros: "menuoutros.jpg",
+  menusticker: "menu.jpg",
+  menubn: "menu.jpg",
+  menuoutros: "menu.jpg",
   menugeral: "menu.jpg",
 });
 
@@ -133,6 +135,11 @@ function mainSections(prefix) {
           "menudws",
           "   『📥』𝗠𝗘𝗡𝗨 𝗗𝗢𝗪𝗡𝗟𝗢𝗔𝗗𝗦",
           "YouTube • TikTok • Instagram • mídia"
+        ),
+        r(
+          "menuia",
+          "   『🧊』𝗠𝗘𝗡𝗨 𝗜𝗔",
+          "Gemini • Tokito IA • OpenAI • Perplexity • voz"
         ),
         r(
           "menusticker",
@@ -287,6 +294,24 @@ function decoratePage(text) {
   return out.join("\n");
 }
 
+// Formata qualquer submenu como um único bloco da sua própria categoria.
+// O catálogo ainda usa cabeçalhos internos para ordenar os comandos, mas
+// eles não aparecem para o usuário: todos os comandos ficam juntos no mesmo
+// separador, no padrão do menu geral.
+function decorateCategory(text, category) {
+  const commands = String(text || "")
+    .split("\n")
+    .map(line => line.trim())
+    .filter(line => line && !/^\*.+\*$/.test(line));
+
+  const lines = [categoryHeading(category || "Comandos")];
+  for (const line of commands) {
+    lines.push("├̬⌑ؔ͟ 「🧊」" + line);
+  }
+  lines.push("╰─");
+  return lines.join("\n");
+}
+
 function categoryHeading(category) {
   const label = String(category || "")
     .replace(/^[^\p{L}\p{N}]*/u, "")
@@ -348,6 +373,14 @@ const textPages = Object.freeze({
       ["YouTube", [["ytsearch termo", "pesquise vídeos"], ["play termo/link", "receba áudio"], ["ytmp3 link", "baixe áudio"], ["ytmp4 link", "baixe vídeo"]]],
       ["Outras fontes", [["spotify link", "música por link"], ["ttkmp4 link", "vídeo curto"], ["igvideo link", "vídeo do Instagram"], ["pin termo", "pesquise imagens"]]],
       ["Biblioteca", [["playlist", "organize uma playlist"], ["play_audio termo", "áudio por pesquisa"]]],
+    ],
+  },
+  menuia: {
+    title: "IA",
+    summary: "Assistentes, pesquisa, voz e transcrição",
+    sections: [
+      ["Conversas", [["ia pergunta", "assistente de IA"], ["gemini pergunta", "pergunte ao Gemini"], ["gemini-pro pergunta", "use o Gemini Pro"], ["tokito-ia pergunta", "converse com a Tokito IA"], ["openai pergunta", "pergunte ao OpenAI"], ["perplexity pergunta", "pesquise com Perplexity"]]],
+      ["Voz e mídia", [["geminitts texto", "transforme texto em áudio"], ["iaaudio pergunta", "receba a resposta em voz"], ["totext", "transcreva um áudio em texto"]]],
     ],
   },
   menualterar: {
@@ -435,7 +468,7 @@ const textExtras = Object.freeze({
 });
 
 const textOrder = [
-  "menusticker", "menudws", "menurpg", "menucoins", "menupokemon",
+  "menusticker", "menudws", "menuia", "menurpg", "menucoins", "menupokemon",
   "menuadm", "menudono", "menualterar", "menulogos", "menubn", "menuoutros",
 ];
 
@@ -484,5 +517,6 @@ module.exports = {
   mainPayload,
   index,
   decoratePage,
+  decorateCategory,
   textGeneral,
 };
