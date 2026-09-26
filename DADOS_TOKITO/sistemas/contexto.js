@@ -130,7 +130,20 @@ async function buildContext({
 
   const mentioned = mentionsFrom(msg);
   const quoted = quotedParticipant(msg);
-  const destino = mentioned[0] || quoted || sender;
+
+  const destino = async () => {
+    const alvo = mentioned[0] || quoted || "";
+    if (!alvo) return null;
+
+    const mencao = cleanJid(alvo);
+
+    return {
+      alvo: mencao,
+      consulta: mencao,
+      mencao,
+      numero: String(mencao).split("@")[0].split(":")[0],
+    };
+  };
 
   let groupMetadata = null;
 
