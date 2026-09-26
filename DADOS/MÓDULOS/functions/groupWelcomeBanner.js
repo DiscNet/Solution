@@ -346,28 +346,6 @@ async function createGroupWelcomeBanner(conn, options = {}) {
   };
 }
 
-function createWelcomeQuoted(groupName) {
-  return {
-    key: {
-      remoteJid: "status@broadcast",
-      fromMe: false,
-      participant: "13135550002@s.whatsapp.net",
-    },
-    message: {
-      contactMessage: {
-        displayName: groupName,
-        vcard:
-          "BEGIN:VCARD\n" +
-          "VERSION:3.0\n" +
-          "FN:" + groupName + "\n" +
-          "ORG:" + String(config.botName || "Bot").replace(/[\r\n;:]/g, " ") + ";\n" +
-          "TEL;type=CELL;type=VOICE;waid=13135550002:556384673123\n" +
-          "END:VCARD",
-      },
-    },
-  };
-}
-
 async function sendGroupWelcomeBanner(conn, options = {}) {
   if (!conn || typeof conn.sendMessage !== "function") {
     throw new Error("Conexão do WhatsApp inválida.");
@@ -386,17 +364,6 @@ async function sendGroupWelcomeBanner(conn, options = {}) {
     mimetype: "image/png",
     caption,
     mentions: [result.participantJid],
-    contextInfo: {
-      forwardingScore: 1,
-      isForwarded: true,
-      forwardedNewsletterMessageInfo: {
-        newsletterJid: "120363426698503859@newsletter",
-        newsletterName: options.botName || config.botName || "Bot",
-        serverMessageId: 116,
-      },
-    },
-  }, {
-    quoted: options.quoted || createWelcomeQuoted(result.groupName),
   });
 }
 
