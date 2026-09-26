@@ -1,22 +1,10 @@
 const fs = require("fs");
 const path = require("path");
 const { isTextOnly, sendInteractiveMessage } = require("./uiMode");
-const { createStatusQuoted } = require("./statusCard");
 const catalog = require("./menuCatalog");
 const config = require("../../config/config");
 const menus = require("../mensagens/menus");
 
-function contextInfo() {
-  return {
-    forwardingScore: 1,
-    isForwarded: true,
-    forwardedNewsletterMessageInfo: {
-      newsletterJid: "120363426698503859@newsletter",
-      newsletterName: menus.botName(),
-      serverMessageId: 116,
-    },
-  };
-}
 
 function imagePath(name) {
   const imagesDir = path.join(__dirname, "..", "..", "imagens");
@@ -44,23 +32,16 @@ async function sendStyledMenu(
   const caption = menus.header(title, prefix, page, pages) + "\n" + body;
 
   const img = imagePath(name);
-  const quoted = createStatusQuoted(msg);
-
   // O arquivo local é preferido quando existir; caso contrário, todas as
   // categorias usam exatamente a mesma arte remota do menu principal.
   const image = fs.existsSync(img)
     ? fs.readFileSync(img)
     : { url: menus.IMAGE_URL };
 
-  await conn.sendMessage(
-    from,
-    {
-      image,
-      caption,
-      contextInfo: contextInfo(),
-    },
-    { quoted }
-  );
+  await conn.sendMessage(from, {
+    image,
+    caption,
+  });
 
   await conn.sendMessage(from, {
     react: {
@@ -79,26 +60,12 @@ async function sendMainMenu(conn, msg, from) {
       ? fs.readFileSync(img)
       : { url: menus.IMAGE_URL };
     const caption = menus.textGeneral(prefix);
-    await conn.sendMessage(
-      from,
-      { image, caption, contextInfo: contextInfo() },
-      { quoted: createStatusQuoted(msg) }
-    );
+    await conn.sendMessage(from, { image, caption });
     await conn.sendMessage(from, { react: { text: "🧊", key: msg.key } });
     return;
   }
 
-  await sendInteractiveMessage(
-    conn,
-    from,
-    {
-      ...menus.mainPayload(prefix),
-      contextInfo: contextInfo(),
-    },
-    {
-      quoted: createStatusQuoted(msg),
-    }
-  );
+  await sendInteractiveMessage(conn, from, menus.mainPayload(prefix));
 
   await conn.sendMessage(from, {
     react: {
@@ -188,15 +155,9 @@ function createMenu(name, category, aliases = []) {
       } catch (error) {
         console.error("Erro no " + name + ":", error);
 
-        await conn.sendMessage(
-          from,
-          {
-            text: "❌ Erro ao carregar o menu.",
-          },
-          {
-            quoted: createStatusQuoted(msg),
-          }
-        );
+        await conn.sendMessage(from, {
+          text: "❌ Erro ao carregar o menu.",
+        });
       }
     },
   };
