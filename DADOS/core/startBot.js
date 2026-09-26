@@ -13,7 +13,6 @@ const path = require("path");
 const { authDir } = require("../conexão/sessao");
 const ROOT_DIR = path.join(__dirname, "..");
 const axios = require("axios");
-const { createStatusQuoted } = require("../MÓDULOS/functions/statusCard");
 const { installMessageDefaults } = require("../MÓDULOS/functions/messageDefaults");
 const { executeCommand } = require("../MÓDULOS/functions/commandExecutor");
 const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
@@ -299,7 +298,11 @@ async function sendCommandNotFoundMessage(conn, from, cmdName, senderNumber, sug
   }
   let sugestaoTexto = sugestao ? `\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝚂𝚎𝚖𝚊𝚕𝚑𝚊𝚗𝚌̧𝚊: ${prefix}${sugestao}` : "";
   const errorMessage = `\n╭ֹܻ╼֮͊͜❀ֹ݄͜┅᳞֟፝┈̤፟━⵿໋݊━⵿໋݊━⵿݊❄️ᮬ᳘ᰰ━⵿໋݊━⵿໋݊━⵿໋݊┈᳞֟፝┅ֹ݄͜❀֮͜╾ֹܻ͊╮\n┃ ┍─݊━⵿໋݊─⊣ (𔓕᳝ׅ ٜ፝⃐⃑֟۫💎 ٜ፝⃐⃑֟۫𔓕᳝ׅ) ⊢─⵿໋݊━⵿໋݊━⵿໋݊─┑\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙴𝚁𝚁𝙾: 𝐂𝐨𝐦𝐚𝐧𝐝𝐨 𝐢𝐧𝐯𝐚́𝐥𝐢𝐝𝐨\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙲𝙼𝙳: ${prefix}${cmdName}\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙳𝙰𝚃𝙰: ${dataAtual}\n┃𖤐𝆺𝅥˚ —̳͟͞͞ 🧊ິ̸𝙷𝙾𝚁𝙰: ${horaAtual}${sugestaoTexto}\n┃ └─݊━⵿⵿໋݊݊─⊢ (𔓕᳝ׅ ٜ፝⃐⃑֟۫💎 ٜ፝⃐⃑֟۫𔓕᳝ׅ) ⊣━⵿໋━⵿໋݊━⵿໋݊─┘\n╰ܻ╼֮͊͜❀ֹ݄͜┅᳞֟፝┈̤፟━⵿໋݊━⵿໋݊━⵿݊❄️ᮬ᳘ᰰ━⵿໋݊━⵿໋݊━⵿໋݊┈᳞֟፝┅ֹ݄͜❀֮͜╾ֹܻ͊╯`;
-  await sendButtons(conn, from, { text: errorMessage, footer: "𝖢𝗅𝗂𝗊𝗎𝖾 𝗇𝗈 𝖻𝗈𝗍𝖺̃𝗈 𝖺𝖻𝖺𝗂𝗑𝗈 𝗉𝖺𝗋𝖺 𝗂𝗋 𝖺𝗈 𝗆𝖾𝗇𝗎", buttons: [{ id: `${prefix}menu`, text: "》『🧊』《　"}], contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: "LukaModzz", serverMessageId: 116 } } }, { quoted: createStatusQuoted(msg) });
+  await sendButtons(conn, from, {
+    text: errorMessage,
+    footer: "𝖢𝗅𝗂𝗊𝗎𝖾 𝗇𝗈 𝖻𝗈𝗍𝖺̃𝗈 𝖺𝖻𝖺𝗂𝗑𝗈 𝗉𝖺𝗋𝖺 𝗂𝗋 𝖺𝗈 𝗆𝖾𝗇𝗎",
+    buttons: [{ id: `${prefix}menu`, text: "》『🧊』《　" }],
+  });
 }
 
 // ==============================================
@@ -597,16 +600,7 @@ async function startBot() {
             try {
               const groupName = await getGroupName(conn, from);
               await conn.sendMessage(from, {
-                text: `⚠️ *ᴀʟᴜɢᴜᴇʟ ᴇxᴘɪʀᴀᴅᴏ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${groupName}\n\nᴏ ᴘᴇʀɪ́ᴏᴅᴏ ᴅᴇ ᴀʟᴜɢᴜᴇʟ ᴅᴇsᴛᴇ ɢʀᴜᴘᴏ ᴇxᴘɪʀᴏᴜ. ᴏ ʙᴏᴛ ɴᴀ̃ᴏ ʀᴇsᴘᴏɴᴅᴇʀᴀ́ ᴀᴛᴇ́ ᴏ ᴀʟᴜɢᴜᴇʟ sᴇʀ ʀᴇɴᴏᴠᴀᴅᴏ.\n\n📌 ᴄᴏɴᴛᴀᴛᴇ ᴏ ᴅᴏɴᴏ ᴘᴀʀᴀ ʀᴇɴᴏᴠᴀʀ.`,
-                contextInfo: {
-                  forwardingScore: 1,
-                  isForwarded: true,
-                  forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363426698503859@newsletter",
-                    newsletterName: `${config.botName || 'LukaModzz'}`,
-                    serverMessageId: 116
-                  }
-                }
+                text: `⚠️ *ᴀʟᴜɢᴜᴇʟ ᴇxᴘɪʀᴀᴅᴏ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${groupName}\n\nᴏ ᴘᴇʀɪ́ᴏᴅᴏ ᴅᴇ ᴀʟᴜɢᴜᴇʟ ᴅᴇsᴛᴇ ɢʀᴜᴘᴏ ᴇxᴘɪʀᴏᴜ. ᴏ ʙᴏᴛ ɴᴀ̃ᴏ ʀᴇsᴘᴏɴᴅᴇʀᴀ́ ᴀᴛᴇ́ ᴏ ᴀʟᴜɢᴜᴇʟ sᴇʀ ʀᴇɴᴏᴠᴀᴅᴏ.\n\n📌 ᴄᴏɴᴛᴀᴛᴇ ᴏ ᴅᴏɴᴏ ᴘᴀʀᴀ ʀᴇɴᴏᴠᴀʀ.`
               });
             } catch (e) {
               console.error("Erro ao enviar notificação de expiração:", e);
@@ -629,16 +623,7 @@ async function startBot() {
           if (!isSenderAdmin) {
             await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
             await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪʟɪɴᴋ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴍᴇɴsᴀɢᴇᴍ ᴄᴏᴍ ʟɪɴᴋ ʀᴇᴍᴏᴠɪᴅᴀ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`,
-              contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363426698503859@newsletter",
-                  newsletterName: `${config.botName || 'LukaModzz'}`,
-                  serverMessageId: 116
-                }
-              }
+              text: `⚠️ *ᴀɴᴛɪʟɪɴᴋ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴍᴇɴsᴀɢᴇᴍ ᴄᴏᴍ ʟɪɴᴋ ʀᴇᴍᴏᴠɪᴅᴀ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
             });
             return;
           }
@@ -651,16 +636,7 @@ async function startBot() {
           if (!isSenderAdmin) {
             await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
             await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪᴅᴏᴄ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴅᴏᴄᴜᴍᴇɴᴛᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`,
-              contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363426698503859@newsletter",
-                  newsletterName: `${config.botName || 'LukaModzz'}`,
-                  serverMessageId: 116
-                }
-              }
+              text: `⚠️ *ᴀɴᴛɪᴅᴏᴄ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴅᴏᴄᴜᴍᴇɴᴛᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
             });
             return;
           }
@@ -673,16 +649,7 @@ async function startBot() {
           if (!isSenderAdmin) {
             await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
             await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪɪᴍᴀɢᴇᴍ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ɪᴍᴀɢᴇᴍ ʀᴇᴍᴏᴠɪᴅᴀ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`,
-              contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363426698503859@newsletter",
-                  newsletterName: `${config.botName || 'LukaModzz'}`,
-                  serverMessageId: 116
-                }
-              }
+              text: `⚠️ *ᴀɴᴛɪɪᴍᴀɢᴇᴍ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ɪᴍᴀɢᴇᴍ ʀᴇᴍᴏᴠɪᴅᴀ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
             });
             return;
           }
@@ -695,16 +662,7 @@ async function startBot() {
           if (!isSenderAdmin) {
             await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
             await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪᴠɪᴅᴇᴏ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴠɪ́ᴅᴇᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`,
-              contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363426698503859@newsletter",
-                  newsletterName: `${config.botName || 'LukaModzz'}`,
-                  serverMessageId: 116
-                }
-              }
+              text: `⚠️ *ᴀɴᴛɪᴠɪᴅᴇᴏ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴠɪ́ᴅᴇᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
             });
             return;
           }
@@ -717,16 +675,7 @@ async function startBot() {
           if (!isSenderAdmin) {
             await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
             await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪᴀᴜᴅɪᴏ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 áᴜᴅɪᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`,
-              contextInfo: {
-                forwardingScore: 1,
-                isForwarded: true,
-                forwardedNewsletterMessageInfo: {
-                  newsletterJid: "120363426698503859@newsletter",
-                  newsletterName: `${config.botName || 'LukaModzz'}`,
-                  serverMessageId: 116
-                }
-              }
+              text: `⚠️ *ᴀɴᴛɪᴀᴜᴅɪᴏ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 áᴜᴅɪᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
             });
             return;
           }
@@ -1062,29 +1011,6 @@ async function startBot() {
               await conn.sendMessage(id, {
                 text: mensagemAdeus,
                 mentions: [userJid],
-                contextInfo: {
-                  forwardingScore: 1,
-                  isForwarded: true,
-                  forwardedNewsletterMessageInfo: {
-                    newsletterJid: "120363426698503859@newsletter",
-                    newsletterName: config.botName || "LukaModzz",
-                    serverMessageId: 116
-                  }
-                }
-              }, {
-                quoted: {
-                  key: {
-                    remoteJid: "status@broadcast",
-                    fromMe: false,
-                    participant: "13135550002@s.whatsapp.net"
-                  },
-                  message: {
-                    contactMessage: {
-                      displayName: groupName,
-                      vcard: "BEGIN:VCARD\nVERSION:3.0\nFN:" + groupName + "\nORG:LukaModzz;\nTEL;type=CELL;type=VOICE;waid=13135550002:556384673123\nEND:VCARD"
-                    }
-                  }
-                }
               });
             } catch (err) {
               console.error("Erro ao processar saída de membro:", err);
