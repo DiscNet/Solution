@@ -1,13 +1,20 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 
-const {
-  candidates,
-  resolveRegisteredKey,
-  normalizeMessageIdentity,
-} = require("../functions/rpgIdentity");
+const contexto = require("../DADOS_KXLYN/sistemas/contexto");
 
-test("group identity considers participant and participantAlt", () => {
+test("contexto Kxlyn normaliza PN e LID sem manter device suffix", () => {
+  assert.equal(
+    contexto.cleanJid("5511999999999:42@s.whatsapp.net"),
+    "5511999999999@s.whatsapp.net"
+  );
+  assert.equal(
+    contexto.cleanJid("123456789012345@lid"),
+    "123456789012345@lid"
+  );
+});
+
+test("sender prioriza participantAlt quando disponível", () => {
   const msg = {
     key: {
       participant: "123456789012345@lid",
@@ -16,51 +23,30 @@ test("group identity considers participant and participantAlt", () => {
     },
   };
 
-  assert.deepEqual(candidates(msg, "123-456@g.us"), [
-    "123456789012345@lid",
-    "5511999999999@s.whatsapp.net",
-  ]);
+  assert.equal(
+    contexto.senderFrom(msg, "123-456@g.us"),
+    "5511999999999@s.whatsapp.net"
+  );
 });
 
-test("registered PN is found even when incoming participant is LID", () => {
-  const pn = "5511999999999@s.whatsapp.net";
+test("menções e resposta citada são extraídas do contexto", () => {
   const msg = {
-    key: {
-      participant: "123456789012345@lid",
-      participantAlt: pn,
+    message: {
+      extendedTextMessage: {
+        contextInfo: {
+          mentionedJid: ["5511888888888@s.whatsapp.net"],
+          participant: "5511777777777:12@s.whatsapp.net",
+        },
+      },
     },
   };
-  const users = { [pn]: { nome: "Jogador" } };
 
-  assert.equal(resolveRegisteredKey(msg, "123-456@g.us", users), pn);
-  assert.equal(normalizeMessageIdentity(msg, "123-456@g.us", users), pn);
-  assert.equal(msg.key.participant, pn);
-  assert.equal(msg.key.participantAlt, pn);
-});
-
-test("registered LID is kept when it is the existing database key", () => {
-  const lid = "123456789012345@lid";
-  const msg = {
-    key: {
-      participant: lid,
-      participantAlt: "5511999999999@s.whatsapp.net",
-    },
-  };
-  const users = { [lid]: { nome: "Jogador" } };
-
-  assert.equal(normalizeMessageIdentity(msg, "123-456@g.us", users), lid);
-  assert.equal(msg.key.participant, lid);
-});
-
-test("private chats may use remoteJidAlt as registration key", () => {
-  const pn = "5511888888888@s.whatsapp.net";
-  const msg = {
-    key: {
-      remoteJid: "987654321098765@lid",
-      remoteJidAlt: pn,
-    },
-  };
-  const users = { [pn]: { nome: "Jogador" } };
-
-  assert.equal(resolveRegisteredKey(msg, pn, users), pn);
+  assert.deepEqual(
+    contexto.mentionsFrom(msg),
+    ["5511888888888@s.whatsapp.net"]
+  );
+  assert.equal(
+    contexto.quotedParticipant(msg),
+    "5511777777777@s.whatsapp.net"
+  );
 });
