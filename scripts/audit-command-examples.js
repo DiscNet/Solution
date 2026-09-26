@@ -4,7 +4,7 @@ const { loadProjectCommandModules, buildCommandRegistry, walkJsFiles } = require
 
 const root = path.join(__dirname, "..");
 const commandsRoot = path.join(root, "commands");
-const pluginsRoot = path.join(root, "DADOS_TOKITO", "plugins");
+const pluginsRoot = path.join(root, "DADOS_KXLYN", "plugins");
 const { records, errors } = loadProjectCommandModules(root, { clearCache: true });
 if (errors.length) {
   for (const item of errors) console.error(`${item.file}: ${item.error.message}`);
