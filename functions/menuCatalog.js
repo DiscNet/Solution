@@ -1,6 +1,6 @@
 const path = require("path");
 const {
-  loadCommandModules,
+  loadProjectCommandModules,
   buildCommandRegistry,
   normalizeCommandName,
 } = require("./commandRegistry");
@@ -10,7 +10,7 @@ function prime(records, errors = [], collisions = []) {
 }
 function diagnostics() {
   if (!snapshot) {
-    const loaded = loadCommandModules(path.join(__dirname, "..", "commands"), {
+    const loaded = loadProjectCommandModules(path.join(__dirname, ".."), {
       clearCache: false,
     });
     const built = buildCommandRegistry(loaded.records);
@@ -41,6 +41,10 @@ function normalize(s) {
 }
 const categories = {
   rpg: "RPG",
+  coins: "Economia",
+  economia: "Economia",
+  pokemon: "Pokémon",
+  poke: "Pokémon",
   adm: "Grupos",
   admins: "Grupos",
   grupos: "Grupos",
