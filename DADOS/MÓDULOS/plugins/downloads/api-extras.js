@@ -5,6 +5,103 @@ function firstYoutube(data) {
   return tokitoApi.list(data).find(item => item?.url || item?.link || item?.videoId) || tokitoApi.list(data)[0] || null;
 }
 
+function normalizeMetadinhaUrl(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  if (/^https?:\/\//i.test(text)) return text;
+
+  if (text.startsWith("/")) {
+    try {
+      return new URL(text, tokitoApi.settings().baseUrl + "/").toString();
+    } catch {}
+  }
+
+  return "";
+}
+
+function extractMetadinhaMedia(value, output = [], seen = new Set(), depth = 0) {
+  if (value === null || value === undefined || depth > 8) return output;
+
+  if (typeof value === "string") {
+    const text = value.trim();
+    if (!text) return output;
+
+    const dataImage = text.match(/^data:(image\/[a-z0-9.+-]+);base64,([a-z0-9+/=\s]+)$/i);
+    if (dataImage) {
+      try {
+        const buffer = Buffer.from(dataImage[2].replace(/\s+/g, ""), "base64");
+        if (buffer.length) {
+          output.push({
+            type: "buffer",
+            buffer,
+            mimetype: dataImage[1].toLowerCase(),
+          });
+        }
+      } catch {}
+      return output;
+    }
+
+    const url = normalizeMetadinhaUrl(text);
+    if (url) output.push({ type: "url", url });
+    else if (/^[\[{]/.test(text)) {
+      try {
+        extractMetadinhaMedia(JSON.parse(text), output, seen, depth + 1);
+      } catch {}
+    }
+    return output;
+  }
+
+  if (typeof value !== "object") return output;
+  if (seen.has(value)) return output;
+  seen.add(value);
+
+  if (Array.isArray(value)) {
+    for (const item of value) extractMetadinhaMedia(item, output, seen, depth + 1);
+    return output;
+  }
+
+  const preferredKeys = [
+    "url", "image", "imagem", "img", "foto", "photo", "src", "link",
+    "media", "arquivo", "file", "download", "metadinha",
+    "images", "imagens", "urls", "resultado", "result", "data",
+  ];
+
+  const visitedKeys = new Set();
+
+  for (const key of preferredKeys) {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) continue;
+    visitedKeys.add(key);
+    extractMetadinhaMedia(value[key], output, seen, depth + 1);
+  }
+
+  for (const [key, item] of Object.entries(value)) {
+    if (visitedKeys.has(key)) continue;
+    extractMetadinhaMedia(item, output, seen, depth + 1);
+  }
+
+  return output;
+}
+
+function uniqueMetadinhaMedia(items) {
+  const keys = new Set();
+  const result = [];
+
+  for (const item of items || []) {
+    const key = item?.type === "url"
+      ? "url:" + item.url
+      : item?.type === "buffer"
+        ? "buffer:" + item.mimetype + ":" + item.buffer?.length + ":" + item.buffer?.subarray(0, 24).toString("base64")
+        : "";
+
+    if (!key || keys.has(key)) continue;
+    keys.add(key);
+    result.push(item);
+  }
+
+  return result;
+}
+
 module.exports = [
   {
     name: "playdoc",
@@ -82,23 +179,65 @@ module.exports = [
     description: "Obtém uma metadinha pela API",
     async execute(conn, msg, args, from) {
       try {
-        const result = await tokitoApi.buffer("/api/metadinha", {}, { timeout: 60000 });
-        if (/image\//i.test(result.contentType)) {
-          await conn.sendMessage(from, { image: result.buffer, caption: "💞 *METADINHA*" }, { quoted: createStatusQuoted(msg) });
+        await conn.sendMessage(from, { react: { text: "💞", key: msg.key } }).catch(() => {});
+
+        const result = await tokitoApi.buffer("/api/metadinha", {}, {
+          timeout: 60000,
+          headers: { accept: "image/*,application/json,*/*" },
+        });
+
+        if (result.buffer?.length && /^image\//i.test(result.contentType)) {
+          await conn.sendMessage(from, {
+            image: result.buffer,
+            mimetype: result.contentType.split(";")[0] || undefined,
+            caption: "💞 *METADINHA*",
+          });
+          await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
           return;
         }
-        const parsed = JSON.parse(result.buffer.toString("utf8"));
-        const item = tokitoApi.firstObject(parsed) || parsed;
-        const image = item?.url || item?.image || item?.imagem || item?.link;
-        if (!image) throw new Error("Imagem não retornada.");
-        await conn.sendMessage(from, { image: { url: image }, caption: "💞 *METADINHA*" }, { quoted: createStatusQuoted(msg) });
+
+        let parsed;
+        try {
+          parsed = JSON.parse(result.buffer.toString("utf8"));
+        } catch {
+          throw new Error(
+            "A API retornou um formato inesperado (" +
+            (result.contentType || "sem content-type") +
+            ")."
+          );
+        }
+
+        const media = uniqueMetadinhaMedia(extractMetadinhaMedia(parsed))
+          .filter(item => item?.type === "buffer" || item?.type === "url")
+          .slice(0, 2);
+
+        if (!media.length) {
+          const keys = parsed && typeof parsed === "object"
+            ? Object.keys(parsed).slice(0, 12).join(", ")
+            : typeof parsed;
+          throw new Error("Imagem não retornada. Campos recebidos: " + (keys || "nenhum"));
+        }
+
+        for (let i = 0; i < media.length; i++) {
+          const item = media[i];
+          const image = item.type === "buffer" ? item.buffer : { url: item.url };
+          await conn.sendMessage(from, {
+            image,
+            ...(item.mimetype ? { mimetype: item.mimetype } : {}),
+            caption: i === 0 ? "💞 *METADINHA*" : undefined,
+          });
+        }
+
+        await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
         console.error("[API METADINHA]", info.status || "-", info.message);
-        await conn.sendMessage(from, { text: tokitoApi.userError(error, "Não foi possível gerar a metadinha.") }, { quoted: createStatusQuoted(msg) });
+        await conn.sendMessage(from, {
+          text: tokitoApi.userError(error, "Não foi possível gerar a metadinha."),
+        });
       }
     },
   },
 ];
 
-module.exports._test = { firstYoutube };
+module.exports._test = { firstYoutube, normalizeMetadinhaUrl, extractMetadinhaMedia, uniqueMetadinhaMedia };
