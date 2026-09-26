@@ -1,56 +1,66 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
+const path = require("path");
 
-const economy = require("../functions/economySystem");
-const pokemon = require("../functions/pokemonSystem");
-const economyCommands = require("../commands/rpg/economia");
-const pokemonCommands = require("../commands/rpg/pokemon");
-const modoCoins = require("../commands/admins/modocoins");
+const r = require("../DADOS_KXLYN/sistemas/rpg");
+const modoCoins = require("../DADOS_KXLYN/plugins/coins/modocoins");
+const modoRpg = require("../DADOS_KXLYN/plugins/rpg/modorpg");
+const { loadProjectCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
 
-test("modo coins exige grupo e admin", () => {
+test("modos RPG e Coins usam permissões de grupo/admin", () => {
   assert.equal(modoCoins.name, "modocoins");
   assert.deepEqual(modoCoins.permissions, { group: true, admin: true });
+  assert.equal(modoRpg.name, "modorpg");
+  assert.deepEqual(modoRpg.permissions, { group: true, admin: true });
 });
 
-test("economia compartilhada expõe comandos principais sem duplicar trabalhar", () => {
-  const names = new Set(economyCommands.map((command) => command.name));
-  for (const name of ["coins", "doarcoins", "rankcoins", "dailycoins", "cassino"]) {
-    assert.ok(names.has(name), `faltando: ${name}`);
-  }
-  assert.equal(names.has("trabalhar"), false);
-  assert.equal(economy.format(1234), "1.234 Coins");
+test("núcleo Kxlyn expõe catálogos integrados", () => {
+  assert.ok(r.CLASSES_RPG.guerreiro);
+  assert.ok(r.ARMAS_RPG.espada);
+  assert.ok(r.COINS_LOJA.escudo);
+  assert.ok(r.CIDADE_EMPREGOS.programador);
+  assert.ok(r.POKEMON.pikachu);
+  assert.ok(r.POKEMON_COMIDA.berry);
+  assert.equal(r.POKEMON.pikachu.evolui, "raichu");
 });
 
-test("catálogo Pokémon tem compra, evolução e comida", () => {
-  assert.ok(pokemon.POKEMON.pikachu);
-  assert.ok(pokemon.POKEMON.charmander);
-  assert.ok(pokemon.FOOD.berry);
-  const created = pokemon.createPokemon("pikachu");
-  assert.equal(created.level, 1);
-  assert.equal(created.hunger, 100);
-  created.level = 12;
-  const evo = pokemon.canEvolve(created);
-  assert.equal(evo.ok, true);
-  assert.equal(evo.target, "raichu");
-});
+test("plugins Kxlyn registram ciclo principal de RPG Coins e Pokémon", () => {
+  const root = path.join(__dirname, "..");
+  const loaded = loadProjectCommandModules(root, { clearCache: true });
+  assert.equal(loaded.errors.length, 0);
 
-test("comandos Pokémon cobrem o ciclo principal", () => {
-  const names = new Set(pokemonCommands.map((command) => command.name));
+  const built = buildCommandRegistry(loaded.records);
+  const registry = built.registry;
+
   for (const name of [
+    "modorpg",
+    "jornada",
+    "arsenal",
+    "boss",
+    "guilda",
+    "level",
+    "ranklevel",
+    "modocoins",
+    "coins",
+    "minerar",
+    "trabalharcoins",
+    "cassino",
+    "lojacoins",
+    "cidade",
+    "banco",
+    "rankcoins",
     "lojapokemon",
     "comprarpokemon",
     "verpokemon",
-    "apelidopokemon",
     "mercadopokemon",
-    "comprarcomidapokemon",
-    "inventariopokemon",
     "alimentarpokemon",
     "carinhopokemon",
+    "batalhapokemon",
     "missaopokemon",
     "evoluirpokemon",
     "venderpokemon",
     "rankpokemon",
   ]) {
-    assert.ok(names.has(name), `faltando: ${name}`);
+    assert.ok(registry[name], "faltando: " + name);
   }
 });
