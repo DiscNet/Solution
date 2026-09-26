@@ -114,6 +114,24 @@ function loadCommandModules(commandsPath, options = {}) {
   return { records, errors };
 }
 
+function loadProjectCommandModules(rootDir, options = {}) {
+  const roots = [
+    path.join(rootDir, "commands"),
+    path.join(rootDir, "DADOS_TOKITO", "plugins"),
+  ];
+
+  const records = [];
+  const errors = [];
+
+  for (const root of roots) {
+    const loaded = loadCommandModules(root, options);
+    records.push(...loaded.records);
+    errors.push(...loaded.errors);
+  }
+
+  return { records, errors, roots };
+}
+
 function buildCommandRegistry(records) {
   const registry = Object.create(null);
   const owners = new Map();
@@ -174,6 +192,7 @@ module.exports = {
   walkJsFiles,
   expandCommandExport,
   loadCommandModules,
+  loadProjectCommandModules,
   buildCommandRegistry,
   replaceRegistry,
   formatRegistryIssue
