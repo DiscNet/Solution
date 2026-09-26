@@ -437,51 +437,46 @@ const textExtras = Object.freeze({
   ]
 });
 
-function textGeneralPages(prefix) {
-  const menuIndex = [
-    "╭─┄─💎〔 𝙼𝙴𝙽𝚄𝚂 〕",
-    ...Object.entries(routes)
-      .filter(([category]) => category !== "Menus")
-      .map(([category, route]) => "├̬⌑ؔ͟ 「🧊」" + prefix + route + " — " + category),
-    "├̬⌑ؔ͟ 「🧊」" + prefix + "menugeral — todos os comandos",
-    "╰─┄─💎",
-  ].join("\n");
+const textOrder = [
+  "menusticker", "menudws", "menurpg", "menucoins", "menupokemon",
+  "menuadm", "menudono", "menualterar", "menulogos", "menubn", "menuoutros",
+];
 
-  const blocks = [];
-  for (const [name, page] of Object.entries(textPages)) {
-    const category = Object.entries(routes).find(([, route]) => route === name)?.[0] || page.title;
-    for (const [section, commands] of page.sections) {
-      const rows = commands.map(([command, description]) =>
-        prefix + command + " | " + description
-      );
-      blocks.push(decoratePage("*" + category + " - " + section + "*\n" + rows.join("\n")));
+function commandLines(commands, prefix, width = 76) {
+  const lines = [];
+  let line = "│";
+  for (const command of commands) {
+    const token = prefix + command;
+    if (line.length > 1 && line.length + token.length + 2 > width) {
+      lines.push(line);
+      line = "│";
     }
-    const extras = textExtras[name] || [];
-    if (extras.length) {
-      blocks.push(decoratePage("*" + category + " - Mais comandos*\n" +
-        extras.map(command => prefix + command).join("\n")));
-    }
+    line += " " + token;
   }
-
-  // Cada parte continua com a mesma moldura do menugeral e cabe na legenda da imagem.
-  const bodies = [];
-  let current = menuIndex;
-  for (const block of blocks) {
-    if (current.length + block.length + 2 > 2900) {
-      bodies.push(current);
-      current = "";
-    }
-    current += (current ? "\n\n" : "") + block;
-  }
-  if (current) bodies.push(current);
-  return bodies.map((body, index) =>
-    header("Geral", prefix, index + 1, bodies.length) + "\n" + body +
-    "\n\nAjuda: " + prefix + "info <comando>"
-  );
+  if (line.length > 1) lines.push(line);
+  return lines;
 }
 
 function textGeneral(prefix) {
-  return textGeneralPages(prefix).join("\n\n");
+  const lines = [
+    header("Geral", prefix),
+    "╭─〔 🧊 ᴍᴇɴᴜs 〕",
+    ...commandLines(textOrder.map(name => name), prefix),
+    "╰─",
+  ];
+
+  for (const name of textOrder) {
+    const page = textPages[name];
+    const commands = [...new Set([
+      ...page.sections.flatMap(([, items]) => items.map(([command]) => command.split(" ")[0])),
+      ...(textExtras[name] || []),
+    ])];
+    lines.push("╭─〔 🧊 " + smallCaps(page.title) + " 〕");
+    lines.push(...commandLines(commands, prefix));
+    lines.push("╰─");
+  }
+  lines.push("Ajuda: " + prefix + "info <comando> • Todos: " + prefix + "menugeral");
+  return lines.join("\n");
 }
 
 module.exports = {
@@ -497,5 +492,4 @@ module.exports = {
   index,
   decoratePage,
   textGeneral,
-  textGeneralPages,
 };
