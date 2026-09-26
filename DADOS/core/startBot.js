@@ -10,6 +10,7 @@ const NodeCache = require("node-cache");
 const pino = require("pino");
 const fs = require("fs");
 const path = require("path");
+const { authDir } = require("../conexão/sessao");
 const ROOT_DIR = path.join(__dirname, "..");
 const axios = require("axios");
 const { createStatusQuoted } = require("../MÓDULOS/functions/statusCard");
@@ -470,7 +471,7 @@ async function startBot() {
       conn = null;
     }
 
-  const { state, saveCreds } = await useMultiFileAuthState("./conexao/bot_auth");
+  const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
   if (!state.creds.registered) {
     console.clear();
@@ -1122,4 +1123,3 @@ async function startBotWithRecovery() {
 }
 
 module.exports = { startBot, startBotWithRecovery };
-

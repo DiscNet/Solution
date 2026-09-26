@@ -5,4 +5,4 @@ node_modules/
 DADOS/temp/
 DADOS/database/runtime.json
 DADOS/database/grupos/
-DADOS/conexao/bot_auth/
+DADOS/conexão/bot_auth/

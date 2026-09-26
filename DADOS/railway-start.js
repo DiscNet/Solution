@@ -1,8 +1,8 @@
 process.chdir(__dirname);
 const fs = require('fs');
 const path = require('path');
+const { authDir: repoAuthDir } = require('./conexão/sessao');
 
-const repoAuthDir = path.join(__dirname, "conexao", "bot_auth");
 const configuredAuthDir = process.env.AUTH_DIR
   ? path.resolve(process.env.AUTH_DIR)
   : (process.env.RAILWAY_VOLUME_MOUNT_PATH
@@ -89,7 +89,7 @@ function prepareAuthDirectory() {
     }
   }
 
-  // O código antigo continua usando ./bot_auth, mas o conteúdo fica no volume.
+  // O caminho em DADOS/conexão/bot_auth aponta para o volume persistente.
   try {
     if (fs.existsSync(repoAuthDir)) {
       fs.rmSync(repoAuthDir, { recursive: true, force: true });

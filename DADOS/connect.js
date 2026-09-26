@@ -5,6 +5,7 @@ const pino = require("pino");
 const readline = require("readline");
 const NodeCache = require("node-cache");
 const qrcode = require("qrcode-terminal");
+const { authDir } = require("./conexão/sessao");
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
 const question = (text) => new Promise((resolve) => rl.question(text, resolve));
@@ -32,7 +33,7 @@ async function conectar() {
   connecting = true;
 
   try {
-    const { state, saveCreds } = await useMultiFileAuthState("./conexao/bot_auth");
+    const { state, saveCreds } = await useMultiFileAuthState(authDir);
     const { version } = await fetchLatestBaileysVersion();
     const msgRetryCounterCache = new NodeCache({ stdTTL: 600, checkperiod: 120, useClones: false });
 

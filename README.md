@@ -45,7 +45,7 @@ npm start
 
 Para os comandos integrados à API, configure `TOKITO_API` no ambiente. Outras integrações podem pedir variáveis próprias; consulte `DADOS/config/config.js` antes de ativá-las.
 
-> **Sessão:** `DADOS/conexao/bot_auth/` contém credenciais de conexão. Trate essa pasta como privada. Em uma implantação nova, prefira armazenar a sessão em um volume ou usar `AUTH_INFO_B64`, que o inicializador reconhece.
+> **Sessão:** `DADOS/conexão/bot_auth/` contém credenciais de conexão. Trate essa pasta como privada. Em uma implantação nova, prefira armazenar a sessão em um volume ou usar `AUTH_INFO_B64`, que o inicializador reconhece.
 
 ## 🗂️ Organização
 
@@ -57,7 +57,7 @@ Para os comandos integrados à API, configure `TOKITO_API` no ambiente. Outras i
 | `DADOS/database/` | Dados e estados dos recursos, incluindo os filtros de moderação. |
 | `DADOS/MÓDULOS/functions/` | Integrações, renderização e funções compartilhadas. |
 | `DADOS/config/config.js` | Configuração geral do bot. |
-| `DADOS/conexao/bot_auth/` | Sessão de conexão do WhatsApp. |
+| `DADOS/conexão/` | Caminho de sessão e pasta `bot_auth/` do WhatsApp. |
 | `DADOS/core/` e `DADOS/eventos/` | Inicialização, conexão e eventos. |
 | `DADOS/imagens/` | Artes usadas nas mensagens e neste README. |
 

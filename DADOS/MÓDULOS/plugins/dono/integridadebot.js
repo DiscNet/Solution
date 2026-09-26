@@ -1,8 +1,8 @@
 // Menu: Dono - Diagnóstico | Comando: integridadebot
 const fs = require("fs");
-const path = require("path");
 const { factory } = require("../../functions/adminHelpers");
 const menuCatalog = require("../../functions/menuCatalog");
+const { credsPath } = require("../../../conexão/sessao");
 
 function mb(bytes) {
   return (Number(bytes || 0) / 1024 / 1024).toFixed(1);
@@ -21,8 +21,7 @@ module.exports = factory({
   const memory = process.memoryUsage();
   const uptime = Math.floor(process.uptime());
   const nodeMajor = Number(String(process.versions.node || "0").split(".")[0]);
-  const authPath = path.join(__dirname, "..", "..", "..", "conexao", "bot_auth", "creds.json");
-  const authOk = fs.existsSync(authPath);
+  const authOk = fs.existsSync(credsPath);
   const registryOk = errors.length === 0 && collisions.length === 0;
   const countOk = records.length >= 1000;
   const nodeOk = nodeMajor >= 22;
