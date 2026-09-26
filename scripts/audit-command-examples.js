@@ -1,10 +1,11 @@
 const fs = require("fs");
 const path = require("path");
-const { loadCommandModules, buildCommandRegistry, walkJsFiles } = require("../functions/commandRegistry");
+const { loadProjectCommandModules, buildCommandRegistry, walkJsFiles } = require("../functions/commandRegistry");
 
 const root = path.join(__dirname, "..");
 const commandsRoot = path.join(root, "commands");
-const { records, errors } = loadCommandModules(commandsRoot, { clearCache: true });
+const pluginsRoot = path.join(root, "DADOS_TOKITO", "plugins");
+const { records, errors } = loadProjectCommandModules(root, { clearCache: true });
 if (errors.length) {
   for (const item of errors) console.error(`${item.file}: ${item.error.message}`);
   process.exit(1);
@@ -63,7 +64,7 @@ function uiLiteralBodies(source) {
   return bodies;
 }
 
-const files = [...walkJsFiles(commandsRoot)];
+const files = [...walkJsFiles(commandsRoot), ...walkJsFiles(pluginsRoot)];
 const core = path.join(root, "core", "startBot.js");
 if (fs.existsSync(core)) files.push(core);
 
