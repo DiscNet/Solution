@@ -399,16 +399,12 @@ const textExtras = Object.freeze({
     "admlist", "veradmin", "listaadv", "retiraradv", "limparadv", "limiteadv",
     "salvarnota", "notas", "delnota", "setregras", "delregras", "linkgrupo",
     "revogarlink", "modolento", "saudegrupo", "modlog", "editargrupo",
-    "exportarmembros", "promover", "rebaixar", "set-nome", "set-desc",
-    "set-perfil", "add-user", "antiaudio", "antidoc", "antisticker",
-    "antienquete", "antiencaminhado", "antimencao"
+    "promover", "rebaixar", "set-nome", "set-desc", "antiaudio",
+    "antisticker", "antienquete"
   ],
   menudono: [
-    "botestatisticas", "botmemoria", "botambiente", "botdependencias",
-    "topcomandos", "cmdauditoria", "cmdpermissoes", "cmdaliases",
-    "cmdglobais", "cooldowncmd", "cooldownlista", "limparcooldowns",
-    "botbanlista", "gruposautorizados", "botmodo", "botnome",
-    "dononome", "getcmd", "cmdorigem"
+    "botestatisticas", "botmemoria", "topcomandos", "limparcooldowns",
+    "gruposautorizados", "botmodo", "botnome", "dononome", "getcmd", "cmdorigem"
   ],
   menudws: [
     "tiktoksearch", "spotifysearch", "soundcloudsearch", "igaudio",
@@ -416,9 +412,8 @@ const textExtras = Object.freeze({
     "mangasearch", "pinterestvideo", "twitter", "facebook", "mediafire"
   ],
   menualterar: [
-    "blue", "cold", "dark", "edge", "emboss", "glow", "mirror", "pixel",
-    "rotate", "sepia", "sharpen", "sketch", "brilho", "contraste", "neon",
-    "reverter", "agudo", "bass", "normalizar", "reverb", "cortaraudio"
+    "pixel", "rotate", "sepia", "sharpen", "brilho", "contraste",
+    "neon", "reverter", "agudo", "bass", "normalizar", "reverb"
   ],
   menulogos: [
     "neonglitch", "galaxy", "watercolor", "typography", "frozen",
@@ -432,8 +427,8 @@ const textExtras = Object.freeze({
   ],
   menuoutros: [
     "avatar", "ascii", "encurtar", "expandirurl", "printsite",
-    "statussite", "dns", "whois", "ip", "moeda", "horario",
-    "feriado", "lerqr", "corrigir", "tts", "transcrever", "hash"
+    "statussite", "dns", "moeda", "feriado", "lerqr", "corrigir",
+    "tts", "transcrever", "hash"
   ]
 });
 
@@ -442,24 +437,16 @@ const textOrder = [
   "menuadm", "menudono", "menualterar", "menulogos", "menubn", "menuoutros",
 ];
 
-function commandLines(commands, prefix, width = 76) {
-  const lines = [];
-  let line = "│";
-  for (const command of commands) {
-    const token = prefix + command;
-    if (line.length > 1 && line.length + token.length + 2 > width) {
-      lines.push(line);
-      line = "│";
-    }
-    line += " " + token;
-  }
-  if (line.length > 1) lines.push(line);
-  return lines;
+function commandLines(commands, prefix) {
+  return commands.map(command => "├ " + prefix + command);
 }
 
 function textGeneral(prefix) {
   const lines = [
-    header("Geral", prefix),
+    "╭─┄─🧊〔 ᴍᴇɴᴜ ɢᴇʀᴀʟ 〕",
+    "├ Bot: " + botName(),
+    "├ Prefixo: " + prefix,
+    "╰─┄─🧊",
     "╭─〔 🧊 ᴍᴇɴᴜs 〕",
     ...commandLines(textOrder.map(name => name), prefix),
     "╰─",
