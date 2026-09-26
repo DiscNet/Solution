@@ -448,7 +448,7 @@ const textLimits = Object.freeze({
   menuadm: 10,
   menudono: 5,
   menualterar: 4,
-  menulogos: 1,
+  menulogos: 8,
   menubn: 2,
   menuoutros: 6,
 });
