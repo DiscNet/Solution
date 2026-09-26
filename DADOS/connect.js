@@ -32,7 +32,7 @@ async function conectar() {
   connecting = true;
 
   try {
-    const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+    const { state, saveCreds } = await useMultiFileAuthState("./conexao/bot_auth");
     const { version } = await fetchLatestBaileysVersion();
     const msgRetryCounterCache = new NodeCache({ stdTTL: 600, checkperiod: 120, useClones: false });
 

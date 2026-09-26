@@ -3,6 +3,6 @@ node_modules/
 .env
 .env.*
 DADOS/temp/
-DADOS/config/runtime.json
+DADOS/database/runtime.json
 DADOS/database/grupos/
-DADOS/auth_info/
+DADOS/conexao/bot_auth/

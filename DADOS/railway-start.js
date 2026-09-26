@@ -2,11 +2,11 @@ process.chdir(__dirname);
 const fs = require('fs');
 const path = require('path');
 
-const repoAuthDir = path.join(__dirname, 'auth_info');
+const repoAuthDir = path.join(__dirname, "conexao", "bot_auth");
 const configuredAuthDir = process.env.AUTH_DIR
   ? path.resolve(process.env.AUTH_DIR)
   : (process.env.RAILWAY_VOLUME_MOUNT_PATH
-      ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'auth_info')
+      ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'bot_auth')
       : repoAuthDir);
 
 function copyDirContents(source, destination) {
@@ -58,7 +58,7 @@ function restoreAuthFromEnv(destination) {
       fs.writeFileSync(outputPath, Buffer.from(fileBase64, 'base64'));
     }
 
-    console.log('✅ auth_info restaurado a partir de AUTH_INFO_B64.');
+    console.log('✅ bot_auth restaurado a partir de AUTH_INFO_B64.');
     return true;
   } catch (err) {
     console.error('❌ Não foi possível restaurar AUTH_INFO_B64:', err.message);
@@ -67,6 +67,7 @@ function restoreAuthFromEnv(destination) {
 }
 
 function prepareAuthDirectory() {
+  fs.mkdirSync(path.dirname(repoAuthDir), { recursive: true });
   // Execução local sem volume.
   if (configuredAuthDir === repoAuthDir) {
     fs.mkdirSync(repoAuthDir, { recursive: true });
@@ -78,24 +79,24 @@ function prepareAuthDirectory() {
   fs.mkdirSync(configuredAuthDir, { recursive: true });
 
   if (isDirEmpty(configuredAuthDir)) {
-    // 1) usa auth_info enviado pelo GitHub como seed do primeiro deploy;
+    // 1) usa bot_auth enviado pelo GitHub como seed do primeiro deploy;
     // 2) se ele não existir, aceita AUTH_INFO_B64 como alternativa.
     if (fs.existsSync(repoAuthDir) && !isDirEmpty(repoAuthDir)) {
       copyDirContents(repoAuthDir, configuredAuthDir);
-      console.log('✅ auth_info inicial copiado para o volume persistente.');
+      console.log('✅ bot_auth inicial copiado para o volume persistente.');
     } else {
       restoreAuthFromEnv(configuredAuthDir);
     }
   }
 
-  // O código antigo continua usando ./auth_info, mas o conteúdo fica no volume.
+  // O código antigo continua usando ./bot_auth, mas o conteúdo fica no volume.
   try {
     if (fs.existsSync(repoAuthDir)) {
       fs.rmSync(repoAuthDir, { recursive: true, force: true });
     }
     fs.symlinkSync(configuredAuthDir, repoAuthDir, 'dir');
   } catch (err) {
-    console.error('❌ Falha ao preparar auth_info persistente:', err.message);
+    console.error('❌ Falha ao preparar bot_auth persistente:', err.message);
     process.exit(1);
   }
 }

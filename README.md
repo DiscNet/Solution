@@ -9,7 +9,7 @@
 
 # Solution · GrimmJow-WA
 
-Bot de WhatsApp mantido por **Kxlyn**, com comandos para grupos, mídia, utilidades e sistemas de jogo. O prefixo padrão é `.`. A estrutura foi reunida em `DADOS/`, com plugins por categoria e textos de menu separados da lógica dos comandos.
+Bot de WhatsApp mantido por **Kxlyn**, com comandos para grupos, mídia, utilidades e sistemas de jogo. O prefixo padrão é `.`. A estrutura foi reunida em `DADOS/MÓDULOS/`, com plugins por categoria e textos de menu separados da lógica dos comandos.
 
 ## ✦ O que o bot reúne
 
@@ -45,18 +45,20 @@ npm start
 
 Para os comandos integrados à API, configure `TOKITO_API` no ambiente. Outras integrações podem pedir variáveis próprias; consulte `DADOS/config/config.js` antes de ativá-las.
 
-> **Sessão:** `DADOS/auth_info/` contém credenciais de conexão. Trate essa pasta como privada. Em uma implantação nova, prefira armazenar a sessão em um volume ou usar `AUTH_INFO_B64`, que o inicializador reconhece.
+> **Sessão:** `DADOS/conexao/bot_auth/` contém credenciais de conexão. Trate essa pasta como privada. Em uma implantação nova, prefira armazenar a sessão em um volume ou usar `AUTH_INFO_B64`, que o inicializador reconhece.
 
 ## 🗂️ Organização
 
 | Caminho | Responsabilidade |
 | --- | --- |
-| `DADOS/plugins/` | Comandos divididos por categoria. |
-| `DADOS/mensagens/` | Menus, mensagens e respostas de erro. |
-| `DADOS/sistemas/` | Regras e contexto dos sistemas do bot. |
-| `DADOS/database/` | Dados e arquivos de suporte usados pelo bot. |
-| `DADOS/functions/` | Integrações, renderização e funções compartilhadas. |
-| `DADOS/core/` e `DADOS/events/` | Inicialização, conexão e eventos. |
+| `DADOS/MÓDULOS/plugins/` | Comandos divididos por categoria. |
+| `DADOS/MÓDULOS/mensagens/` | Menus, mensagens e respostas de erro. |
+| `DADOS/MÓDULOS/sistemas/` | Regras e contexto dos sistemas do bot. |
+| `DADOS/database/` | Dados e estados dos recursos, incluindo os filtros de moderação. |
+| `DADOS/MÓDULOS/functions/` | Integrações, renderização e funções compartilhadas. |
+| `DADOS/config/config.js` | Configuração geral do bot. |
+| `DADOS/conexao/bot_auth/` | Sessão de conexão do WhatsApp. |
+| `DADOS/core/` e `DADOS/eventos/` | Inicialização, conexão e eventos. |
 | `DADOS/imagens/` | Artes usadas nas mensagens e neste README. |
 
 O comando de produção é `npm start`; o `Dockerfile` da raiz instala as dependências e inicia o mesmo script.

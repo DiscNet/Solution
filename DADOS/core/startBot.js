@@ -12,28 +12,28 @@ const fs = require("fs");
 const path = require("path");
 const ROOT_DIR = path.join(__dirname, "..");
 const axios = require("axios");
-const { createStatusQuoted } = require("../functions/statusCard");
-const { executeCommand } = require("../functions/commandExecutor");
-const runtimeLogger = require("../functions/runtimeLogger");
-const { extractMessageText, unwrapMessage, isInteractiveReply, interactiveReplyId } = require("../functions/messageText");
-const { registerConnectionEvents } = require("../events/connection");
-const { createReconnectController } = require("../events/reconnect");
-const { registerMessagesEvent } = require("../events/messages");
-const { registerGroupEvents } = require("../events/groups");
-const { handlePrivateInbox } = require("../events/privateInbox");
-const contactNameCache = require("../functions/contactNameCache");
+const { createStatusQuoted } = require("../MÓDULOS/functions/statusCard");
+const { executeCommand } = require("../MÓDULOS/functions/commandExecutor");
+const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
+const { extractMessageText, unwrapMessage, isInteractiveReply, interactiveReplyId } = require("../MÓDULOS/functions/messageText");
+const { registerConnectionEvents } = require("../eventos/connection");
+const { createReconnectController } = require("../eventos/reconnect");
+const { registerMessagesEvent } = require("../eventos/messages");
+const { registerGroupEvents } = require("../eventos/groups");
+const { handlePrivateInbox } = require("../eventos/privateInbox");
+const contactNameCache = require("../MÓDULOS/functions/contactNameCache");
 const {
   normalizeCommandName,
   loadProjectCommandModules,
   buildCommandRegistry,
   replaceRegistry,
   formatRegistryIssue
-} = require("../functions/commandRegistry");
+} = require("../MÓDULOS/functions/commandRegistry");
 
 // RUNTIME_OPTIMIZED_V1
 
 // 🔥 CARREGA O CONFIG COM RECARREGAMENTO AUTOMÁTICO
-const configLoader = require("../functions/configLoader");
+const configLoader = require("../MÓDULOS/functions/configLoader");
 let config = configLoader.carregarConfig();
 
 // 🔥 FUNÇÃO PARA RECARREGAR CONFIG EM COMANDOS
@@ -176,21 +176,21 @@ function detectCommand(text, commandsList) {
 // ALUGUEL
 // ==============================================
 
-const aluguel = require("../functions/aluguel");
+const aluguel = require("../MÓDULOS/functions/aluguel");
 
 // ==============================================
 // AFK
 // ==============================================
 
-const afk = require("../functions/afk");
-const activitySystem = require("../functions/activitySystem");
+const afk = require("../MÓDULOS/functions/afk");
+const activitySystem = require("../MÓDULOS/functions/activitySystem");
 
 // ==============================================
 // ANTIS
 // ==============================================
 
-const antiManager = require("../functions/antiManager");
-const blockcmdManager = require("../functions/blockcmd");
+const antiManager = require("../MÓDULOS/functions/antiManager");
+const blockcmdManager = require("../MÓDULOS/functions/blockcmd");
 
 function isAntiAtivo(grupoId, tipo) {
   return antiManager.isAntiAtivo(grupoId, tipo);
@@ -213,15 +213,15 @@ function contemLink(texto) {
 // ANTI-SPAM
 // ==============================================
 
-const { isAntispamAtivo, verificarSpam } = require("../functions/antispam");
+const { isAntispamAtivo, verificarSpam } = require("../MÓDULOS/functions/antispam");
 
 // ==============================================
 // BEM-VINDO
 // ==============================================
 
-const bemvindoFunctions = require("../functions/bemvindo");
+const bemvindoFunctions = require("../MÓDULOS/functions/bemvindo");
 const isBemvindoAtivo = bemvindoFunctions.isBemvindoAtivo;
-const { sendGroupWelcomeBanner } = require("../functions/groupWelcomeBanner");
+const { sendGroupWelcomeBanner } = require("../MÓDULOS/functions/groupWelcomeBanner");
 
 // ==============================================
 // CONFIGURAÇÃO DE MANUTENÇÃO
@@ -241,9 +241,9 @@ function isUserDono(senderJid) {
 }
 
 async function verificarManutencao(conn, from, cmdName, senderJid, msg) {
-  const emManutencao = require("../functions/maintenance").list().includes(cmdName);
+  const emManutencao = require("../MÓDULOS/functions/maintenance").list().includes(cmdName);
   if (!emManutencao) return false;
-  const isDono = require("../functions/permissions").isOwner(msg);
+  const isDono = require("../MÓDULOS/functions/permissions").isOwner(msg);
   if (isDono) {
     await conn.sendMessage(from, { text: `⚠️ *ᴀᴛᴇɴÇÃᴏ ᴅᴏɴᴏ!*\n\n🔧 ᴏ ᴄᴏᴍᴀɴᴅᴏ "${cmdName}" ᴇsᴛá ᴇᴍ ᴍᴀɴᴜᴛᴇɴçãᴏ ᴘᴀʀᴀ ᴜsᴜáʀɪᴏs ᴄᴏᴍᴜɴs, ᴍᴀs ᴠᴏᴄê ᴛᴇᴍ ᴘᴇʀᴍɪssãᴏ ᴘᴀʀᴀ ᴜsᴀʀ.\n\n📌 ᴄᴏɴᴛɪɴᴜᴇ ᴄᴏᴍ ᴏ ᴄᴏᴍᴀɴᴅᴏ ɴᴏʀᴍᴀʟᴍᴇɴᴛᴇ.` }, { quoted: msg });
     return false;
@@ -342,7 +342,7 @@ function reloadCommandsFromDisk() {
   const { registry, collisions } = buildCommandRegistry(records);
 
   replaceRegistry(commands, registry);
-  require("../functions/menuCatalog").prime(records, errors, collisions);
+  require("../MÓDULOS/functions/menuCatalog").prime(records, errors, collisions);
   comandosCarregados = records.length;
   comandosFalhos = errors.map(({ file, error }) =>
     `${path.relative(ROOT_DIR, file)}: ${error.message}`
@@ -369,7 +369,7 @@ reloadCommandsFromDisk();
 
 if (process.env.HOT_RELOAD === "1") {
   try {
-    require("../functions/autoupgrade")({ commands });
+    require("../MÓDULOS/functions/autoupgrade")({ commands });
   } catch (error) {
     console.error("Falha ao ativar hot reload:", error.message);
   }
@@ -379,9 +379,9 @@ if (process.env.HOT_RELOAD === "1") {
 // FUNÇÕES EXTERNAS
 // ==============================================
 
-const autofiguPath = path.join(ROOT_DIR, "plugins", "admin", "autofigu.js");
+const autofiguPath = path.join(ROOT_DIR, "MÓDULOS", "plugins", "admin", "autofigu.js");
 const autofiguModule = fs.existsSync(autofiguPath) ? require(autofiguPath) : null;
-const autoresponse = require("../functions/autoresponse");
+const autoresponse = require("../MÓDULOS/functions/autoresponse");
 const axiosInstance = axios.create({ timeout: 10000 });
 global.reactMessages = {};
 function isGroup(jid) { return jid.endsWith("@g.us"); }
@@ -470,7 +470,7 @@ async function startBot() {
       conn = null;
     }
 
-  const { state, saveCreds } = await useMultiFileAuthState("./auth_info");
+  const { state, saveCreds } = await useMultiFileAuthState("./conexao/bot_auth");
 
   if (!state.creds.registered) {
     console.clear();
@@ -575,7 +575,7 @@ async function startBot() {
         });
       }
 
-      if (await require("../functions/adminPolicy").moderateMessage(conn, msg, from, text)) return;
+      if (await require("../MÓDULOS/functions/adminPolicy").moderateMessage(conn, msg, from, text)) return;
 
       // ========== EXTRAIR DADOS PARA LOG ==========
       const remetenteNumero = sender ? sender.split('@')[0] : 'desconhecido';

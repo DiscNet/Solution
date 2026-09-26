@@ -1,4 +1,4 @@
-const { buildContext } = require("../../sistemas/contexto");
+const { buildContext } = require("../../MÓDULOS/sistemas/contexto");
 
 function normal(value) {
   return String(value || "").trim().toLowerCase();
