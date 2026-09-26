@@ -14,6 +14,7 @@ const { authDir } = require("../conexão/sessao");
 const ROOT_DIR = path.join(__dirname, "..");
 const axios = require("axios");
 const { createStatusQuoted } = require("../MÓDULOS/functions/statusCard");
+const { installMessageDefaults } = require("../MÓDULOS/functions/messageDefaults");
 const { executeCommand } = require("../MÓDULOS/functions/commandExecutor");
 const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
 const { extractMessageText, unwrapMessage, isInteractiveReply, interactiveReplyId } = require("../MÓDULOS/functions/messageText");
@@ -501,16 +502,7 @@ async function startBot() {
     logger: baileysLogger
   });
 
-  const NEWSLETTER_JID = config.newsletterJid || "120363xxxxxxxxxx@newsletter";
-  const NEWSLETTER_NAME = config.newsletterName || config.botName || "TokitoBot";
-  const _originalSendMessage = conn.sendMessage.bind(conn);
-  conn.sendMessage = async (jid, content, options = {}) => {
-    const semContexto = content.delete || content.react || content.poll || content.pin;
-    if (!semContexto) {
-      options.contextInfo = { ...(options.contextInfo || {}), forwardingScore: 2, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: NEWSLETTER_JID, newsletterName: NEWSLETTER_NAME, serverMessageId: null } };
-    }
-    return _originalSendMessage(jid, content, options);
-  };
+  installMessageDefaults(conn);
 
   registerConnectionEvents(conn, {
     saveCreds,
