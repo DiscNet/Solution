@@ -1,7 +1,11 @@
 const fs = require("fs");
 const path = require("path");
 
-const ROOT = path.join(__dirname, "..", "commands");
+const PROJECT_ROOT = path.join(__dirname, "..");
+const ROOTS = [
+  path.join(PROJECT_ROOT, "commands"),
+  path.join(PROJECT_ROOT, "DADOS_TOKITO", "plugins"),
+];
 // Quantidade mínima é opcional. O catálogo deve priorizar comandos úteis,
 // não famílias geradas apenas para inflar a contagem.
 const MIN_COMMANDS = Number(process.env.MIN_COMMANDS || 0);
@@ -40,7 +44,7 @@ function expand(exported) {
 
 const records = [];
 const loadErrors = [];
-for (const file of walk(ROOT)) {
+for (const root of ROOTS) for (const file of walk(root)) {
   try {
     delete require.cache[require.resolve(file)];
     const exported = require(file);
@@ -48,14 +52,14 @@ for (const file of walk(ROOT)) {
       const name = normalizeName(command?.name);
       if (!name) continue;
       records.push({
-        file: path.relative(path.join(__dirname, ".."), file),
+        file: path.relative(PROJECT_ROOT, file),
         name,
         aliases: collectAliases(command),
         hidden: command?.hidden === true,
       });
     }
   } catch (error) {
-    loadErrors.push({ file: path.relative(path.join(__dirname, ".."), file), error: error.message });
+    loadErrors.push({ file: path.relative(PROJECT_ROOT, file), error: error.message });
   }
 }
 
