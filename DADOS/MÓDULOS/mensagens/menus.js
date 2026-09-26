@@ -439,18 +439,10 @@ const textOrder = [
   "menuadm", "menudono", "menualterar", "menulogos", "menubn", "menuoutros",
 ];
 
-const textLimits = Object.freeze({
-  menusticker: 12,
-  menudws: 12,
-  menurpg: 7,
-  menucoins: 7,
-  menupokemon: 9,
-  menuadm: 10,
-  menudono: 5,
-  menualterar: 4,
-  menulogos: 8,
-  menubn: 2,
-  menuoutros: 6,
+const textOmitted = Object.freeze({
+  menuadm: ["configgrupo", "atividades"],
+  menudono: ["integridadebot", "autorizargrupo"],
+  menuoutros: ["rankativo"],
 });
 
 function commandLines(commands, prefix) {
@@ -470,21 +462,14 @@ function textSectionEnd() {
 }
 
 function textGeneral(prefix) {
-  const lines = [
-    header("Menu Geral", prefix),
-    "",
-    ...textSection("Menus"),
-    ...commandLines(textOrder.map(name => name), prefix),
-    textSectionEnd(),
-  ];
+  const lines = [header("Menu Geral", prefix), ""];
 
   for (const name of textOrder) {
     const page = textPages[name];
     const commands = [...new Set([
       ...page.sections.flatMap(([, items]) => items.map(([command]) => command)),
-      ...(textExtras[name] || []),
-    ])];
-    commands.splice(textLimits[name]);
+      // O menu geral prioriza os comandos principais de cada categoria.
+    ])].filter(command => !(textOmitted[name] || []).includes(command));
     lines.push(...textSection(page.title));
     lines.push(...commandLines(commands, prefix));
     lines.push(textSectionEnd());
