@@ -1,5 +1,3 @@
-const { createStatusQuoted } = require("./statusCard");
-
 const SMALLCAPS = Object.freeze({
   a: "ᴀ", b: "ʙ", c: "ᴄ", d: "ᴅ", e: "ᴇ", f: "ғ", g: "ɢ", h: "ʜ", i: "ɪ",
   j: "ᴊ", k: "ᴋ", l: "ʟ", m: "ᴍ", n: "ɴ", o: "ᴏ", p: "ᴘ", q: "ǫ", r: "ʀ",
@@ -26,11 +24,7 @@ async function reply(conn, msg, text, options = {}) {
   if (!from) throw new Error("UI_REPLY_NO_TARGET");
   const content = { text: String(text), ...(options.content || {}) };
   const sendOptions = { ...(options.sendOptions || {}) };
-  if (options.card !== false) {
-    sendOptions.quoted = options.quoted || createStatusQuoted(msg, options.ownerName, options.numberOverride);
-  } else if (options.quoted) {
-    sendOptions.quoted = options.quoted;
-  }
+  if (options.quoted) sendOptions.quoted = options.quoted;
   return conn.sendMessage(from, content, sendOptions);
 }
 
