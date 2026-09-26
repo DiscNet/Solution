@@ -1,14 +1,11 @@
 {
-  "name": "LukaModzz",
+  "name": "kxlyn-solution",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "DADOS/index.js",
   "scripts": {
-    "start": "node railway-start.js",
-    "connect": "node connect.js",
-    "normalize:cards": "node scripts/normalize-status-cards.js",
-    "test": "node --test --test-skip-pattern=\"^1000\\+ commands load with metadata while generated families stay out of menu payloads$\" tests/*.test.js",
-    "audit:commands": "node scripts/audit-commands.js && node scripts/audit-command-examples.js"
+    "start": "node DADOS/railway-start.js",
+    "connect": "node DADOS/connect.js"
   },
   "engines": {
     "node": ">=22.22.2"
@@ -31,16 +28,13 @@
     "node-webpmux": "^3.2.1",
     "pino": "^10.3.1",
     "sharp": "^0.35.4",
-    "youtubei.js": "^18.0.0"
+    "youtubei.js": "^18.0.0",
+    "qrcode-terminal": "^0.12.0"
   },
   "overrides": {
     "@vreden/youtube_scraper": {
       "axios": "^1.19.0"
     },
     "minimatch": "^3.1.4"
-  },
-  "devDependencies": {
-    "playwright": "^1.61.1",
-    "qrcode-terminal": "^0.12.0"
   }
 }
