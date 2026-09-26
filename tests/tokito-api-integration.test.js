@@ -13,14 +13,13 @@ const couplePack = require("../commands/brincadeiras/tokito-api-couple");
 const downloadPack = require("../commands/dws/tokito-api-downloads");
 const extraPack = require("../commands/dws/tokito-api-extras");
 const playlist = require("../commands/dws/playlist");
-const rpgCards = require("../commands/rpg/tokito-cards");
 const akinator = require("../commands/brincadeiras/akinator");
 const textTools = require("../commands/outros/util-texto");
 const totext = textTools.find(command => command.name === "transcrever");
 const bratPack = require("../commands/dws/brat");
 const stickerPack = require("../commands/sticker/tokito-api-stickers");
 const freeFirePack = require("../commands/outros/tokito-freefire");
-const { loadCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
+const { loadProjectCommandModules, buildCommandRegistry } = require("../functions/commandRegistry");
 const youtubeResult = require("../functions/youtubeResult");
 const youtubeMedia = require("../functions/youtubeMedia");
 const messageText = require("../functions/messageText");
@@ -307,9 +306,11 @@ test("playlist resolve resultado da pesquisa YouTube", () => {
   assert.equal(track.url, "https://youtube.com/watch?v=abc");
 });
 
-test("cards RPG Tokito incluem level e coinscard", () => {
-  const names = rpgCards.map(x => x.name);
-  assert.deepEqual(names, ["level", "coinscard"]);
+test("RPG e Coins usam plugins Kxlyn separados", () => {
+  const level = require("../DADOS_KXLYN/plugins/rpg/level");
+  const coins = require("../DADOS_KXLYN/plugins/coins/coins");
+  assert.equal(level.name, "level");
+  assert.equal(coins.name, "coins");
 });
 
 test("perfil e welcome apontam para os canvases da Tokito API", () => {
@@ -319,23 +320,23 @@ test("perfil e welcome apontam para os canvases da Tokito API", () => {
   assert.match(welcome, /\/canvas\/welcome/);
 });
 
-test("RPG está organizado em seções Tokito-style", () => {
-  const registro = fs.readFileSync(path.join(__dirname, "..", "commands", "rpg", "registro.js"), "utf8");
-  const ficha = fs.readFileSync(path.join(__dirname, "..", "commands", "rpg", "ficha.js"), "utf8");
-  const loja = fs.readFileSync(path.join(__dirname, "..", "commands", "rpg", "loja.js"), "utf8");
-  assert.match(registro, /Sistema RPG/);
-  assert.match(ficha, /Sistema RPG/);
-  assert.match(loja, /Loja e Itens/);
+test("RPG está organizado na estrutura DADOS_KXLYN", () => {
+  const jornada = fs.readFileSync(path.join(__dirname, "..", "DADOS_KXLYN", "plugins", "rpg", "jornada.js"), "utf8");
+  const economia = fs.readFileSync(path.join(__dirname, "..", "DADOS_KXLYN", "plugins", "coins", "economia.js"), "utf8");
+  const pokemon = fs.readFileSync(path.join(__dirname, "..", "DADOS_KXLYN", "plugins", "pokemon", "cuidados.js"), "utf8");
+  assert.match(jornada, /Jornada/);
+  assert.match(economia, /N-Coins/);
+  assert.match(pokemon, /Batalha Pokémon/);
 });
 
 test("todos os novos comandos carregam no registry sem erro de módulo", () => {
-  const commandsPath = path.join(__dirname, "..", "commands");
-  const loaded = loadCommandModules(commandsPath, { clearCache: true });
+  const projectRoot = path.join(__dirname, "..");
+  const loaded = loadProjectCommandModules(projectRoot, { clearCache: true });
   assert.equal(loaded.errors.length, 0, loaded.errors.map(x => x.file + ": " + x.error.message).join("\n"));
   const built = buildCommandRegistry(loaded.records);
   const required = [
     "gemini", "openai", "tiktoksearch", "spotifysearch", "facebook", "twitter",
-    "playdoc", "tiktokfoto", "playlist", "level", "coinscard",
+    "playdoc", "tiktokfoto", "playlist", "level", "coins", "modocoins", "lojapokemon",
     "akinator", "transcrever", "figu", "brat", "likes", "criarsala", "iaaudio", "chatia", "apitest", "darkgreen", "neonglitch", "galaxy",
     "play_audio", "playvideo", "spotify_audio", "tiktok_audio", "instagram_audio", "face_audio", "twitter_audio", "kwai_audio", "apple_audio", "sound_audio", "menulogos",
     "casal", "casalgif", "mines", "adivinhepalavra", "cacapalavras", "resetforca", "resetquiz", "resetmines", "resetadivinhe", "resetcaca", "logoglitch", "logocartoon", "logodesfoque"
