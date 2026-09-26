@@ -1,88 +1,93 @@
-🤖 WhatsApp Bot - GitHub
+```markdown
+# 🤖 WhatsApp Bot
 
 <div align="center">
 
-https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=0,2,2,5,30&height=200&section=header&text=WhatsApp%20Bot&fontSize=70&fontColor=fff&animation=fadeIn&fontAlignY=38&desc=Automação%20Inteligente%20para%20WhatsApp&descAlignY=55&descSize=20
+![Header](https://capsule-render.vercel.app/api?type=waving&color=0:25D366,50:128C7E,100:075E54&height=200&section=header&text=WhatsApp%20Bot&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Automa%C3%A7%C3%A3o%20Inteligente%20para%20WhatsApp&descAlignY=58&descSize=20)
 
-https://img.shields.io/github/stars/seu-usuario/whatsapp-bot?style=for-the-badge&logo=github&color=yellow
-https://img.shields.io/github/forks/seu-usuario/whatsapp-bot?style=for-the-badge&logo=github&color=blue
-https://img.shields.io/github/issues/seu-usuario/whatsapp-bot?style=for-the-badge&logo=github&color=red
-https://img.shields.io/badge/License-MIT-green?style=for-the-badge&logo=opensourceinitiative
+[![Stars](https://img.shields.io/github/stars/seu-usuario/whatsapp-bot?style=for-the-badge&logo=github&color=yellow&labelColor=black)](https://github.com/seu-usuario/whatsapp-bot/stargazers)
+[![Forks](https://img.shields.io/github/forks/seu-usuario/whatsapp-bot?style=for-the-badge&logo=github&color=blue&labelColor=black)](https://github.com/seu-usuario/whatsapp-bot/network)
+[![Issues](https://img.shields.io/github/issues/seu-usuario/whatsapp-bot?style=for-the-badge&logo=github&color=red&labelColor=black)](https://github.com/seu-usuario/whatsapp-bot/issues)
+[![License](https://img.shields.io/badge/License-MIT-25D366?style=for-the-badge&logo=opensourceinitiative&labelColor=black)](LICENSE)
+[![Node](https://img.shields.io/badge/Node.js-18+-339933?style=for-the-badge&logo=nodedotjs&labelColor=black)](https://nodejs.org)
 
-<img src="https://readme-typing-svg.herokuapp.com?font=Fira+Code&weight=600&size=24&pause=1000&color=25D366&center=true&vCenter=true&width=600&lines=Bem-vindo+ao+WhatsApp+Bot!+%F0%9F%A4%96;Automatize+suas+mensagens+%F0%9F%92%AC;Feito+com+Node.js+%2B+Baileys+%E2%9A%A1;100%25+Gratuito+e+Open+Source+%F0%9F%8C%9F" alt="Typing SVG" />
+<br>
+
+<img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=24&duration=3000&pause=1000&color=25D366&center=true&vCenter=true&multiline=true&width=700&height=100&lines=Bem-vindo+ao+WhatsApp+Bot!+%F0%9F%A4%96;Automatize+suas+mensagens+%F0%9F%92%AC;Feito+com+Node.js+%2B+Baileys+%E2%9A%A1;100%25+Gratuito+e+Open+Source+%F0%9F%8C%9F" alt="Typing SVG" />
 
 </div>
 
 ---
 
-📋 Índice
+## 📋 Índice
 
-· ✨ Sobre o Projeto
-· 🚀 Funcionalidades
-· 📸 Demonstração
-· ⚙️ Instalação
-· 🎮 Comandos
-· 🛠️ Tecnologias
-· 📁 Estrutura
-· 🤝 Contribuindo
-· 📄 Licença
+- [✨ Sobre o Projeto](#-sobre-o-projeto)
+- [🚀 Funcionalidades](#-funcionalidades)
+- [📸 Demonstração](#-demonstração)
+- [⚙️ Instalação](#️-instalação)
+- [🎮 Comandos](#-comandos)
+- [🛠️ Tecnologias](#️-tecnologias)
+- [📁 Estrutura](#-estrutura)
+- [🤝 Contribuindo](#-contribuindo)
+- [📄 Licença](#-licença)
 
 ---
 
-✨ Sobre o Projeto
+## ✨ Sobre o Projeto
 
 <div align="center">
 
-<img src="https://media.giphy.com/media/qgQUggAC3Pfv687qPC/giphy.gif" width="400" />
+<img src="https://media.giphy.com/media/qgQUggAC3Pfv687qPC/giphy.gif" width="400" alt="Coding GIF" />
 
 </div>
 
-Um bot de WhatsApp moderno, rápido e cheio de funcionalidades, desenvolvido com Node.js e a biblioteca Baileys. Ideal para automatizar tarefas, gerenciar grupos e interagir com usuários de forma inteligente. 🎯
+Um **bot de WhatsApp** moderno, rápido e cheio de funcionalidades, desenvolvido com **Node.js** e a biblioteca **Baileys**. Ideal para automatizar tarefas, gerenciar grupos e interagir com usuários de forma inteligente. 🎯
 
-💡 Dica: Este bot é totalmente gratuito, open source e fácil de configurar!
-
----
-
-🚀 Funcionalidades
-
-<div align="center">
-
-🎯 Recurso 📝 Descrição ✅ Status
-🤖 Auto-responder Respostas automáticas inteligentes ✅
-🎨 Sticker Maker Crie figurinhas personalizadas ✅
-📥 Downloader YouTube, Instagram, TikTok ✅
-🎵 Música Busca e envia áudios ✅
-🎮 Jogos Quiz, forca, adivinhações ✅
-👥 Admin Grupo Ban, kick, promote ✅
-🔒 Anti-Link Bloqueio de links indesejados ✅
-📊 Ranking Sistema de níveis e XP ✅
-🌐 IA Integrada ChatGPT / Gemini ✅
-
-</div>
+> 💡 **Dica:** Este bot é totalmente gratuito, open source e fácil de configurar!
 
 ---
 
-📸 Demonstração
+## 🚀 Funcionalidades
 
 <div align="center">
 
-🎨 Preview do Bot
-
-<img src="https://user-images.githubusercontent.com/74038190/212284100-561aa473-3905-4a80-b561-0d28506553ee.gif" width="700" />
-
-📱 Screenshots
-
-https://via.placeholder.com/400x600/25D366/FFFFFF?text=Menu+Principal
-https://via.placeholder.com/400x600/128C7E/FFFFFF?text=Sticker+Maker
-https://via.placeholder.com/400x600/075E54/FFFFFF?text=Downloader
+| 🎯 Recurso | 📝 Descrição | ✅ Status |
+|:----------:|:-------------|:---------:|
+| 🤖 **Auto-responder** | Respostas automáticas inteligentes | ✅ |
+| 🎨 **Sticker Maker** | Crie figurinhas personalizadas | ✅ |
+| 📥 **Downloader** | YouTube, Instagram, TikTok | ✅ |
+| 🎵 **Música** | Busca e envia áudios | ✅ |
+| 🎮 **Jogos** | Quiz, forca, adivinhações | ✅ |
+| 👥 **Admin Grupo** | Ban, kick, promote | ✅ |
+| 🔒 **Anti-Link** | Bloqueio de links indesejados | ✅ |
+| 📊 **Ranking** | Sistema de níveis e XP | ✅ |
+| 🌐 **IA Integrada** | ChatGPT / Gemini | ✅ |
 
 </div>
 
 ---
 
-⚙️ Instalação
+## 📸 Demonstração
 
-📦 Pré-requisitos
+<div align="center">
+
+### 🎨 Preview do Bot
+
+<img src="https://media.giphy.com/media/LnQjpWaON8nhr21vNW/giphy.gif" width="200" alt="Bots GIF" />
+
+### 📱 Screenshots
+
+![Menu](https://capsule-render.vercel.app/api?type=rect&color=0:25D366,100:075E54&height=300&section=header&text=Menu%20Principal&fontSize=40&fontColor=ffffff)
+![Sticker](https://capsule-render.vercel.app/api?type=rect&color=0:128C7E,100:25D366&height=300&section=header&text=Sticker%20Maker&fontSize=40&fontColor=ffffff)
+![Downloader](https://capsule-render.vercel.app/api?type=rect&color=0:075E54,100:128C7E&height=300&section=header&text=Downloader&fontSize=40&fontColor=ffffff)
+
+</div>
+
+---
+
+## ⚙️ Instalação
+
+### 📦 Pré-requisitos
 
 ```bash
 ✅ Node.js v18+
@@ -119,7 +124,7 @@ npm start
 
 <div align="center">
 
-<img src="https://media.giphy.com/media/LnQjpWaON8nhr21vNW/giphy.gif" width="200" />
+<img src="https://media.giphy.com/media/LnQjpWaON8nhr21vNW/giphy.gif" width="200" alt="Connect GIF" />
 
 </div>
 
@@ -237,7 +242,9 @@ Este projeto está sob a licença MIT. Veja o arquivo LICENSE para mais detalhes
 
 https://img.shields.io/github/stars/seu-usuario/whatsapp-bot?style=social
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=gradient&customColorList=0,2,2,5,30&height=120&section=footer&animation=twinkling" />
+<br>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:25D366,50:128C7E,100:075E54&height=120&section=footer&animation=twinkling" />
 
 Feito com 💚 por Seu Nome
 
@@ -245,17 +252,3 @@ https://profile-counter.glitch.me/seu-usuario/count.svg
 
 </div>
 ```
-
----
-
-🎨 Recursos Visuais Usados
-
-Este README utiliza elementos animados e coloridos:
-
-Recurso Descrição
-🌊 Capsule Render Header/Footer com onda animada em chroma color
-⌨️ Typing SVG Texto digitado animado
-🎞️ GIPHY GIFs animados de tecnologia
-🏷️ Shields.io Badges coloridos e dinâmicos
-✨ Emojis Ícones em toda a documentação
-📊 Tabelas Organização visual limpa
