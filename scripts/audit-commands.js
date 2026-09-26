@@ -4,7 +4,7 @@ const path = require("path");
 const PROJECT_ROOT = path.join(__dirname, "..");
 const ROOTS = [
   path.join(PROJECT_ROOT, "commands"),
-  path.join(PROJECT_ROOT, "DADOS_TOKITO", "plugins"),
+  path.join(PROJECT_ROOT, "DADOS_KXLYN", "plugins"),
 ];
 // Quantidade mínima é opcional. O catálogo deve priorizar comandos úteis,
 // não famílias geradas apenas para inflar a contagem.
