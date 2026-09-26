@@ -1,12 +1,13 @@
 const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
 const contactNameCache = require("../MÓDULOS/functions/contactNameCache");
+const { runWithMessage } = require("../MÓDULOS/functions/messageDefaults");
 
 function registerMessagesEvent(conn, processIncomingMessage) {
   conn.ev.on("messages.upsert", async ({ messages }) => {
     for (const msg of messages || []) {
       try {
         contactNameCache.rememberMessage(msg);
-        await processIncomingMessage(msg);
+        await runWithMessage(msg, () => processIncomingMessage(msg));
       } catch (error) {
         runtimeLogger.error({ scope: "messages.upsert", error, code: "ERR_MESSAGE_EVENT" });
       }
