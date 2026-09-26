@@ -1,5 +1,6 @@
 const { sendButtons: giftedButtons, sendInteractiveMessage: giftedInteractive } = require("gifted-btns");
 const state = require("./adminState");
+const { prepareOutgoing } = require("./messageDefaults");
 
 function isTextOnly(jid) {
   if (!String(jid || "").endsWith("@g.us")) return false;
@@ -54,12 +55,14 @@ function plainPayload(payload) {
 
 async function sendInteractiveMessage(conn, jid, payload, options) {
   if (isTextOnly(jid)) return conn.sendMessage(jid, plainPayload(payload), options);
-  return giftedInteractive(conn, jid, payload, options);
+  const outgoing = prepareOutgoing(payload, options);
+  return giftedInteractive(conn, jid, outgoing.content, outgoing.options);
 }
 
 async function sendButtons(conn, jid, payload, options) {
   if (isTextOnly(jid)) return conn.sendMessage(jid, plainPayload(payload), options);
-  return giftedButtons(conn, jid, payload, options);
+  const outgoing = prepareOutgoing(payload, options);
+  return giftedButtons(conn, jid, outgoing.content, outgoing.options);
 }
 
 async function sendMessageWithUi(conn, jid, payload, options) {
