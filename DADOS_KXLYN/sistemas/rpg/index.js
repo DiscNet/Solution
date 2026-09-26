@@ -147,6 +147,14 @@ const CIDADE_EMPRESAS = Object.freeze({
   startup: { nome: "Startup", emoji: "🚀", preco: 95000, receita: [3800, 7200] },
 });
 
+const CIDADE_PEIXES = Object.freeze([
+  { nome: "Tilápia", emoji: "🐟", raridade: "Comum", peso: [1, 4], valorKg: 90, pesoChance: 48 },
+  { nome: "Tucunaré", emoji: "🐠", raridade: "Incomum", peso: [2, 7], valorKg: 160, pesoChance: 28 },
+  { nome: "Pirarucu", emoji: "🐡", raridade: "Raro", peso: [5, 14], valorKg: 320, pesoChance: 16 },
+  { nome: "Dourado", emoji: "✨", raridade: "Épico", peso: [3, 9], valorKg: 520, pesoChance: 7 },
+  { nome: "Peixe Lendário", emoji: "👑", raridade: "Lendário", peso: [8, 20], valorKg: 900, pesoChance: 1 },
+]);
+
 const PATENTES = Object.freeze([
   [0, "Bronze I"],
   [100, "Bronze II"],
@@ -512,6 +520,7 @@ module.exports = {
   CIDADE_CASAS,
   CIDADE_VEICULOS,
   CIDADE_EMPRESAS,
+  CIDADE_PEIXES,
   PATENTES,
   MARCOS,
   pokemonImg,
