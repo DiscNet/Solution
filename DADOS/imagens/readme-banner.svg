@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="360" viewBox="0 0 1200 360" role="img" aria-labelledby="title desc">
+  <title id="title">Solution, bot de WhatsApp de Kxlyn</title>
+  <desc id="desc">Banner escuro com identidade roxa e azul, nome Solution e monograma K.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#090815"/>
+      <stop offset="0.55" stop-color="#15102C"/>
+      <stop offset="1" stop-color="#071820"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#B799FF"/>
+      <stop offset="0.5" stop-color="#8B5CF6"/>
+      <stop offset="1" stop-color="#54D8E8"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#7952E9" stop-opacity="0.48"/>
+      <stop offset="1" stop-color="#7952E9" stop-opacity="0"/>
+    </radialGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse">
+      <circle cx="2" cy="2" r="1" fill="#B2A4DA" opacity="0.13"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="360" rx="24" fill="url(#bg)"/>
+  <rect width="1200" height="360" rx="24" fill="url(#dots)"/>
+  <circle cx="973" cy="165" r="272" fill="url(#glow)"/>
+  <path d="M0 305 C250 245 360 398 620 322 S1015 241 1200 326" fill="none" stroke="#A98AFD" stroke-opacity="0.16" stroke-width="2"/>
+  <path d="M0 325 C210 276 400 392 646 343 S1024 264 1200 341" fill="none" stroke="#64D8EB" stroke-opacity="0.13" stroke-width="2"/>
+  <rect x="58" y="52" width="6" height="35" rx="3" fill="url(#neon)"/>
+  <text x="82" y="76" fill="#BBA9E7" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="4">KXLYN  /  WHATSAPP BOT</text>
+  <text x="58" y="174" fill="#F6F2FF" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" letter-spacing="1">SOLUTION</text>
+  <rect x="58" y="194" width="486" height="3" rx="1.5" fill="url(#neon)"/>
+  <text x="58" y="240" fill="#D9CEFA" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="600" letter-spacing="3">GRIMMJOW-WA</text>
+  <text x="58" y="299" fill="#AFA9C7" font-family="Arial, Helvetica, sans-serif" font-size="15" letter-spacing="2.8">COMANDOS   ·   SISTEMAS   ·   CARDS</text>
+  <rect x="818" y="48" width="322" height="264" rx="25" fill="#14112A" fill-opacity="0.8" stroke="#AE91F5" stroke-opacity="0.46" stroke-width="2"/>
+  <rect x="836" y="66" width="286" height="228" rx="17" fill="none" stroke="#66D2E8" stroke-opacity="0.15"/>
+  <circle cx="979" cy="165" r="76" fill="#1D1740" stroke="url(#neon)" stroke-width="3"/>
+  <circle cx="979" cy="165" r="62" fill="none" stroke="#AE91F5" stroke-opacity="0.18" stroke-width="2"/>
+  <text x="979" y="196" fill="#EEE7FF" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="90" font-weight="800">K</text>
+  <circle cx="868" cy="98" r="4" fill="#8B5CF6"/>
+  <circle cx="883" cy="98" r="4" fill="#54D8E8"/>
+  <circle cx="898" cy="98" r="4" fill="#C2A7FF"/>
+  <text x="979" y="272" fill="#B7A8DF" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="4">BUILD YOUR WORLD</text>
+</svg>
