@@ -437,30 +437,51 @@ const textExtras = Object.freeze({
   ]
 });
 
-function textGeneral(prefix) {
-  const lines = [
-    "╭─┄─🧊〔 " + botName() + " 〕",
-    "│ Menu geral • Prefixo: " + prefix,
-    "╰─┄─🧊",
-    "",
-    "*Menus:*",
+function textGeneralPages(prefix) {
+  const menuIndex = [
+    "╭─┄─💎〔 𝙼𝙴𝙽𝚄𝚂 〕",
     ...Object.entries(routes)
       .filter(([category]) => category !== "Menus")
-      .map(([category, route]) => category + " " + prefix + route),
-    "Completo: " + prefix + "menugeral",
-    ""
-  ];
+      .map(([category, route]) => "├̬⌑ؔ͟ 「🧊」" + prefix + route + " — " + category),
+    "├̬⌑ؔ͟ 「🧊」" + prefix + "menugeral — todos os comandos",
+    "╰─┄─💎",
+  ].join("\n");
 
+  const blocks = [];
   for (const [name, page] of Object.entries(textPages)) {
-    const commands = [
-      ...page.sections.flatMap(([, items]) => items.map(([command]) => command.split(" ")[0])),
-      ...(textExtras[name] || []),
-    ];
-    lines.push(page.title + ":");
-    lines.push(commands.map(command => prefix + command).join(" · "));
+    const category = Object.entries(routes).find(([, route]) => route === name)?.[0] || page.title;
+    for (const [section, commands] of page.sections) {
+      const rows = commands.map(([command, description]) =>
+        prefix + command + " | " + description
+      );
+      blocks.push(decoratePage("*" + category + " - " + section + "*\n" + rows.join("\n")));
+    }
+    const extras = textExtras[name] || [];
+    if (extras.length) {
+      blocks.push(decoratePage("*" + category + " - Mais comandos*\n" +
+        extras.map(command => prefix + command).join("\n")));
+    }
   }
-  lines.push("", "Uso: " + prefix + "info <comando> · " + prefix + "menu <categoria>");
-  return lines.join("\n");
+
+  // Cada parte continua com a mesma moldura do menugeral e cabe na legenda da imagem.
+  const bodies = [];
+  let current = menuIndex;
+  for (const block of blocks) {
+    if (current.length + block.length + 2 > 2900) {
+      bodies.push(current);
+      current = "";
+    }
+    current += (current ? "\n\n" : "") + block;
+  }
+  if (current) bodies.push(current);
+  return bodies.map((body, index) =>
+    header("Geral", prefix, index + 1, bodies.length) + "\n" + body +
+    "\n\nAjuda: " + prefix + "info <comando>"
+  );
+}
+
+function textGeneral(prefix) {
+  return textGeneralPages(prefix).join("\n\n");
 }
 
 module.exports = {
@@ -476,4 +497,5 @@ module.exports = {
   index,
   decoratePage,
   textGeneral,
+  textGeneralPages,
 };

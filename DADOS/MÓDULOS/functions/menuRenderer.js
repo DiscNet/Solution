@@ -130,18 +130,14 @@ async function sendMainMenu(conn, msg, from) {
 
   if (isTextOnly(from)) {
     const img = imagePath("menugeral");
-    const caption = menus.textGeneral(prefix);
-    if (fs.existsSync(img)) {
-      await conn.sendMessage(from, {
-        image: fs.readFileSync(img),
-        caption,
-        contextInfo: contextInfo(),
-      }, { quoted: createStatusQuoted(msg) });
-    } else {
-      await conn.sendMessage(from, {
-        text: caption,
-        contextInfo: contextInfo(),
-      }, { quoted: createStatusQuoted(msg) });
+    const image = fs.existsSync(img) ? fs.readFileSync(img) : null;
+    for (const caption of menus.textGeneralPages(prefix)) {
+      await conn.sendMessage(from,
+        image
+          ? { image, caption, contextInfo: contextInfo() }
+          : { text: caption, contextInfo: contextInfo() },
+        { quoted: createStatusQuoted(msg) }
+      );
     }
     await conn.sendMessage(from, { react: { text: "🧊", key: msg.key } });
     return;
