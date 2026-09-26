@@ -264,11 +264,7 @@ function decoratePage(text) {
 
       const section = sectionParts.join(" - ");
 
-      out.push(
-        "╭─〔 🧊 " +
-        smallCaps(category) +
-        " 〕"
-      );
+      out.push(categoryHeading(category));
 
       if (section) {
         out.push("│ " + smallCaps(section));
@@ -289,6 +285,10 @@ function decoratePage(text) {
   if (sectionOpen) out.push("╰─");
 
   return out.join("\n");
+}
+
+function categoryHeading(category) {
+  return "╭─〔 🧊 " + smallCaps(category) + " 〕";
 }
 
 // O menu geral em texto é curado à mão e usado só por .menu no modo sem botões.
@@ -426,9 +426,8 @@ const textExtras = Object.freeze({
     "rankfalido", "rankgado", "rankotaku", "ranksigma", "rankcasal", "fakechat"
   ],
   menuoutros: [
-    "avatar", "ascii", "encurtar", "expandirurl", "printsite",
-    "statussite", "dns", "moeda", "feriado", "lerqr",
-    "tts", "transcrever"
+    "avatar",
+    "statussite", "dns", "moeda"
   ]
 });
 
@@ -442,9 +441,7 @@ function commandLines(commands, prefix) {
 }
 
 function textSection(title) {
-  return [
-    "╭─〔 🧊 " + smallCaps(title) + " 〕",
-  ];
+  return [categoryHeading(title)];
 }
 
 function textSectionEnd() {
@@ -469,6 +466,7 @@ function textGeneral(prefix) {
     lines.push(...textSection(page.title));
     lines.push(...commandLines(commands, prefix));
     lines.push(textSectionEnd());
+    lines.push("");
   }
   return lines.join("\n");
 }
