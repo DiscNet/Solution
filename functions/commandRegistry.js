@@ -117,7 +117,7 @@ function loadCommandModules(commandsPath, options = {}) {
 function loadProjectCommandModules(rootDir, options = {}) {
   const roots = [
     path.join(rootDir, "commands"),
-    path.join(rootDir, "DADOS_TOKITO", "plugins"),
+    path.join(rootDir, "DADOS_KXLYN", "plugins"),
   ];
 
   const records = [];
