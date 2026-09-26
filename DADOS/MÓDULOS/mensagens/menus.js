@@ -396,8 +396,8 @@ const textExtras = Object.freeze({
   menucoins: ["gerenciarcoins", "entrarnacidade"],
   menupokemon: ["comprarpokemon", "venderpokemon"],
   menuadm: [
-    "admlist", "veradmin", "listaadv", "retiraradv", "limparadv", "limiteadv",
-    "salvarnota", "notas", "delnota", "setregras", "delregras", "linkgrupo",
+    "admlist", "veradmin", "listaadv", "limparadv", "limiteadv",
+    "salvarnota", "notas", "setregras", "delregras", "linkgrupo",
     "revogarlink", "modolento", "saudegrupo", "modlog", "editargrupo",
     "promover", "rebaixar", "set-nome", "set-desc", "antiaudio",
     "antisticker", "antienquete"
@@ -427,8 +427,8 @@ const textExtras = Object.freeze({
   ],
   menuoutros: [
     "avatar", "ascii", "encurtar", "expandirurl", "printsite",
-    "statussite", "dns", "moeda", "feriado", "lerqr", "corrigir",
-    "tts", "transcrever", "hash"
+    "statussite", "dns", "moeda", "feriado", "lerqr",
+    "tts", "transcrever"
   ]
 });
 
@@ -441,15 +441,23 @@ function commandLines(commands, prefix) {
   return commands.map(command => "├ " + prefix + command);
 }
 
+function textSection(title) {
+  return [
+    "╭─〔 🧊 " + smallCaps(title) + " 〕",
+  ];
+}
+
+function textSectionEnd() {
+  return "╰─";
+}
+
 function textGeneral(prefix) {
   const lines = [
-    "╭─┄─🧊〔 ᴍᴇɴᴜ ɢᴇʀᴀʟ 〕",
-    "├ Bot: " + botName(),
-    "├ Prefixo: " + prefix,
-    "╰─┄─🧊",
-    "╭─〔 🧊 ᴍᴇɴᴜs 〕",
+    header("Menu Geral", prefix),
+    "",
+    ...textSection("Menus"),
     ...commandLines(textOrder.map(name => name), prefix),
-    "╰─",
+    textSectionEnd(),
   ];
 
   for (const name of textOrder) {
@@ -458,11 +466,10 @@ function textGeneral(prefix) {
       ...page.sections.flatMap(([, items]) => items.map(([command]) => command.split(" ")[0])),
       ...(textExtras[name] || []),
     ])];
-    lines.push("╭─〔 🧊 " + smallCaps(page.title) + " 〕");
+    lines.push(...textSection(page.title));
     lines.push(...commandLines(commands, prefix));
-    lines.push("╰─");
+    lines.push(textSectionEnd());
   }
-  lines.push("Ajuda: " + prefix + "info <comando> • Todos: " + prefix + "menugeral");
   return lines.join("\n");
 }
 
