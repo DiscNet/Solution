@@ -439,33 +439,27 @@ const textExtras = Object.freeze({
 
 function textGeneral(prefix) {
   const lines = [
-    header("Geral", prefix),
+    "╭─┄─🧊〔 " + botName() + " 〕",
+    "│ Menu geral • Prefixo: " + prefix,
+    "╰─┄─🧊",
     "",
-    "╭─┄─💎〔 𝙼𝙴𝙽𝚄𝚂 〕",
+    "*Menus:*",
     ...Object.entries(routes)
       .filter(([category]) => category !== "Menus")
-      .map(([category, route]) => "├̬⌑ؔ͟ 「🧊」" + prefix + route + " — " + category),
-    "├̬⌑ؔ͟ 「🧊」" + prefix + "menugeral — menu completo",
-    "╰─┄─💎",
+      .map(([category, route]) => category + " " + prefix + route),
+    "Completo: " + prefix + "menugeral",
     ""
   ];
 
   for (const [name, page] of Object.entries(textPages)) {
-    lines.push("╭─┄─🧊〔 " + page.title + " 〕");
-    for (const [section, commands] of page.sections) {
-      lines.push("│ *" + section + "*");
-      for (const [command, description] of commands) {
-        lines.push("├̬⌑ؔ͟ 「🧊」" + prefix + command + " — " + description);
-      }
-    }
-    const extra = textExtras[name] || [];
-    if (extra.length) {
-      lines.push("│ *Mais comandos*");
-      for (const command of extra) lines.push("├̬⌑ؔ͟ 「🧊」" + prefix + command);
-    }
-    lines.push("╰─┄─🧊", "");
+    const commands = [
+      ...page.sections.flatMap(([, items]) => items.map(([command]) => command.split(" ")[0])),
+      ...(textExtras[name] || []),
+    ];
+    lines.push(page.title + ":");
+    lines.push(commands.map(command => prefix + command).join(" · "));
   }
-  lines.push("Ajuda: " + prefix + "info <comando>");
+  lines.push("", "Uso: " + prefix + "info <comando> · " + prefix + "menu <categoria>");
   return lines.join("\n");
 }
 

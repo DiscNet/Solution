@@ -25,7 +25,7 @@ Alguns comandos de busca, download e IA precisam de serviços externos ativos e 
 
 ## 🧭 Menus e mensagens em grupos
 
-Com botões, `.menu` conserva a lista interativa e a imagem de apresentação. Sem botões, mostra um menu geral em texto com uma seleção ampla de comandos, mantida em `DADOS/MÓDULOS/mensagens/menus.js`. Os outros menus, como `.menu adm` e `.menuadm`, continuam organizados por categoria e seção, com suas imagens.
+Com botões, `.menu` conserva a lista interativa e a imagem de apresentação. Sem botões, mostra a imagem com um menu geral compacto na própria legenda, mantido em `DADOS/MÓDULOS/mensagens/menus.js`. Os outros menus, como `.menu adm` e `.menuadm`, continuam organizados por categoria e seção, com suas imagens.
 
 Grupos novos recebem respostas **sem botões** por padrão. Um administrador pode consultar ou alterar esse modo com `.sembotoes`, `.sembotoes 1` (texto) e `.sembotoes 0` (permitir botões). A escolha é salva por grupo. No modo de texto, opções interativas aparecem como comandos para digitar; por exemplo, `.autofigu` mostra o estado e indica `.autofigu 0` quando estiver ativo.
 
