@@ -288,7 +288,10 @@ function decoratePage(text) {
 }
 
 function categoryHeading(category) {
-  return "╭─〔 🧊 " + smallCaps(category) + " 〕";
+  const label = String(category || "")
+    .replace(/^[^\p{L}\p{N}]*/u, "")
+    .trim();
+  return "╭─〔 🧊 " + smallCaps(label) + " 〕";
 }
 
 // O menu geral em texto é curado à mão e usado só por .menu no modo sem botões.
