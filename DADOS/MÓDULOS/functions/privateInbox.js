@@ -1,4 +1,4 @@
-const { sendButtons } = require("gifted-btns");
+const { sendButtons } = require("./uiMode");
 const config = require("../../config/config");
 const { createStatusQuoted } = require("./statusCard");
 

@@ -1,6 +1,6 @@
 // Menu: Dono - Grupos | Comando: gerenciar
 const config = require("../../../config/config");
-const { sendInteractiveMessage } = require("gifted-btns");
+const { sendInteractiveMessage } = require("../../functions/uiMode");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const { isAdminParticipant } = require("../../functions/permissions");
 const {

@@ -7,7 +7,7 @@ const sharp = require("sharp");
 const webp = require("node-webpmux");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 const config = require("../../../config/config");
-const { sendInteractiveMessage } = require("gifted-btns");
+const { isTextOnly, sendInteractiveMessage } = require("../../functions/uiMode");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
 const execFilePromise = util.promisify(execFile);
@@ -185,6 +185,16 @@ module.exports = {
       if (!args || args.length === 0) {
         const status = autoconfig[groupId] === true ? "✅ ᴀᴛɪᴠᴀᴅᴏ" : "❌ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ";
         const statusEmoji = autoconfig[groupId] === true ? "🔄" : "⏸️";
+
+        if (isTextOnly(from)) {
+          const next = autoconfig[groupId] === true
+            ? "Use " + prefix + "autofigu 0 para desativar."
+            : "Use " + prefix + "autofigu 1 para ativar.";
+          return conn.sendMessage(from, {
+            text: "🎨 *Autofigu*\n" + statusEmoji + " Estado: " + status + "\n" + next,
+            contextInfo: newsletterContext(bot)
+          }, { quoted: createStatusQuoted(msg) });
+        }
 
         return sendInteractiveMessage(conn, from, {
           text: `🎨 *ᴀᴜᴛᴏғɪɢᴜ*\n━━━━━━━━━━━━━━━━━━━━\n\n${statusEmoji} *sᴛᴀᴛᴜs:* ${status}`,

@@ -2,7 +2,7 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/admins/bemvindo.js
 const config = require("../../../config/config");
-const { sendInteractiveMessage } = require("gifted-btns");
+const { isTextOnly, sendInteractiveMessage } = require("../../functions/uiMode");
 const bemvindoFunctions = require("../../functions/bemvindo");
 
 module.exports = {
@@ -59,6 +59,13 @@ module.exports = {
       const status = bemvindoFunctions.isBemvindoAtivo(from);
 
       if (!args[0]) {
+        if (isTextOnly(from)) {
+          const next = status ? "0 para desativar" : "1 para ativar";
+          return conn.sendMessage(from, {
+            text: "🎉 *Boas-vindas:* " + (status ? "ativo" : "desativado") +
+              "\nUse " + prefix + "bemvindo " + next + "."
+          }, { quoted: createStatusQuoted(msg) });
+        }
         return await sendInteractiveMessage(conn, from, {
           text: `🎉 *sɪsᴛᴇᴍᴀ ᴅᴇ ʙᴏᴀs-ᴠɪɴᴅᴀs*\n\n📊 *sᴛᴀᴛᴜs:* ${status ? "✅ ᴀᴛɪᴠᴀᴅᴏ" : "❌ ᴅᴇsᴀᴛɪᴠᴀᴅᴏ"}\n━━━━━━━━━━━━━━━━━━━━━━`,
           footer: "ᴇsᴄᴏʟʜᴀ ᴜᴍᴀ ᴏᴘᴄ̧ᴀ̃ᴏ:",

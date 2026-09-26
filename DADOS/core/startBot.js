@@ -47,7 +47,7 @@ function recarregarConfigHandler() {
 // ==============================================
 // IMPORTS
 // ==============================================
-const { sendButtons, sendInteractiveMessage } = require("gifted-btns");
+const { sendButtons, sendInteractiveMessage } = require("../MÓDULOS/functions/uiMode");
 
 // ==============================================
 // CORES ANSI PARA TERMINAL

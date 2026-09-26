@@ -3,6 +3,7 @@ const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const { generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
 const tokitoApi = require("../../functions/apiClient");
+const { isTextOnly } = require("../../functions/uiMode");
 
 function displayBotName() {
   return String(config.botName || "Bot")
@@ -202,6 +203,11 @@ module.exports = {
       const urls = imageUrls(data);
       if (!urls.length) {
         throw new Error("Nenhuma imagem encontrada para essa busca.");
+      }
+
+      if (isTextOnly(from)) {
+        await sendSequentialFallback(conn, msg, from, urls.slice(0, 6), query);
+        return;
       }
 
       try {

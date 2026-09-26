@@ -15,13 +15,19 @@ Bot de WhatsApp mantido por **Kxlyn**, com comandos para grupos, mídia, utilida
 
 | Área | Exemplos no projeto |
 | --- | --- |
-| 🧭 **Menus** | `.menu`, `.menurpg`, `.menucoins`, `.menupokemon` e menus por categoria. |
+| 🧭 **Menus** | `.menu` reúne categorias e comandos principais; `.menurpg`, `.menuadm` e outros abrem páginas escritas à mão. |
 | 🛡️ **Grupos** | Administração, boas-vindas, filtros e ferramentas para moderadores. |
 | 🎮 **Sistemas** | RPG, Pokémon, coins, progressão e rankings do próprio bot. |
 | 🎧 **Mídia** | Busca e downloads, figurinhas, imagens e comandos de áudio. |
 | ✨ **Utilidades** | Perfil, ping, ferramentas de texto e comandos integrados à API. |
 
 Alguns comandos de busca, download e IA precisam de serviços externos ativos e de uma chave configurada para funcionar.
+
+## 🧭 Menus e mensagens em grupos
+
+O texto de cada categoria fica em `DADOS/MÓDULOS/mensagens/menus.js`. Os menus são editados manualmente: ao adicionar um comando, atualize a categoria correspondente. `.menu` mostra as categorias e os principais comandos; `.menu adm` ou `.menuadm` abre a página de administração.
+
+Grupos novos recebem respostas **sem botões** por padrão. Um administrador pode consultar ou alterar esse modo com `.sembotoes`, `.sembotoes 1` (texto) e `.sembotoes 0` (permitir botões). A escolha é salva por grupo. No modo de texto, opções interativas aparecem como comandos para digitar; por exemplo, `.autofigu` mostra o estado e indica `.autofigu 0` quando estiver ativo.
 
 ## 🎨 Visual dos menus
 

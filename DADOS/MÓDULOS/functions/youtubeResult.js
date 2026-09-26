@@ -7,6 +7,7 @@ const {
   proto,
 } = require("@whiskeysockets/baileys");
 const { getVideo } = require("./youtubeClient");
+const { isTextOnly } = require("./uiMode");
 
 function textValue(value, fallback = "") {
   if (value === undefined || value === null) return fallback;
@@ -440,6 +441,16 @@ async function sendYoutubeList(conn, msg, from, results, query) {
     throw new Error("Nenhum resultado para montar a lista.");
   }
 
+  if (isTextOnly(from)) {
+    const lines = results.slice(0, 6).map((video, index) =>
+      (index + 1) + ". *" + video.title + "*\n" + prefix + "ytplay " + video.url
+    );
+    return conn.sendMessage(from, {
+      text: "🔎 *Busca:* " + query + "\n\n" + lines.join("\n\n") +
+        "\n\nÁudio direto: " + prefix + "play " + results[0].url,
+    }, { quoted: createStatusQuoted(msg) });
+  }
+
   const interactiveMessage = {
     header: {
       title: "🔎 YouTube Search",
@@ -513,6 +524,7 @@ async function sendYoutubeFallback(conn, msg, from, video) {
 }
 
 async function sendYoutubeChoice(conn, msg, from, video) {
+  if (isTextOnly(from)) return sendYoutubeFallback(conn, msg, from, video);
   const prefix = config.prefix || ".";
   let header = {
     title: "🎬 YouTube",

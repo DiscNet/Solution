@@ -4,7 +4,7 @@ const { createStatusQuoted } = require("../../functions/statusCard");
 const tokitoApi = require("../../functions/apiClient");
 const { normalizeYoutubeList } = require("../../functions/youtubeResult");
 const { searchVideos } = require("../../functions/youtubeClient");
-const { sendInteractiveMessage } = require("gifted-btns");
+const { isTextOnly, sendInteractiveMessage } = require("../../functions/uiMode");
 
 function botName() {
   return String(config.botName || "Bot")
@@ -68,6 +68,8 @@ async function sendSearchList(conn, msg, from, query, results) {
   const rows = buildRows(results, prefix);
 
   if (!rows.length) throw new Error("Nenhum resultado para montar a lista.");
+
+  if (isTextOnly(from)) return sendFallback(conn, msg, from, query, results);
 
   try {
     return await sendInteractiveMessage(

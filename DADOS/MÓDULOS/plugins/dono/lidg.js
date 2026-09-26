@@ -1,6 +1,6 @@
 // Menu: Dono - Grupos | Comando: lidg
 const config = require("../../../config/config");
-const { sendInteractiveMessage } = require("gifted-btns");
+const { sendInteractiveMessage } = require("../../functions/uiMode");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const {
   newsletterContext,
