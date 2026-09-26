@@ -439,12 +439,6 @@ const textOrder = [
   "menuadm", "menudono", "menualterar", "menulogos", "menubn", "menuoutros",
 ];
 
-const textOmitted = Object.freeze({
-  menuadm: ["configgrupo", "atividades"],
-  menudono: ["integridadebot", "autorizargrupo"],
-  menuoutros: ["rankativo"],
-});
-
 function commandLines(commands, prefix) {
   return commands.map(command => {
     const name = String(command).trim().split(/\s+/)[0];
@@ -468,8 +462,8 @@ function textGeneral(prefix) {
     const page = textPages[name];
     const commands = [...new Set([
       ...page.sections.flatMap(([, items]) => items.map(([command]) => command)),
-      // O menu geral prioriza os comandos principais de cada categoria.
-    ])].filter(command => !(textOmitted[name] || []).includes(command));
+      ...(textExtras[name] || []),
+    ])];
     lines.push(...textSection(page.title));
     lines.push(...commandLines(commands, prefix));
     lines.push(textSectionEnd());
