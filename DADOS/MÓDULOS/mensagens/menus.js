@@ -436,8 +436,26 @@ const textOrder = [
   "menuadm", "menudono", "menualterar", "menulogos", "menubn", "menuoutros",
 ];
 
+const textLimits = Object.freeze({
+  menusticker: 12,
+  menudws: 12,
+  menurpg: 7,
+  menucoins: 7,
+  menupokemon: 9,
+  menuadm: 10,
+  menudono: 5,
+  menualterar: 4,
+  menulogos: 1,
+  menubn: 2,
+  menuoutros: 6,
+});
+
 function commandLines(commands, prefix) {
-  return commands.map(command => "├ " + prefix + command);
+  return commands.map(command => {
+    const name = String(command).trim().split(/\s+/)[0];
+    return "├̬⌑ؔ͟ 「🧊」" + prefix + name +
+      " | Uso: " + prefix + name;
+  });
 }
 
 function textSection(title) {
@@ -460,9 +478,10 @@ function textGeneral(prefix) {
   for (const name of textOrder) {
     const page = textPages[name];
     const commands = [...new Set([
-      ...page.sections.flatMap(([, items]) => items.map(([command]) => command.split(" ")[0])),
+      ...page.sections.flatMap(([, items]) => items.map(([command]) => command)),
       ...(textExtras[name] || []),
     ])];
+    commands.splice(textLimits[name]);
     lines.push(...textSection(page.title));
     lines.push(...commandLines(commands, prefix));
     lines.push(textSectionEnd());
