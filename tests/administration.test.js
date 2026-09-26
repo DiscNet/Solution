@@ -523,8 +523,14 @@ test("menu navigation preserves all pages, sections, aliases and custom prefixes
   const body = () => messages[0]?.text || messages[0]?.caption || "";
   await run("menu", ["adm"]);
   assert.match(body(), /\.advertir/);
-  await run("menu", ["rpg", "pets"]);
-  assert.match(body(), /Uso: \.pets/);
+  await run("menu", ["rpg", "jornada"]);
+  assert.match(body(), /\.jornada/);
+  reset();
+  await run("menucoins");
+  assert.match(body(), /\.coins/);
+  reset();
+  await run("menupokemon");
+  assert.match(body(), /\.lojapokemon/);
   await run("menugeral");
   assert.ok(messages[0].image);
   assert.match(body(), /Todos os comandos/);
