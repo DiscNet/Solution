@@ -21,6 +21,7 @@ const { registerConnectionEvents } = require("../eventos/connection");
 const { createReconnectController } = require("../eventos/reconnect");
 const { registerMessagesEvent } = require("../eventos/messages");
 const { registerGroupEvents } = require("../eventos/groups");
+const { createRestartAnnouncer } = require("../MÓDULOS/functions/restartAnnouncement");
 const { handlePrivateInbox } = require("../eventos/privateInbox");
 const contactNameCache = require("../MÓDULOS/functions/contactNameCache");
 const { moderateLegacyAnti, moderateSpam } = require("../MÓDULOS/functions/groupAntis");
@@ -374,6 +375,7 @@ function isGroup(jid) { return jid.endsWith("@g.us"); }
 // ==============================================
 
 let conn = null;
+const announceRestartToGroups = createRestartAnnouncer(() => conn);
 
 function ownerPrivateJid() {
   const number = String(config.ownerNumber || "").replace(/\D/g, "");
@@ -413,6 +415,7 @@ async function notifyOwnerStartup() {
 function handleConnectionOpen() {
   exibirLogsPosInicio();
   void notifyOwnerStartup();
+  void announceRestartToGroups();
 }
 
 function exibirLogsPosInicio() {

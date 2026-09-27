@@ -29,6 +29,8 @@ Com botões, `.menu` conserva a lista interativa e a imagem de apresentação. S
 
 Grupos novos recebem respostas **sem botões** por padrão. Um administrador pode consultar ou alterar esse modo com `.sembotoes`, `.sembotoes 1` (texto) e `.sembotoes 0` (permitir botões). A escolha é salva por grupo. No modo de texto, opções interativas aparecem como comandos para digitar; por exemplo, `.autofigu` mostra o estado e indica `.autofigu 0` quando estiver ativo.
 
+Quando o bot inicia, os grupos dos quais ainda participa e que têm aluguel ativo recebem um aviso de reinício no formato padrão. O dono pode cancelar um plano com `.cancelar-aluguel` dentro do grupo ou `.cancelar-aluguel ID@g.us` no privado. Figurinhas criadas pelo `.autofigu` ocupam um quadro de **512 × 512 pixels** tanto para imagens quanto para vídeos.
+
 ## 🛡️ Proteção dos grupos
 
 Administradores podem cadastrar palavras ou frases com `.addpalavra texto`, consultar `.listapalavra`, remover com `.delpalavra texto` e ativar o filtro usando `.antipalavra 1`. O filtro apaga a mensagem detectada; com `.autoban 1`, também remove o autor. As remoções automáticas ficam registradas em `.modlog` com o motivo.

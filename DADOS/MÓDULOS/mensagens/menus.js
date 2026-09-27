@@ -363,7 +363,7 @@ const textPages = Object.freeze({
     sections: [
       ["Bot", [["reload", "recarregue a configuração"], ["setprefix", "altere o prefixo"], ["botestado", "estado do bot"], ["integridadebot", "diagnóstico"], ["botsaudavel", "resumo de saúde"]]],
       ["Comandos", [["catalogocmd", "catálogo de comandos"], ["buscarcmd", "busca de comando"], ["cmdestatistica", "estatísticas"], ["cmderros", "erros recentes"]]],
-      ["Grupos", [["listg", "grupos do bot"], ["gerenciar", "administre um grupo"], ["autorizargrupo", "autorize um grupo"]]],
+      ["Grupos", [["listg", "grupos do bot"], ["gerenciar", "administre um grupo"], ["autorizargrupo", "autorize um grupo"], ["ativar-aluguel plano ID", "ative um aluguel"], ["cancelar-aluguel ID", "cancele um aluguel"], ["listar-alugueis", "consulte os aluguéis"]]],
     ],
   },
   menudws: {
