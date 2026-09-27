@@ -3,6 +3,7 @@ const config = require("../../../config/config");
 const profiles = require("../../functions/publicProfiles");
 const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { newsletterContext } = require("../../functions/ownerGroupManager");
 
 const TOKITO_ROUTE = "/api/pesquisa/instagram-stalker";
 
@@ -165,32 +166,55 @@ function normalizeTokitoProfile(data, requestedUsername) {
   };
 }
 
+function frame(lines) {
+  return [
+    "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
+    ...lines.filter(Boolean).map(line => `├̬⌑ؔ͟ ${line}`),
+    "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
+  ].join("\n");
+}
+
 function caption(profile) {
   const bio = profile.biography
     ? profile.biography.replace(/\s+/g, " ").trim().slice(0, 500)
     : "Sem bio pública.";
 
-  const lines = [
-    "📸 *INSTAGRAM STALK*",
-    "",
-    "👤 *Usuário:* @" + profile.username,
-    profile.fullName ? "🪪 *Nome:* " + profile.fullName : null,
-    "👥 *Seguidores:* " + profiles.fullNumber(profile.followers),
-    "➡️ *Seguindo:* " + profiles.fullNumber(profile.following),
-    "🖼️ *Publicações:* " + profiles.fullNumber(profile.posts),
-    "✅ *Verificado:* " + boolLabel(profile.verified),
-    "🔒 *Privado:* " + boolLabel(profile.private),
-    profile.category ? "🏷️ *Categoria:* " + profile.category : null,
-    "",
-    "📝 *Bio:* " + bio,
-    profile.externalUrl ? "🔗 *Link da bio:* " + profile.externalUrl : null,
-    "",
-    "🌐 " + profile.profileUrl,
-    "",
-    "⚡ _Dados consultados pela Tokito API._",
-  ].filter(Boolean);
+  return frame([
+    "⎾📸⏌ *𝙸𝙽𝚂𝚃𝙰𝙶𝚁𝙰𝙼 𝚂𝚃𝙰𝙻𝙺*",
+    `⎾👤⏌ 𝚄𝚜𝚞𝚊́𝚛𝚒𝚘: *@${profile.username}*`,
+    profile.fullName
+      ? `⎾🪪⏌ 𝙽𝚘𝚖𝚎: *${profile.fullName}*`
+      : null,
+    `⎾👥⏌ 𝚂𝚎𝚐𝚞𝚒𝚍𝚘𝚛𝚎𝚜: *${profiles.fullNumber(profile.followers)}*`,
+    `⎾➡️⏌ 𝚂𝚎𝚐𝚞𝚒𝚗𝚍𝚘: *${profiles.fullNumber(profile.following)}*`,
+    `⎾🖼️⏌ 𝙿𝚞𝚋𝚕𝚒𝚌𝚊𝚌̧𝚘̃𝚎𝚜: *${profiles.fullNumber(profile.posts)}*`,
+    `⎾✅⏌ 𝚅𝚎𝚛𝚒𝚏𝚒𝚌𝚊𝚍𝚘: *${boolLabel(profile.verified)}*`,
+    `⎾🔒⏌ 𝙿𝚛𝚒𝚟𝚊𝚍𝚘: *${boolLabel(profile.private)}*`,
+    profile.category
+      ? `⎾🏷️⏌ 𝙲𝚊𝚝𝚎𝚐𝚘𝚛𝚒𝚊: *${profile.category}*`
+      : null,
+    `⎾📝⏌ 𝙱𝚒𝚘: *${bio}*`,
+    profile.externalUrl
+      ? `⎾🔗⏌ 𝙻𝚒𝚗𝚔: ${profile.externalUrl}`
+      : null,
+    `⎾🌐⏌ 𝙿𝚎𝚛𝚏𝚒𝚕: ${profile.profileUrl}`,
+    "⎾⚡⏌ 𝙵𝚘𝚗𝚝𝚎: *Tokito API*",
+  ]);
+}
 
-  return lines.join("\n");
+function usageText(prefix) {
+  return frame([
+    "⎾📸⏌ *𝙸𝙽𝚂𝚃𝙰𝙶𝚁𝙰𝙼 𝚂𝚃𝙰𝙻𝙺*",
+    `⎾🔹⏌ Uso: *${prefix}instastalk <usuario>*`,
+    `⎾💎⏌ Exemplo: *${prefix}instastalk instagram*`,
+  ]);
+}
+
+function errorText(message) {
+  return frame([
+    "⎾📸⏌ *𝙸𝙽𝚂𝚃𝙰𝙶𝚁𝙰𝙼 𝚂𝚃𝙰𝙻𝙺*",
+    `⎾❌⏌ ${String(message || "Não foi possível consultar o perfil.")}`,
+  ]);
 }
 
 async function fetchTokitoInstagram(username) {
@@ -238,10 +262,8 @@ module.exports = {
 
     if (!raw) {
       return conn.sendMessage(from, {
-        text:
-          "📸 *INSTAGRAM STALK*\n\n" +
-          "Uso: *" + prefix + "instastalk <usuario>*\n" +
-          "Ex.: *" + prefix + "instastalk instagram*",
+        text: usageText(prefix),
+        contextInfo: newsletterContext(),
       }, { quoted: createStatusQuoted(msg) });
     }
 
@@ -258,6 +280,7 @@ module.exports = {
           await conn.sendMessage(from, {
             image: { url: profile.avatar },
             caption: text,
+            contextInfo: newsletterContext(),
           }, { quoted: createStatusQuoted(msg) });
 
           await conn.sendMessage(from, {
@@ -270,6 +293,7 @@ module.exports = {
 
       await conn.sendMessage(from, {
         text,
+        contextInfo: newsletterContext(),
       }, { quoted: createStatusQuoted(msg) });
 
       await conn.sendMessage(from, {
@@ -290,7 +314,8 @@ module.exports = {
           );
 
       return conn.sendMessage(from, {
-        text: detail,
+        text: errorText(detail.replace(/^❌\s*/, "")),
+        contextInfo: newsletterContext(),
       }, { quoted: createStatusQuoted(msg) });
     }
   },
@@ -300,7 +325,10 @@ module.exports = {
     unwrapResult,
     numberValue,
     normalizeTokitoProfile,
+    frame,
     caption,
+    usageText,
+    errorText,
     fetchTokitoInstagram,
   },
 };
