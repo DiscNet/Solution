@@ -267,7 +267,7 @@ const commands = [
           conn,
           msg,
           from,
-          "🎙️ *Transcrição • Tokito API*\n\n" +
+          "🎙️ *Transcrição*\n\n" +
             text.slice(0, 12000) +
             (meta ? "\n\nℹ️ " + meta : "")
         );
