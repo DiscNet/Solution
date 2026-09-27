@@ -3,6 +3,7 @@ const crypto = require("crypto");
 
 const PRIVNOTE_BASE_URL = "https://privnote.com";
 const MAX_NOTE_LENGTH = 12000;
+const HUSHNOTE_BASE_URL = "https://hush.dangerous.dev";
 
 function evpBytesToKey(password, salt, keyLength = 32, ivLength = 16) {
   const passwordBuffer = Buffer.isBuffer(password)
@@ -60,6 +61,40 @@ function normalizeResponse(data) {
   } catch (_) {
     return {};
   }
+}
+
+
+async function createFallbackNote(http, text) {
+  const response = await http.post(
+    HUSHNOTE_BASE_URL + "/api/create/",
+    { note: String(text) },
+    {
+      timeout: 30000,
+      validateStatus: () => true,
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json",
+        "user-agent": "WhatsAppBot/1.0",
+      },
+    },
+  );
+
+  if (response.status < 200 || response.status >= 300) {
+    const error = new Error("Fallback respondeu HTTP " + response.status + ".");
+    error.httpStatus = response.status;
+    throw error;
+  }
+
+  const url = String(response.data?.url || "").trim();
+  if (!/^https?:\/\//i.test(url)) {
+    throw new Error("Fallback não retornou uma URL válida.");
+  }
+
+  return {
+    url,
+    provider: "Hushnote",
+    endToEnd: false,
+  };
 }
 
 async function createPrivnote(http, text) {
@@ -157,7 +192,11 @@ async function createPrivnote(http, text) {
     : new URL(noteLink, PRIVNOTE_BASE_URL).toString();
 
   const clean = base.split("#")[0];
-  return clean + "#" + passphrase;
+  return {
+    url: clean + "#" + passphrase,
+    provider: "Privnote",
+    endToEnd: true,
+  };
 }
 
 module.exports = {
@@ -192,14 +231,27 @@ module.exports = {
         react: { text: "🔐", key: msg.key },
       }).catch(() => {});
 
-      const url = await createPrivnote(axiosInstance, text);
+      let note;
+      try {
+        note = await createPrivnote(axiosInstance, text);
+      } catch (error) {
+        const status = Number(error?.httpStatus || error?.response?.status || 0);
+        if (status !== 403) throw error;
+        console.warn("[PRIVNOTE] Privnote bloqueou a requisição; usando fallback.");
+        note = await createFallbackNote(axiosInstance, text);
+      }
+
+      const securityNote = note.endToEnd
+        ? "🔒 A chave de descriptografia fica no próprio link."
+        : "ℹ️ Fallback ativo: esta nota usa criptografia no servidor do serviço alternativo.";
 
       await conn.sendMessage(from, {
         text:
-          "🔐 *PRIVNOTE CRIADO*\n\n" +
-          url +
-          "\n\n⚠️ O link contém a chave de descriptografia. " +
-          "Por padrão, a nota é destruída após a primeira leitura.",
+          "🔐 *NOTA DESCARTÁVEL CRIADA*\n\n" +
+          note.url +
+          "\n\n🌐 Serviço: *" + note.provider + "*\n" +
+          securityNote +
+          "\n⚠️ A nota é destruída após a primeira leitura.",
       });
 
       await conn.sendMessage(from, {
@@ -230,5 +282,6 @@ module.exports = {
     generatePassphrase,
     normalizeResponse,
     createPrivnote,
+    createFallbackNote,
   },
 };
