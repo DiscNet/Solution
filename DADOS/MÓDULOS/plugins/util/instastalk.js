@@ -198,7 +198,6 @@ function caption(profile) {
       ? `⎾🔗⏌ 𝙻𝚒𝚗𝚔: ${profile.externalUrl}`
       : null,
     `⎾🌐⏌ 𝙿𝚎𝚛𝚏𝚒𝚕: ${profile.profileUrl}`,
-    "⎾⚡⏌ 𝙵𝚘𝚗𝚝𝚎: *Tokito API*",
   ]);
 }
 
