@@ -3,6 +3,7 @@ const config = require("../../../config/config");
 const { sendInteractiveMessage } = require("../../functions/uiMode");
 const { createStatusQuoted } = require("../../functions/statusCard");
 const { isAdminParticipant } = require("../../functions/permissions");
+const aluguel = require("../../functions/aluguel");
 const {
   newsletterContext,
   normalizeGroupId,
@@ -29,6 +30,56 @@ function frame(lines) {
     ...lines.map((line) => `├̬⌑ؔ͟ ${line}`),
     "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
   ].join("\n");
+}
+
+function rentalPlanLabel(plan) {
+  return {
+    diario: "Diário",
+    semanal: "Semanal",
+    mensal: "Mensal",
+    trimensal: "Trimensal",
+    permanente: "Permanente",
+  }[plan] || String(plan || "Plano");
+}
+
+function rentalPlanDescription(plan, data = {}) {
+  if (plan === "permanente") return "♾️ Sem prazo de expiração";
+  const days = Number(data.dias || 0);
+  const value = Number(data.valor || 0);
+  const duration = `${days} dia${days === 1 ? "" : "s"}`;
+  const price = value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  });
+  return `⏳ ${duration} · 💵 ${price}`;
+}
+
+function rentalSections(prefix, groupId) {
+  return [{
+    title: "🧊 Planos de aluguel",
+    rows: Object.entries(aluguel.PLANOS).map(([plan, data]) => ({
+      id: `${prefix}gerenciar ${groupId} aluguel ${plan}`,
+      title: `💰 Plano ${rentalPlanLabel(plan)}`,
+      description: rentalPlanDescription(plan, data),
+    })),
+  }];
+}
+
+function rentalStatus(groupId) {
+  const info = aluguel.getInfoAluguel(groupId);
+  if (!info?.ativo) return "Inativo";
+  if (info.permanente) return "Permanente";
+
+  const label = rentalPlanLabel(info.plano);
+  if (!info.dataExpiracao) return label;
+
+  const expiry = new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Fortaleza",
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(info.dataExpiracao));
+
+  return `${label} · até ${expiry}`;
 }
 
 function usage(prefix, groupId, action) {
@@ -154,6 +205,42 @@ async function handleAction({ conn, from, msg, args, groupId, metadata, action, 
       return reply(`📣 Aviso enviado para *${metadata.subject || groupId}*.`);
     }
 
+    case "aluguel": {
+      const plano = String(args[2] || "").toLowerCase();
+      const planoData = aluguel.PLANOS[plano];
+
+      if (!planoData) {
+        return reply("❌ Plano de aluguel inválido. Abra novamente o menu de aluguel do grupo.");
+      }
+
+      let dataExpiracao = null;
+      if (plano === "permanente") {
+        aluguel.ativarPermanente(groupId);
+      } else {
+        dataExpiracao = aluguel.calcularExpiracao(plano);
+        aluguel.ativarAluguel(groupId, plano, dataExpiracao);
+      }
+
+      const avisoEnviado = await aluguel.anunciarAtivacao(
+        conn,
+        groupId,
+        plano,
+        dataExpiracao,
+      );
+
+      const detalhes = plano === "permanente"
+        ? "Sem prazo de expiração"
+        : rentalPlanDescription(plano, planoData);
+
+      return reply(frame([
+        "⎾🧊⏌ *𝙰𝙻𝚄𝙶𝚄𝙴𝙻 𝙰𝚃𝙸𝚅𝙰𝙳𝙾*",
+        `⎾👥⏌ 𝙶𝚛𝚞𝚙𝚘: *${metadata.subject || groupId}*`,
+        `⎾💰⏌ 𝙿𝚕𝚊𝚗𝚘: *${rentalPlanLabel(plano)}*`,
+        `⎾⏳⏌ 𝙳𝚎𝚝𝚊𝚕𝚑𝚎𝚜: *${detalhes}*`,
+        `⎾📣⏌ 𝙰𝚟𝚒𝚜𝚘 𝚗𝚘 𝚐𝚛𝚞𝚙𝚘: *${avisoEnviado ? "Enviado" : "Não enviado"}*`,
+      ]));
+    }
+
     case "promover":
     case "rebaixar": {
       const target = userTarget(args[2]);
@@ -226,6 +313,7 @@ module.exports = {
       }
 
       const stats = groupStats(metadata, conn);
+      const currentRental = rentalStatus(groupId);
       const rows = [
         {
           title: "📊 Informações",
@@ -281,6 +369,7 @@ module.exports = {
           `⎾🤖⏌ 𝙱𝚘𝚝: *${stats.botAdmin ? "Administrador" : "Membro"}*`,
           `⎾🔒⏌ 𝙼𝚎𝚗𝚜𝚊𝚐𝚎𝚗𝚜: *${stats.closed ? "Somente admins" : "Todos"}*`,
           `⎾🛠️⏌ 𝙴𝚍𝚒𝚌̧𝚊̃𝚘: *${stats.restricted ? "Somente admins" : "Todos"}*`,
+          `⎾💰⏌ 𝙰𝚕𝚞𝚐𝚞𝚎𝚕: *${currentRental}*`,
           `⎾🆔⏌ 𝙸𝙳/𝙻𝙸𝙳: \`${groupId}\``,
           "⎾💎⏌ 𝚂𝚎𝚕𝚎𝚌𝚒𝚘𝚗𝚎 𝚞𝚖𝚊 𝚊𝚌̧𝚊̃𝚘 𝚊𝚋𝚊𝚒𝚡𝚘.",
         ]),
@@ -299,6 +388,13 @@ module.exports = {
             buttonParamsJson: JSON.stringify({
               title: "⚙️ Ações do grupo",
               sections: rows,
+            }),
+          },
+          {
+            name: "single_select",
+            buttonParamsJson: JSON.stringify({
+              title: "💰 Ativar aluguel",
+              sections: rentalSections(prefix, groupId),
             }),
           },
         ],
