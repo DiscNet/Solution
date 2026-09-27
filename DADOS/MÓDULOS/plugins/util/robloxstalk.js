@@ -3,14 +3,11 @@ const config = require("../../../config/config");
 const profiles = require("../../functions/publicProfiles");
 const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { newsletterContext } = require("../../functions/ownerGroupManager");
 
 const TOKITO_ROUTES = [
+  "/api/roblox-stalker",
   "/api/pesquisa/roblox-stalker",
-  "/api/pesquisa/robloxstalker",
-  "/api/pesquisa/roblox-stalk",
-  "/api/stalker/roblox-stalker",
-  "/api/tools/roblox-stalker",
-  "/api/pesquisa/roblox",
 ];
 
 let workingTokitoRoute = null;
@@ -215,38 +212,55 @@ function normalizeTokitoProfile(data, requestedUsername) {
   };
 }
 
+function frame(lines) {
+  return [
+    "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
+    ...lines.filter(Boolean).map(line => `├̬⌑ؔ͟ ${line}`),
+    "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
+  ].join("\n");
+}
+
 function caption(profile) {
   const bio = profile.description
     ? profile.description.replace(/\s+/g, " ").trim().slice(0, 700)
     : "Sem descrição pública.";
 
-  const lines = [
-    "🎮 *ROBLOX STALK*",
-    "",
-    "👤 *Usuário:* @" + profile.username,
+  return frame([
+    "⎾🎮⏌ *𝚁𝙾𝙱𝙻𝙾𝚇 𝚂𝚃𝙰𝙻𝙺*",
+    `⎾👤⏌ 𝚄𝚜𝚞𝚊́𝚛𝚒𝚘: *@${profile.username}*`,
     profile.displayName
-      ? "🪪 *Nome de exibição:* " + profile.displayName
+      ? `⎾🪪⏌ 𝙽𝚘𝚖𝚎: *${profile.displayName}*`
       : null,
     profile.id
-      ? "🆔 *ID:* " + profile.id
+      ? `⎾🆔⏌ 𝙸𝙳: *${profile.id}*`
       : null,
-    "👥 *Seguidores:* " + profiles.fullNumber(profile.followers),
-    "➡️ *Seguindo:* " + profiles.fullNumber(profile.following),
-    "🤝 *Amigos:* " + profiles.fullNumber(profile.friends),
-    "✅ *Verificado:* " + boolLabel(profile.verified),
-    "🚫 *Banido:* " + boolLabel(profile.banned),
+    `⎾👥⏌ 𝚂𝚎𝚐𝚞𝚒𝚍𝚘𝚛𝚎𝚜: *${profiles.fullNumber(profile.followers)}*`,
+    `⎾➡️⏌ 𝚂𝚎𝚐𝚞𝚒𝚗𝚍𝚘: *${profiles.fullNumber(profile.following)}*`,
+    `⎾🤝⏌ 𝙰𝚖𝚒𝚐𝚘𝚜: *${profiles.fullNumber(profile.friends)}*`,
+    `⎾✅⏌ 𝚅𝚎𝚛𝚒𝚏𝚒𝚌𝚊𝚍𝚘: *${boolLabel(profile.verified)}*`,
+    `⎾🚫⏌ 𝙱𝚊𝚗𝚒𝚍𝚘: *${boolLabel(profile.banned)}*`,
     profile.created
-      ? "📅 *Conta criada:* " + profiles.datePt(profile.created)
+      ? `⎾📅⏌ 𝙲𝚛𝚒𝚊𝚍𝚘 𝚎𝚖: *${profiles.datePt(profile.created)}*`
       : null,
-    "",
-    "📝 *Descrição:* " + bio,
-    "",
-    "🌐 " + profile.profileUrl,
-    "",
-    "⚡ _Dados consultados pela Tokito API._",
-  ].filter(Boolean);
+    `⎾📝⏌ 𝙳𝚎𝚜𝚌𝚛𝚒𝚌̧𝚊̃𝚘: *${bio}*`,
+    `⎾🌐⏌ 𝙿𝚎𝚛𝚏𝚒𝚕: ${profile.profileUrl}`,
+    "⎾⚡⏌ 𝙵𝚘𝚗𝚝𝚎: *Tokito API*",
+  ]);
+}
 
-  return lines.join("\n");
+function usageText(prefix) {
+  return frame([
+    "⎾🎮⏌ *𝚁𝙾𝙱𝙻𝙾𝚇 𝚂𝚃𝙰𝙻𝙺*",
+    `⎾🔹⏌ Uso: *${prefix}robloxstalk <usuario>*`,
+    `⎾💎⏌ Exemplo: *${prefix}robloxstalk Builderman*`,
+  ]);
+}
+
+function errorText(message) {
+  return frame([
+    "⎾🎮⏌ *𝚁𝙾𝙱𝙻𝙾𝚇 𝚂𝚃𝙰𝙻𝙺*",
+    `⎾❌⏌ ${String(message || "Não foi possível consultar o perfil.")}`,
+  ]);
 }
 
 async function requestTokitoRoblox(route, clean) {
@@ -326,10 +340,8 @@ module.exports = {
 
     if (!raw) {
       return conn.sendMessage(from, {
-        text:
-          "🎮 *ROBLOX STALK*\n\n" +
-          "Uso: *" + prefix + "robloxstalk <usuario>*\n" +
-          "Ex.: *" + prefix + "robloxstalk Builderman*",
+        text: usageText(prefix),
+        contextInfo: newsletterContext(),
       }, { quoted: createStatusQuoted(msg) });
     }
 
@@ -346,6 +358,7 @@ module.exports = {
           await conn.sendMessage(from, {
             image: { url: profile.avatar },
             caption: text,
+            contextInfo: newsletterContext(),
           }, { quoted: createStatusQuoted(msg) });
 
           await conn.sendMessage(from, {
@@ -358,6 +371,7 @@ module.exports = {
 
       await conn.sendMessage(from, {
         text,
+        contextInfo: newsletterContext(),
       }, { quoted: createStatusQuoted(msg) });
 
       await conn.sendMessage(from, {
@@ -388,7 +402,8 @@ module.exports = {
       }
 
       return conn.sendMessage(from, {
-        text: detail,
+        text: errorText(detail.replace(/^❌\s*/, "")),
+        contextInfo: newsletterContext(),
       }, { quoted: createStatusQuoted(msg) });
     }
   },
@@ -398,7 +413,10 @@ module.exports = {
     unwrapResult,
     numberValue,
     normalizeTokitoProfile,
+    frame,
     caption,
+    usageText,
+    errorText,
     requestTokitoRoblox,
     fetchTokitoRoblox,
     TOKITO_ROUTES,
