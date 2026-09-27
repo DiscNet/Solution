@@ -77,22 +77,30 @@ async function createPrivnote(http, text) {
   form.append("notify_ref", "");
 
   const response = await http.post(
-    PRIVNOTE_BASE_URL + "/legacy/",
+    PRIVNOTE_BASE_URL + "/",
     form.toString(),
     {
       timeout: 30000,
+      maxRedirects: 5,
       validateStatus: () => true,
       headers: {
-        "content-type": "application/x-www-form-urlencoded",
+        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
         "x-requested-with": "XMLHttpRequest",
-        "user-agent": "Mozilla/5.0",
-        accept: "application/json, text/plain, */*",
+        origin: PRIVNOTE_BASE_URL,
+        referer: PRIVNOTE_BASE_URL + "/",
+        "user-agent":
+          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
+          "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+        accept: "application/json, text/javascript, */*; q=0.01",
+        "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
       },
     },
   );
 
   if (response.status < 200 || response.status >= 300) {
-    throw new Error("Privnote respondeu HTTP " + response.status + ".");
+    const error = new Error("Privnote respondeu HTTP " + response.status + ".");
+    error.httpStatus = response.status;
+    throw error;
   }
 
   const data = normalizeResponse(response.data);
@@ -167,8 +175,14 @@ module.exports = {
         react: { text: "❌", key: msg.key },
       }).catch(() => {});
 
+      const status = Number(error?.httpStatus || error?.response?.status || 0);
+      const detail = status ? ` (HTTP ${status})` : "";
+
       return conn.sendMessage(from, {
-        text: "❌ Não foi possível criar a nota no Privnote agora.",
+        text:
+          "❌ Não foi possível criar a nota no Privnote agora" +
+          detail +
+          ".",
       });
     }
   },
