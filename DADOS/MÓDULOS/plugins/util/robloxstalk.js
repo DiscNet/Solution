@@ -33,6 +33,134 @@ function firstDefined(...values) {
   );
 }
 
+function isHttpUrl(value) {
+  return /^https?:\/\//i.test(String(value || "").trim());
+}
+
+function findImageUrlDeep(value, depth = 0, seen = new Set()) {
+  if (depth > 8 || value === null || value === undefined) return "";
+
+  if (typeof value === "string") {
+    const text = value.trim();
+    return isHttpUrl(text) && /(?:image|avatar|thumbnail|headshot|rbxcdn|roblox)/i.test(text)
+      ? text
+      : "";
+  }
+
+  if (typeof value !== "object" || seen.has(value)) return "";
+  seen.add(value);
+
+  const preferredKeys = [
+    "imageUrl",
+    "image_url",
+    "avatar",
+    "avatarUrl",
+    "avatar_url",
+    "thumbnail",
+    "thumbnailUrl",
+    "thumbnail_url",
+    "headshot",
+    "headshotUrl",
+    "headshot_url",
+    "profileImage",
+    "profile_image",
+    "profile_pic",
+    "foto",
+    "imagem",
+    "picture",
+    "icon",
+  ];
+
+  for (const key of preferredKeys) {
+    const candidate = value?.[key];
+
+    if (typeof candidate === "string" && isHttpUrl(candidate)) {
+      return candidate.trim();
+    }
+
+    if (candidate && typeof candidate === "object") {
+      const nested = findImageUrlDeep(candidate, depth + 1, seen);
+      if (nested) return nested;
+    }
+  }
+
+  const entries = Array.isArray(value)
+    ? value.map((item, index) => [String(index), item])
+    : Object.entries(value);
+
+  for (const [, nestedValue] of entries) {
+    const nested = findImageUrlDeep(nestedValue, depth + 1, seen);
+    if (nested) return nested;
+  }
+
+  return "";
+}
+
+async function officialRobloxHeadshot(userId) {
+  const id = String(userId || "").replace(/\D/g, "");
+  if (!id) return "";
+
+  try {
+    const { data } = await tokitoApi.axios.get(
+      "https://thumbnails.roblox.com/v1/users/avatar-headshot",
+      {
+        params: {
+          userIds: id,
+          size: "420x420",
+          format: "Png",
+          isCircular: false,
+        },
+        timeout: 20000,
+        headers: {
+          "user-agent": "WhatsAppBot/1.0",
+          accept: "application/json",
+        },
+      }
+    );
+
+    const item = Array.isArray(data?.data) ? data.data[0] : null;
+    return isHttpUrl(item?.imageUrl) ? String(item.imageUrl).trim() : "";
+  } catch (_) {
+    return "";
+  }
+}
+
+async function resolveAvatar(profile, rawData) {
+  let url = String(profile?.avatar || "").trim();
+
+  if (!isHttpUrl(url)) {
+    url = findImageUrlDeep(rawData);
+  }
+
+  if (!isHttpUrl(url) && profile?.id) {
+    url = await officialRobloxHeadshot(profile.id);
+  }
+
+  return isHttpUrl(url) ? url : "";
+}
+
+async function downloadImage(url) {
+  if (!isHttpUrl(url)) return null;
+
+  try {
+    const response = await tokitoApi.axios.get(url, {
+      responseType: "arraybuffer",
+      timeout: 25000,
+      maxContentLength: 8 * 1024 * 1024,
+      maxBodyLength: 8 * 1024 * 1024,
+      headers: {
+        "user-agent": "WhatsAppBot/1.0",
+        accept: "image/*,*/*;q=0.8",
+      },
+    });
+
+    const buffer = Buffer.from(response.data || []);
+    return buffer.length ? buffer : null;
+  } catch (_) {
+    return null;
+  }
+}
+
 function unwrapResult(data) {
   let current = data;
 
@@ -119,18 +247,28 @@ function normalizeTokitoProfile(data, requestedUsername) {
     raw.idUser
   );
 
-  const avatar = String(firstDefined(
+  const directAvatar = firstDefined(
     raw.avatar,
     raw.avatar_url,
     raw.avatarUrl,
+    raw.imageUrl,
+    raw.image_url,
     raw.image,
     raw.imagem,
     raw.foto,
     raw.thumbnail,
     raw.thumbnailUrl,
+    raw.thumbnail_url,
     raw.headshot,
+    raw.headshotUrl,
+    raw.headshot_url,
     raw.profile_pic
-  ) || "").trim();
+  );
+
+  const avatar =
+    typeof directAvatar === "string" && isHttpUrl(directAvatar)
+      ? directAvatar.trim()
+      : findImageUrlDeep(data);
 
   return {
     id: id !== undefined && id !== null
@@ -299,6 +437,8 @@ async function fetchTokitoRoblox(username) {
         throw error;
       }
 
+      profile.avatar = await resolveAvatar(profile, data);
+
       workingTokitoRoute = route;
       return profile;
     } catch (error) {
@@ -355,8 +495,10 @@ module.exports = {
 
       if (profile.avatar) {
         try {
+          const avatarBuffer = await downloadImage(profile.avatar);
+
           await conn.sendMessage(from, {
-            image: { url: profile.avatar },
+            image: avatarBuffer || { url: profile.avatar },
             caption: text,
             contextInfo: newsletterContext(),
           }, { quoted: createStatusQuoted(msg) });
@@ -366,7 +508,12 @@ module.exports = {
           }).catch(() => {});
 
           return;
-        } catch (_) {}
+        } catch (imageError) {
+          console.warn(
+            "[ROBLOXSTALK/AVATAR]",
+            imageError?.message || imageError
+          );
+        }
       }
 
       await conn.sendMessage(from, {
@@ -410,6 +557,11 @@ module.exports = {
 
   _test: {
     boolLabel,
+    isHttpUrl,
+    findImageUrlDeep,
+    officialRobloxHeadshot,
+    resolveAvatar,
+    downloadImage,
     unwrapResult,
     numberValue,
     normalizeTokitoProfile,
