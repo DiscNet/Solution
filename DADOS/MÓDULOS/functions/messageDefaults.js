@@ -15,6 +15,18 @@ function currentMessage() {
   return messageContext.getStore()?.msg || null;
 }
 
+function messageDefaultsDisabled() {
+  return messageContext.getStore()?.disableMessageDefaults === true;
+}
+
+function runWithoutMessageDefaults(callback) {
+  const current = messageContext.getStore() || {};
+  return messageContext.run(
+    { ...current, disableMessageDefaults: true },
+    callback,
+  );
+}
+
 function isControlMessage(content) {
   if (!content || typeof content !== "object") return true;
 
@@ -43,6 +55,13 @@ function stripLegacyForwarding(contextInfo) {
 }
 
 function prepareOutgoing(content, options = {}) {
+  if (messageDefaultsDisabled()) {
+    return {
+      content,
+      options: options && typeof options === "object" ? options : {},
+    };
+  }
+
   if (isControlMessage(content)) {
     return {
       content,
@@ -142,6 +161,7 @@ async function sendWithTyping(conn, jid, send) {
 }
 
 function prepareRelayMessage(message) {
+  if (messageDefaultsDisabled()) return message;
   if (!message || typeof message !== "object") return message;
 
   const inner = message.viewOnceMessage?.message ||
@@ -218,7 +238,9 @@ function installMessageDefaults(conn) {
 
 module.exports = {
   runWithMessage,
+  runWithoutMessageDefaults,
   currentMessage,
+  messageDefaultsDisabled,
   isControlMessage,
   shouldShowTyping,
   stripLegacyForwarding,
