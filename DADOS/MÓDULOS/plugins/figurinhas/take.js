@@ -2,7 +2,6 @@
 const webp = require("node-webpmux");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const { unwrapMessage } = require("../../functions/messageText");
-const { defaultStickerPack } = require("../../functions/stickerMetadata");
 
 function sourceSticker(msg) {
   const content = unwrapMessage(msg);
@@ -13,9 +12,13 @@ function sourceSticker(msg) {
 }
 
 function stickerName(msg) {
-  return String(msg?.pushName || "Usuário")
+  const name = String(msg?.pushName || "Usuário")
     .replace(/[\x00-\x1f\x7f]/g, " ")
-    .trim().slice(0, 64) || "Usuário";
+    .replace(/^@+/, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, 63) || "Usuário";
+  return "@" + name;
 }
 
 async function downloadSticker(sticker) {
@@ -37,7 +40,7 @@ async function withName(buffer, name) {
   await image.load(buffer);
   const metadata = Buffer.from(JSON.stringify({
     "sticker-pack-id": "take-" + Date.now(),
-    "sticker-pack-name": defaultStickerPack(),
+    "sticker-pack-name": "",
     "sticker-pack-publisher": name,
     emojis: [],
   }), "utf8");
