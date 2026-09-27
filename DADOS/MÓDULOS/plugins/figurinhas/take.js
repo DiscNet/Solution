@@ -2,6 +2,7 @@
 const webp = require("node-webpmux");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const { unwrapMessage } = require("../../functions/messageText");
+const { defaultStickerPack } = require("../../functions/stickerMetadata");
 
 function sourceSticker(msg) {
   const content = unwrapMessage(msg);
@@ -36,8 +37,8 @@ async function withName(buffer, name) {
   await image.load(buffer);
   const metadata = Buffer.from(JSON.stringify({
     "sticker-pack-id": "take-" + Date.now(),
-    "sticker-pack-name": name,
-    "sticker-pack-publisher": "",
+    "sticker-pack-name": defaultStickerPack(),
+    "sticker-pack-publisher": name,
     emojis: [],
   }), "utf8");
   const header = Buffer.from([
