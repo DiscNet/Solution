@@ -47,17 +47,17 @@ function wrapText(value, maxChars = 16) {
   }
 
   if (current) lines.push(current);
-  return lines.slice(0, 7);
+  return lines;
 }
 
 function textLayout(text) {
   const clean = String(text || "").replace(/\s+/g, " ").trim();
-  const maxChars = clean.length <= 18 ? 18 : clean.length <= 45 ? 15 : 13;
+  const maxChars = clean.length <= 18 ? 18 : clean.length <= 45 ? 15 : clean.length <= 80 ? 14 : 16;
   const lines = wrapText(clean, maxChars);
   const longest = Math.max(1, ...lines.map(line => [...line].length));
   const byWidth = Math.floor(430 / Math.max(1, longest * 0.58));
   const byHeight = Math.floor(360 / Math.max(1, lines.length * 1.18));
-  const fontSize = Math.max(38, Math.min(120, byWidth, byHeight));
+  const fontSize = Math.max(30, Math.min(120, byWidth, byHeight));
   const lineHeight = Math.round(fontSize * 1.16);
   const totalHeight = Math.max(lineHeight, lines.length * lineHeight);
   const firstY = 256 - totalHeight / 2 + lineHeight * 0.78;
