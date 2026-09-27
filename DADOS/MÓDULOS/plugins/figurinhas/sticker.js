@@ -9,6 +9,7 @@ const webp = require("node-webpmux");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
 const execFilePromise = util.promisify(execFile);
 const TEMP_DIR = path.join(__dirname, "..", "..", "..", "temp");
@@ -264,8 +265,8 @@ module.exports = {
     const prefix = config.prefix || ".";
     const invokedName = String(requestedName || "s").trim().toLowerCase() || "s";
     const invokedCommand = `${prefix}${invokedName}`;
-    const PACKNAME = "GrimmJow";
-    const AUTHOR = "GrimmJow";
+    const PACKNAME = defaultStickerPack();
+    const AUTHOR = defaultStickerAuthor();
 
     let inputPath = null;
     let outputPath = null;
