@@ -9,13 +9,14 @@ const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
 const webp = require("node-webpmux");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const config = require("../../../config/config");
 
 const REMOVE_BG_API_KEY = "xyo9rDrGTeUv26jaJa5tdX8g";
 
-const PACKNAME = `Created by LᴜᴋᴀMᴏᴅᴢᴢ Rᴏʙᴏᴛ\nDev & Owner: Kxʟʏɴ\n`;
-const AUTHOR = `\nBᴏᴛ: +55 (63) 9200-3562\nMy hatred shall build empires.`;
+const PACKNAME = defaultStickerPack();
+const AUTHOR = defaultStickerAuthor();
 
 async function addMeta(file){
   const img = new webp.Image();
