@@ -23,6 +23,14 @@ function userTarget(value) {
     : null;
 }
 
+function frame(lines) {
+  return [
+    "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮",
+    ...lines.map((line) => `├̬⌑ؔ͟ ${line}`),
+    "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯",
+  ].join("\n");
+}
+
 function usage(prefix, groupId, action) {
   const examples = {
     nome: `${prefix}gerenciar ${groupId} nome Novo nome do grupo`,
@@ -265,18 +273,17 @@ module.exports = {
 
       return sendInteractiveMessage(conn, from, {
         ...(picture ? { image: { url: picture } } : {}),
-        text: [
-          "⚙️ *GERENCIAR GRUPO*",
-          "",
-          `📛 *${metadata.subject || "Sem nome"}*`,
-          `🆔 \`${groupId}\``,
-          `👥 ${stats.members} membros · 👮 ${stats.admins} admins`,
-          `🤖 Bot: *${stats.botAdmin ? "administrador" : "membro"}*`,
-          `🔒 Mensagens: *${stats.closed ? "somente admins" : "todos"}*`,
-          `🛠️ Edição: *${stats.restricted ? "somente admins" : "todos"}*`,
-          "",
-          "Selecione uma ação:",
-        ].join("\n"),
+        text: frame([
+          "⎾🧊⏌ *𝙶𝙴𝚁𝙴𝙽𝙲𝙸𝙰𝚁 𝙶𝚁𝚄𝙿𝙾*",
+          `⎾👥⏌ 𝙶𝚛𝚞𝚙𝚘: *${metadata.subject || "Sem nome"}*`,
+          `⎾🔹⏌ 𝙼𝚎𝚖𝚋𝚛𝚘𝚜: *${stats.members}*`,
+          `⎾👑⏌ 𝙰𝚍𝚖𝚒𝚗𝚜: *${stats.admins}*`,
+          `⎾🤖⏌ 𝙱𝚘𝚝: *${stats.botAdmin ? "Administrador" : "Membro"}*`,
+          `⎾🔒⏌ 𝙼𝚎𝚗𝚜𝚊𝚐𝚎𝚗𝚜: *${stats.closed ? "Somente admins" : "Todos"}*`,
+          `⎾🛠️⏌ 𝙴𝚍𝚒𝚌̧𝚊̃𝚘: *${stats.restricted ? "Somente admins" : "Todos"}*`,
+          `⎾🆔⏌ 𝙸𝙳/𝙻𝙸𝙳: \`${groupId}\``,
+          "⎾💎⏌ 𝚂𝚎𝚕𝚎𝚌𝚒𝚘𝚗𝚎 𝚞𝚖𝚊 𝚊𝚌̧𝚊̃𝚘 𝚊𝚋𝚊𝚒𝚡𝚘.",
+        ]),
         footer: `${config.botName || "GrimmJow-WA"} · gerenciar`,
         contextInfo: newsletterContext(),
         interactiveButtons: [
