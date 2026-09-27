@@ -30,22 +30,17 @@ function stickerBotName() {
 }
 
 function defaultStickerPack() {
-  const bot = cleanLabel(stickerBotName(), "GrimmJowBOT");
-  return [
-    "⎾🧊⏌ 𝙿𝙰𝙲𝙺 𝙳𝙴 𝙵𝙸𝙶𝚄𝚁𝙸𝙽𝙷𝙰𝚂",
-    `⎾🤖⏌ 𝙱𝚘𝚝: ${bot}`,
-  ].join("\n");
+  return "";
 }
 
 function defaultStickerAuthor() {
-  const owner = cleanLabel(config.ownerName, "Kxlyn");
-  return `⎾👑⏌ 𝙲𝚛𝚒𝚊𝚍𝚘𝚛: ${owner}`;
+  return "Ненависть мудрых способна породить империи.";
 }
 
 function exifBuffer(packname, author, emojis = ["🧊"]) {
   const data = Buffer.from(JSON.stringify({
     "sticker-pack-id": "solution-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
-    "sticker-pack-name": cleanMetadata(packname, defaultStickerPack()),
+    "sticker-pack-name": packname === "" ? "" : cleanMetadata(packname, ""),
     "sticker-pack-publisher": cleanMetadata(author, defaultStickerAuthor()),
     emojis: Array.isArray(emojis) ? emojis.slice(0, 8) : ["🧊"],
   }), "utf8");
@@ -67,8 +62,8 @@ async function applyStickerMetadata(buffer, options = {}) {
   const image = new webp.Image();
   await image.load(buffer);
   image.exif = exifBuffer(
-    options.packname || defaultStickerPack(),
-    options.author || defaultStickerAuthor(),
+    options.packname ?? defaultStickerPack(),
+    options.author ?? defaultStickerAuthor(),
     options.emojis || ["🧊"],
   );
   return image.save(null);
