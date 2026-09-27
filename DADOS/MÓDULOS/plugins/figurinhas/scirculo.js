@@ -7,6 +7,7 @@ const { exec } = require("child_process");
 const util = require("util");
 const execPromise = util.promisify(exec);
 const webp = require("node-webpmux");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
 function getRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -68,13 +69,8 @@ module.exports = {
       // ==============================================
       // CONFIGURAÇÕES PADRÃO DA FIGURINHA (MESMAS DO .s)
       // ==============================================
-      const PACKNAME = `○֩Lᴜᴋᴀ.ᴍᴏᴅᴢᴢ🍥҈
-
- ۩                                L͟u͟k͟a͟                                 🂱
-
-
-      `;
-      const AUTHOR = `🔱҉⃤𝙾𝚠𝚗𝚎𝚛: 63 98467-3123 ꪜ\n📍҉⃤𝐵𝑜𝑡: 63 99200-3562 ꪜ\n🕋҉⃤ℒ𝓊𝓀𝒶ℳℴ𝒹𝓏𝓏 ꪜ`;
+      const PACKNAME = defaultStickerPack();
+const AUTHOR = defaultStickerAuthor();
       // ==============================================
 
       await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
