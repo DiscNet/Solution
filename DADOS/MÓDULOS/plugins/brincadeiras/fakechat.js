@@ -1,5 +1,5 @@
 // Menu: Brincadeiras - Interações | Comando: fakechat
-const { createStatusQuoted } = require("../../functions/statusCard");
+const { runWithoutMessageDefaults } = require("../../functions/messageDefaults");
 
 function getContextInfo(msg) {
   const message = msg?.message || {};
@@ -70,44 +70,46 @@ module.exports = {
   usage: "fakechat @usuario | mensagem falsa | resposta",
 
   async execute(conn, msg, args, from) {
-    const parsed = parseFakeChat(args);
-    const targetJid = getTargetJid(msg);
+    return runWithoutMessageDefaults(async () => {
+      const parsed = parseFakeChat(args);
+      const targetJid = getTargetJid(msg);
 
-    if (!parsed || !targetJid) {
-      return conn.sendMessage(
-        from,
-        {
-          text:
-            "❌ ᴜsᴏ: .fakechat @usuario | mensagem falsa | resposta\n\n" +
-            "ᴇxᴇᴍᴘʟᴏ: .fakechat @usuario | oi gente eu voltei | finalmente apareceu",
-        },
-        { quoted: createStatusQuoted(msg) },
-      );
-    }
+      if (!parsed || !targetJid) {
+        return conn.sendMessage(
+          from,
+          {
+            text:
+              "❌ ᴜsᴏ: .fakechat @usuario | mensagem falsa | resposta\n\n" +
+              "ᴇxᴇᴍᴘʟᴏ: .fakechat @usuario | oi gente eu voltei | finalmente apareceu",
+          },
+          { quoted: msg },
+        );
+      }
 
-    const fakeText = parsed.fakeText.slice(0, 1500);
-    const replyText = parsed.replyText.slice(0, 3000);
+      const fakeText = parsed.fakeText.slice(0, 1500);
+      const replyText = parsed.replyText.slice(0, 3000);
 
-    try {
-      const fakeQuoted = makeFakeQuoted(from, targetJid, fakeText);
+      try {
+        const fakeQuoted = makeFakeQuoted(from, targetJid, fakeText);
 
-      await conn.sendMessage(
-        from,
-        { text: replyText },
-        { quoted: fakeQuoted },
-      );
+        await conn.sendMessage(
+          from,
+          { text: replyText },
+          { quoted: fakeQuoted },
+        );
 
-      await conn
-        .sendMessage(from, { react: { text: "🎭", key: msg.key } })
-        .catch(() => {});
-    } catch (error) {
-      console.error("[FAKECHAT] erro ao criar mensagem falsa:", error);
-      await conn.sendMessage(
-        from,
-        { text: "❌ ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴄʀɪᴀʀ ᴏ ғᴀᴋᴇᴄʜᴀᴛ." },
-        { quoted: createStatusQuoted(msg) },
-      );
-    }
+        await conn
+          .sendMessage(from, { react: { text: "🎭", key: msg.key } })
+          .catch(() => {});
+      } catch (error) {
+        console.error("[FAKECHAT] erro ao criar mensagem falsa:", error);
+        await conn.sendMessage(
+          from,
+          { text: "❌ ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴄʀɪᴀʀ ᴏ ғᴀᴋᴇᴄʜᴀᴛ." },
+          { quoted: msg },
+        );
+      }
+    });
   },
 };
 
