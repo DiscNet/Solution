@@ -4,8 +4,12 @@
   "description": "",
   "main": "DADOS/index.js",
   "scripts": {
-    "start": "node DADOS/railway-start.js",
-    "connect": "node DADOS/connect.js"
+    "start": "node DADOS/supervisor.js",
+    "bot": "node DADOS/railway-start.js",
+    "connect": "node DADOS/connect.js",
+    "update": "node DADOS/update.js start",
+    "update:check": "node DADOS/update.js check",
+    "update:rollback": "node DADOS/update.js rollback"
   },
   "engines": {
     "node": ">=22.22.2"

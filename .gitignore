@@ -2,6 +2,7 @@ node_modules/
 *.log
 .env
 .env.*
+.update/
 DADOS/temp/
 DADOS/database/runtime.json
 DADOS/database/grupos/
