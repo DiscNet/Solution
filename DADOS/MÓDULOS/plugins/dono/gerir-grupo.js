@@ -42,6 +42,15 @@ async function metadataOrThrow(conn, groupId) {
   return metadata;
 }
 
+async function groupPicture(conn, groupId) {
+  try {
+    const url = await conn.profilePictureUrl(groupId, "image");
+    return /^https?:\/\//i.test(String(url || "")) ? String(url) : null;
+  } catch {
+    return null;
+  }
+}
+
 async function handleAction({ conn, from, msg, args, groupId, metadata, action, prefix }) {
   const quoted = createStatusQuoted(msg);
   const stats = groupStats(metadata, conn);
@@ -252,7 +261,10 @@ module.exports = {
         },
       ];
 
+      const picture = await groupPicture(conn, groupId);
+
       return sendInteractiveMessage(conn, from, {
+        ...(picture ? { image: { url: picture } } : {}),
         text: [
           "⚙️ *GERENCIAR GRUPO*",
           "",
@@ -268,6 +280,13 @@ module.exports = {
         footer: `${config.botName || "GrimmJow-WA"} · gerenciar`,
         contextInfo: newsletterContext(),
         interactiveButtons: [
+          {
+            name: "cta_copy",
+            buttonParamsJson: JSON.stringify({
+              display_text: "📋 Copiar ID/LID",
+              copy_code: groupId,
+            }),
+          },
           {
             name: "single_select",
             buttonParamsJson: JSON.stringify({
