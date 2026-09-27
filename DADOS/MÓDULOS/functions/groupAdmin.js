@@ -3,6 +3,7 @@ const h = require("./adminHelpers");
 const { isAdminParticipant, sameIdentity, botIdentityCandidates } = require("./permissions");
 const block = require("./blockcmd");
 const ui = require("./ui");
+const autoban = require("./groupAutoban");
 function rest(msg, args) {
   return h.context(msg).participant &&
     !h.context(msg).mentionedJid?.length &&
@@ -22,7 +23,7 @@ async function run({ conn, msg, args, from, def }) {
   const g = state.groupSettings(from);
   const change = (fn) => state.update((d) => fn(state.group(d, from)));
   if (["advertir", "retiraradv", "advertencias", "limparadv"].includes(name)) {
-    const { jid } = await h.resolveMember(conn, from, msg, args, {
+    const { jid, p, metadata } = await h.resolveMember(conn, from, msg, args, {
       protect: name === "advertir",
     });
     if (name === "advertencias")
@@ -60,12 +61,32 @@ async function run({ conn, msg, args, from, def }) {
       a.push({ at: Date.now(), actor: h.actor(msg), reason });
       return a.length;
     });
-    return `Advertência registrada: ${n}/${g.warnLimit || 3}.${n >= (g.warnLimit || 3) ? " Limite atingido; revise o histórico e decida a ação." : ""}`;
+    const limit = state.groupSettings(from).warnLimit || 3;
+    if (n >= limit && autoban.isEnabled(from)) {
+      const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: p });
+      if (result.removed) {
+        change(group => { delete (group.warnings || {})[jid]; });
+      }
+      return ui.adminCard("Advertência", [
+        ui.adminRow("⚠️", "Avisos", `${n}/${limit}`),
+        ui.adminRow("📝", "Motivo", reason),
+        ui.adminRow(result.removed ? "✅" : "❌", "Autoban",
+          ui.smallcaps(result.removed ? "membro removido" : result.error || "não concluído")),
+      ]);
+    }
+    return ui.adminCard("Advertência", [
+      ui.adminRow("⚠️", "Avisos", `${n}/${limit}`),
+      ui.adminRow("📝", "Motivo", reason),
+      ...(n >= limit ? [ui.adminRow("🛡️", "Limite", ui.smallcaps("atingido; autoban desligado"))] : []),
+    ]);
   }
   if (name === "limiteadv") {
     const n = h.integer(args[0], 1, 20);
     change((g) => (g.warnLimit = n));
-    return `Limite de advertências: ${n}. A remoção é decidida pelo administrador.`;
+    return ui.adminCard("Limite de advertências", [
+      ui.adminRow("⚠️", "Limite", n),
+      ui.adminRow("🛡️", "Autoban", ui.smallcaps(autoban.isEnabled(from) ? "ativo" : "inativo")),
+    ]);
   }
   if (name === "listaadv")
     return list(
@@ -182,6 +203,7 @@ async function run({ conn, msg, args, from, def }) {
       ui.adminRow("⚠️", "Limite de advertências", g.warnLimit || 3),
       ui.adminRow("⏳", "Modo lento", `${g.slowmode || 0}s`),
       ui.adminRow("🛡️", "Anti-spam", antiSpam ? "ativo" : "inativo"),
+      ui.adminRow("🚫", "Autoban", g.autoban ? "ativo" : "inativo"),
       ui.adminRow("📥", "Aprovação", g.approvalNotice ? "avisos ativos" : "avisos inativos"),
       ui.adminRow("🤖", "Autoaprovação", g.autoApprove ? "ativa" : "inativa"),
       ui.adminRow("🔒", "Comandos só admins", g.commandsAdminOnly ? "sim" : "não"),

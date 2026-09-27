@@ -23,6 +23,7 @@ const { registerMessagesEvent } = require("../eventos/messages");
 const { registerGroupEvents } = require("../eventos/groups");
 const { handlePrivateInbox } = require("../eventos/privateInbox");
 const contactNameCache = require("../MÓDULOS/functions/contactNameCache");
+const { moderateLegacyAnti, moderateSpam } = require("../MÓDULOS/functions/groupAntis");
 const {
   normalizeCommandName,
   loadProjectCommandModules,
@@ -186,35 +187,12 @@ const aluguel = require("../MÓDULOS/functions/aluguel");
 const afk = require("../MÓDULOS/functions/afk");
 const activitySystem = require("../MÓDULOS/functions/activitySystem");
 
-// ==============================================
-// ANTIS
-// ==============================================
-
-const antiManager = require("../MÓDULOS/functions/antiManager");
 const blockcmdManager = require("../MÓDULOS/functions/blockcmd");
-
-function isAntiAtivo(grupoId, tipo) {
-  return antiManager.isAntiAtivo(grupoId, tipo);
-}
 
 function isCommandBlocked(grupoId, cmdName) {
   return blockcmdManager.isCommandBlocked(grupoId, cmdName);
 }
 
-// ==============================================
-// ANTI-LINK
-// ==============================================
-
-function contemLink(texto) {
-  if (!texto) return false;
-  return /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9-]+\.(com|br|net|org|gov|edu|info|io|app|club|xyz|site|online|store|tech|live|link|me|co|us|uk|de|fr|jp|ru|in|com\.br|org\.br|net\.br|gov\.br|edu\.br))/i.test(texto);
-}
-
-// ==============================================
-// ANTI-SPAM
-// ==============================================
-
-const { isAntispamAtivo, verificarSpam } = require("../MÓDULOS/functions/antispam");
 
 // ==============================================
 // BEM-VINDO
@@ -614,73 +592,7 @@ async function startBot() {
 
       // Bloqueios de comandos são verificados no executor para texto e botões.
 
-      // ========== 🔥 VERIFICAÇÃO DE CONTEÚDO BLOQUEADO (ANTI) ==========
-      if (grupo) {
-        // Anti-Link
-        if (text && !interactiveReply && isAntiAtivo(from, 'link') && contemLink(text)) {
-          const groupMetadata = await conn.groupMetadata(from);
-          const isSenderAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-          if (!isSenderAdmin) {
-            await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-            await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪʟɪɴᴋ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴍᴇɴsᴀɢᴇᴍ ᴄᴏᴍ ʟɪɴᴋ ʀᴇᴍᴏᴠɪᴅᴀ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
-            });
-            return;
-          }
-        }
-
-        // Anti-Documento
-        if (msg.message.documentMessage && isAntiAtivo(from, 'documento')) {
-          const groupMetadata = await conn.groupMetadata(from);
-          const isSenderAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-          if (!isSenderAdmin) {
-            await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-            await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪᴅᴏᴄ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴅᴏᴄᴜᴍᴇɴᴛᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
-            });
-            return;
-          }
-        }
-
-        // Anti-Imagem
-        if (msg.message.imageMessage && isAntiAtivo(from, 'imagem')) {
-          const groupMetadata = await conn.groupMetadata(from);
-          const isSenderAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-          if (!isSenderAdmin) {
-            await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-            await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪɪᴍᴀɢᴇᴍ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ɪᴍᴀɢᴇᴍ ʀᴇᴍᴏᴠɪᴅᴀ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
-            });
-            return;
-          }
-        }
-
-        // Anti-Vídeo
-        if (msg.message.videoMessage && isAntiAtivo(from, 'video')) {
-          const groupMetadata = await conn.groupMetadata(from);
-          const isSenderAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-          if (!isSenderAdmin) {
-            await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-            await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪᴠɪᴅᴇᴏ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 ᴠɪ́ᴅᴇᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
-            });
-            return;
-          }
-        }
-
-        // Anti-Áudio
-        if (msg.message.audioMessage && isAntiAtivo(from, 'audio')) {
-          const groupMetadata = await conn.groupMetadata(from);
-          const isSenderAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-          if (!isSenderAdmin) {
-            await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-            await conn.sendMessage(from, {
-              text: `⚠️ *ᴀɴᴛɪᴀᴜᴅɪᴏ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n🚫 áᴜᴅɪᴏ ʀᴇᴍᴏᴠɪᴅᴏ ᴀᴜᴛᴏᴍᴀᴛɪᴄᴀᴍᴇɴᴛᴇ.`
-            });
-            return;
-          }
-        }
-      }
+      if (await moderateLegacyAnti(conn, msg, from, { text, interactiveReply })) return;
 
       // ========== LOG DE MENSAGEM ==========
       if (text && !text.startsWith(config.prefix) && !text.match(/(https?:\/\/[^\s]+)/g)) {
@@ -838,30 +750,7 @@ async function startBot() {
         }
       }
 
-      // ANTI-SPAM
-      if (grupo && text && !text.startsWith(config.prefix)) {
-        const antispamAtivo = isAntispamAtivo(from);
-        if (antispamAtivo) {
-          const groupMetadata = await conn.groupMetadata(from);
-          const isAdmin = groupMetadata.participants.some(p => p.id === sender && p.admin);
-          if (!isAdmin) {
-            const spamResult = verificarSpam(sender, from, 5, 5);
-            if (spamResult.isSpam) {
-              await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
-              if (spamResult.shouldExpel) {
-                try { await conn.groupParticipantsUpdate(from, [sender], "remove"); await conn.sendMessage(from, { text: `⚠️ *ᴜsᴜÁʀɪᴏ ᴇxᴘᴜʟsᴏ ᴘᴏʀ sᴘᴀᴍ!*\n\n@${sender.split('@')[0]} ғᴏɪ ᴇxᴘᴜʟsᴏ ᴅᴏ ɢʀᴜᴘᴏ ᴀᴘós ᴀᴄᴜᴍᴜʟᴀʀ 3 ᴀᴠɪsᴏs ᴅᴇ sᴘᴀᴍ.`, mentions: [sender] }); } catch (err) { await conn.sendMessage(from, { text: `⚠️ *sᴘᴀᴍ ᴅᴇᴛᴇᴄᴛᴀᴅᴏ!*\n\n@${sender.split('@')[0]} ᴠᴏᴄê ᴀᴛɪɴɢɪᴜ 3 ᴀᴠɪsᴏs ᴅᴇ sᴘᴀᴍ, ᴍᴀs ɴãᴏ ғᴏɪ ᴘᴏssíᴠᴇʟ ᴇxᴘᴜʟsᴀʀ.`, mentions: [sender] }); }
-              } else if (spamResult.shouldWarn) {
-                const tempoRestante = Math.ceil((spamResult.mutedUntil - Date.now()) / 1000);
-                await conn.sendMessage(from, { text: `⚠️ *${spamResult.warnings}/3 ᴀᴠɪsᴏs ᴅᴇ sᴘᴀᴍ!*\n\n@${sender.split('@')[0]} ᴠᴏᴄê ᴇɴᴠɪᴏᴜ ${spamResult.count} ᴍᴇɴsᴀɢᴇɴs ᴇᴍ ᴍᴇɴᴏs ᴅᴇ 5 sᴇɢᴜɴᴅᴏs.\n\n🚫 ᴠᴏᴄê ᴇsᴛá ᴍᴜᴛᴀᴅᴏ ᴘᴏʀ ${tempoRestante} sᴇɢᴜɴᴅᴏs.\n\n📌 ᴘʀóxɪᴍᴏ ᴀᴠɪsᴏ = ᴇxᴘᴜʟsÃᴏ!`, mentions: [sender] });
-              } else if (spamResult.isMuted) {
-                const tempoRestante = Math.ceil((spamResult.mutedUntil - Date.now()) / 1000);
-                await conn.sendMessage(from, { text: `⏳ *ᴠᴏᴄÊ ᴇsᴛÁ ᴍᴜᴛᴀᴅᴏ!*\n\n@${sender.split('@')[0]} ᴀɢᴜᴀʀᴅᴇ ${tempoRestante} sᴇɢᴜɴᴅᴏs ᴀɴᴛᴇs ᴅᴇ ᴇɴᴠɪᴀʀ ɴᴏᴠᴀs ᴍᴇɴsᴀɢᴇɴs.\n\n🚫 ᴠᴏᴄê ᴊá ᴛᴇᴍ ${spamResult.warnings} ᴀᴠɪsᴏ(s) ᴅᴇ sᴘᴀᴍ.`, mentions: [sender] });
-              }
-              return;
-            }
-          }
-        }
-      }
+      if (await moderateSpam(conn, msg, from, { text, prefix: config.prefix })) return;
 
       if (autofiguModule) { await autofiguModule.autoHandler(conn, msg, from, sender); }
 

@@ -7,6 +7,7 @@ const {
   senderCandidates,
 } = require("./permissions");
 const ui = require("./ui");
+const autoban = require("./groupAutoban");
 const cooldowns = new Map();
 const slow = new Map();
 const stats = new Map();
@@ -159,10 +160,10 @@ async function moderateMessage(conn, msg, from, text) {
     mencao: (c.mentionedJid?.length || 0) > (filters.mencao || 0),
     longo: (text?.length || 0) > (filters.longo || 0),
   };
-  for (const [name, hit] of Object.entries(tests))
-    if (filters[name] && hit) reason = "filtro " + name;
+  const matchedFilter = Object.entries(tests).find(([name, hit]) => filters[name] && hit);
+  if (matchedFilter) reason = "filtro " + matchedFilter[0];
   const k = from + "|" + h.identity(p);
-  if (g.slowmode && text) {
+  if (!matchedFilter && g.slowmode && text) {
     if ((slow.get(k) || 0) > now) reason = "modo lento";
     else {
       slow.set(k, now + g.slowmode * 1000);
@@ -170,7 +171,16 @@ async function moderateMessage(conn, msg, from, text) {
     }
   }
   if (!reason) return false;
-  await conn.sendMessage(from, { delete: msg.key });
+  await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
+  if (matchedFilter) {
+    const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: p });
+    if (result.enabled && !result.protected && !result.pending) {
+      await conn.sendMessage(from, {
+        text: autoban.card(result, "filtro " + matchedFilter[0]),
+        ...(result.jid ? { mentions: [result.jid] } : {}),
+      });
+    }
+  }
   return true;
 }
 module.exports = {

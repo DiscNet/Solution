@@ -352,8 +352,8 @@ const textPages = Object.freeze({
     title: "🛡️ Grupos",
     summary: "Moderação, boas-vindas e automações",
     sections: [
-      ["Configuração", [["sembotoes 1/0", "mensagens sem botões (padrão: ativo)"], ["autofigu 1/0", "figurinhas automáticas"], ["bemvindo 1/0", "boas-vindas"], ["configgrupo", "opções do grupo"]]],
-      ["Moderação", [["antilink on/off", "filtro de links"], ["antiimagem on/off", "filtro de imagens"], ["antivideo on/off", "filtro de vídeos"], ["antispam 1/0", "proteção contra spam"], ["filtros", "consulte os filtros"], ["advertir", "advertências"], ["mutar", "silencie um membro"]]],
+      ["Configuração", [["sembotoes 1/0", "mensagens sem botões (padrão: ativo)"], ["autofigu 1/0", "figurinhas automáticas"], ["bemvindo 1/0", "boas-vindas"], ["status", "antis e automações ativas"], ["configgrupo", "opções do grupo"]]],
+      ["Moderação", [["antilink on/off", "filtro de links"], ["antiimagem on/off", "filtro de imagens"], ["antivideo on/off", "filtro de vídeos"], ["antispam 1/0", "proteção contra spam"], ["autoban 1/0", "remoção automática"], ["filtros", "consulte os filtros"], ["advertir", "advertências"], ["mutar", "silencie um membro"]]],
       ["Gestão", [["abrir", "libere mensagens"], ["fechar", "restrinja mensagens"], ["ban", "remova um membro"], ["tag", "marque os membros"], ["regras", "veja as regras"], ["atividades", "resumo de atividade"], ["aprovacao 1/0", "aprovação de entrada"], ["autoaprovacao 1/0", "aprovação automática"], ["pedidos", "solicitações pendentes"], ["aprovarpedido número", "aprove um pedido"], ["recusarpedido número", "recuse um pedido"], ["aprovarpedidos confirmar", "aprove todos os pedidos"], ["recusarpedidos confirmar", "recuse todos os pedidos"]]],
     ],
   },
@@ -436,7 +436,8 @@ const textExtras = Object.freeze({
     "salvarnota", "notas", "setregras", "delregras", "linkgrupo",
     "revogarlink", "modolento", "saudegrupo", "modlog", "editargrupo",
     "promover", "rebaixar", "set-nome", "set-desc", "antiaudio",
-    "antisticker", "antienquete"
+    "antisticker", "antienquete", "antidoc", "anticontato",
+    "antilocalizacao", "antiencaminhado", "antimencao", "antilongo"
   ],
   menudono: [
     "botestatisticas", "botmemoria", "topcomandos", "limparcooldowns",

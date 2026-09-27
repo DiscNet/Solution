@@ -26,6 +26,7 @@ function group(d, jid) {
     rules: "",
     slowmode: 0,
     warnLimit: 3,
+    autoban: false,
     approvalNotice: false,
     autoApprove: false,
   });
