@@ -1,7 +1,12 @@
-// Menu: Dono - Utilidades | Comando: privnote
+// Menu: Brincadeiras | Comando: privnote / PrivRush
+const config = require("../../../config/config");
+const { senderFrom } = require("../../sistemas/contexto");
+const privRush = require("../../functions/privRush");
+
 const ONETIME_SECRET_BASE_URL = "https://us.onetimesecret.com";
 const ONETIME_SECRET_SHARE_DOMAIN = "us.onetimesecret.com";
-const MAX_NOTE_LENGTH = 12000;
+const MAX_NOTE_LENGTH = 8500;
+const SECRET_TTL_SECONDS = Math.floor(privRush.DROP_TTL_MS / 1000);
 
 function normalizeResponse(data) {
   if (data && typeof data === "object") return data;
@@ -21,6 +26,7 @@ async function createOnetimeSecret(http, text) {
       secret: {
         kind: "conceal",
         share_domain: ONETIME_SECRET_SHARE_DOMAIN,
+        ttl: String(SECRET_TTL_SECONDS),
         secret: String(text),
       },
     },
@@ -77,53 +83,117 @@ async function createOnetimeSecret(http, text) {
   };
 }
 
+function buildRushSecret(text, draft, prefix) {
+  return (
+    "🏁 PRIVRUSH — COFRE RELÂMPAGO\n\n" +
+    "📩 CONTEÚDO DO CRIADOR:\n" +
+    String(text) +
+    "\n\n━━━━━━━━━━━━━━━━━━\n" +
+    "🎟️ CÓDIGO DE RESGATE:\n" +
+    draft.code +
+    "\n\n" +
+    "🏆 Você foi a primeira pessoa a revelar este cofre.\n" +
+    "Volte ao WhatsApp e use:\n" +
+    prefix + "resgatar " + draft.code +
+    "\n\n" +
+    "💠 Prêmio base: " + draft.basePoints + " PrivPoints\n" +
+    "⚡ Quanto mais rápido resgatar, maior o bônus.\n" +
+    "🚫 O criador do drop não pode resgatar.\n" +
+    "⌛ O código expira em 10 minutos."
+  );
+}
+
 module.exports = {
-  permissions: { owner: true, private: true },
+  // O arquivo continua na pasta /dono por compatibilidade, mas estas flags
+  // anulam a permissão inferida e deixam o comando disponível em qualquer chat.
+  permissions: { owner: false, private: false },
   name: "privnote",
-  aliases: ["pn"],
-  menuCategory: "Dono",
-  menuSection: "Utilidades",
-  usage: "privnote <texto>",
-  description: "Cria uma nota descartável de visualização única no Onetime Secret",
+  aliases: ["pn", "privrush", "cofre"],
+  menuCategory: "Brincadeiras",
+  menuSection: "PrivRush",
+  usage: "privnote <mensagem>",
+  description: "Cria um cofre de visualização única; o primeiro a resgatar o código vence",
 
   async execute(conn, msg, args = [], from, axiosInstance) {
     const text = args.join(" ").trim();
+    const prefix = String(config.prefix || ".");
+    const creator = senderFrom(msg, from);
 
     if (!text) {
       return conn.sendMessage(from, {
         text:
-          "📝 *PRIVNOTE*\n\n" +
-          "Uso: *.privnote <texto>*\n" +
-          "Ex.: *.privnote código temporário*",
+          "🏁 *PRIVRUSH*\n\n" +
+          "Crie um cofre que só pode ser revelado uma vez.\n" +
+          "Dentro dele haverá um código secreto. Quem abrir primeiro e usar o código antes dos outros vence.\n\n" +
+          "Uso: *" + prefix + "privnote <mensagem>*\n" +
+          "Resgate: *" + prefix + "resgatar KX-XXXX-XXXX*\n" +
+          "Ranking: *" + prefix + "privrank*",
       });
     }
 
     if (text.length > MAX_NOTE_LENGTH) {
       return conn.sendMessage(from, {
-        text: `❌ A nota deve ter no máximo ${MAX_NOTE_LENGTH} caracteres.`,
+        text: `❌ A mensagem deve ter no máximo ${MAX_NOTE_LENGTH} caracteres.`,
       });
     }
 
+    let draft = null;
+
     try {
+      draft = privRush.prepareDrop({
+        creator,
+        chatId: from,
+        message: text,
+      });
+
+      privRush.commitDrop(draft);
+
       await conn.sendMessage(from, {
         react: { text: "🔐", key: msg.key },
       }).catch(() => {});
 
-      const note = await createOnetimeSecret(axiosInstance, text);
+      const hiddenContent = buildRushSecret(text, draft, prefix);
+      const note = await createOnetimeSecret(axiosInstance, hiddenContent);
 
       await conn.sendMessage(from, {
         text:
-          "🔐 *NOTA DESCARTÁVEL CRIADA*\n\n" +
-          note.url +
-          "\n\n🌐 Serviço: *" + note.provider + "*\n" +
-          "⚠️ O conteúdo pode ser visualizado uma única vez e depois é destruído.",
+          "🏁 *PRIVRUSH ABERTO!*\n\n" +
+          "🔐 " + note.url +
+          "\n\n" +
+          "👁️ A nota só pode ser revelada *uma vez*.\n" +
+          "🎟️ Dentro dela existe um código de resgate.\n" +
+          "🏆 A primeira pessoa que usar *" + prefix + "resgatar <código>* vence.\n" +
+          "💠 Base: *" + draft.basePoints + " PrivPoints*\n" +
+          "⚡ Bônus máximo de velocidade: *+200*\n" +
+          "⌛ Validade: *10 minutos*\n" +
+          "🚫 O criador não pode resgatar o próprio drop.\n\n" +
+          "📊 Ranking deste chat: *" + prefix + "privrank*",
       });
 
       await conn.sendMessage(from, {
         react: { text: "✅", key: msg.key },
       }).catch(() => {});
     } catch (error) {
-      console.error("[PRIVNOTE]", error?.message || error);
+      if (draft) {
+        try {
+          privRush.cancelDrop(draft);
+        } catch (_) {}
+      }
+
+      if (error?.code === "CREATE_COOLDOWN") {
+        const seconds = Math.max(
+          1,
+          Math.ceil(Number(error.remainingMs || 0) / 1000)
+        );
+
+        return conn.sendMessage(from, {
+          text:
+            "⏳ Aguarde *" + seconds +
+            "s* antes de soltar outro PrivRush.",
+        });
+      }
+
+      console.error("[PRIVRUSH]", error?.message || error);
 
       await conn.sendMessage(from, {
         react: { text: "❌", key: msg.key },
@@ -134,7 +204,7 @@ module.exports = {
 
       return conn.sendMessage(from, {
         text:
-          "❌ Não foi possível criar a nota no Onetime Secret agora" +
+          "❌ Não foi possível criar o PrivRush agora" +
           detail +
           ".",
       });
@@ -144,5 +214,6 @@ module.exports = {
   _test: {
     normalizeResponse,
     createOnetimeSecret,
+    buildRushSecret,
   },
 };
