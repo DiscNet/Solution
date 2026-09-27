@@ -34,7 +34,7 @@ function defaultStickerPack() {
 }
 
 function defaultStickerAuthor() {
-  return "Ненависть мудрых способна породить империи.";
+  return "和";
 }
 
 function exifBuffer(packname, author, emojis = ["🧊"]) {
