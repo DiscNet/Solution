@@ -12,6 +12,17 @@ function cleanLabel(value, fallback) {
   return (text || fallback).slice(0, 80);
 }
 
+function cleanMetadata(value, fallback) {
+  const text = String(value || "")
+    .replace(/[\x00-\x09\x0b-\x1f\x7f]/g, " ")
+    .split("\n")
+    .map(line => line.replace(/\s+/g, " ").trim())
+    .filter(Boolean)
+    .join("\n")
+    .trim();
+  return (text || fallback).slice(0, 700);
+}
+
 function defaultStickerPack() {
   const bot = cleanLabel(config.botName, "Kxlyn");
   return [
@@ -34,8 +45,8 @@ function defaultStickerAuthor() {
 function exifBuffer(packname, author, emojis = ["🧊"]) {
   const data = Buffer.from(JSON.stringify({
     "sticker-pack-id": "solution-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8),
-    "sticker-pack-name": cleanLabel(packname, defaultStickerPack()),
-    "sticker-pack-publisher": cleanLabel(author, defaultStickerAuthor()),
+    "sticker-pack-name": cleanMetadata(packname, defaultStickerPack()),
+    "sticker-pack-publisher": cleanMetadata(author, defaultStickerAuthor()),
     emojis: Array.isArray(emojis) ? emojis.slice(0, 8) : ["🧊"],
   }), "utf8");
 
@@ -65,6 +76,7 @@ async function applyStickerMetadata(buffer, options = {}) {
 
 module.exports = {
   cleanLabel,
+  cleanMetadata,
   defaultStickerPack,
   defaultStickerAuthor,
   exifBuffer,
