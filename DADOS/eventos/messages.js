@@ -1,13 +1,30 @@
 const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
 const contactNameCache = require("../MÓDULOS/functions/contactNameCache");
-const { runWithMessage } = require("../MÓDULOS/functions/messageDefaults");
+const { runWithMessage, startCommandTyping } = require("../MÓDULOS/functions/messageDefaults");
+const { extractMessageText } = require("../MÓDULOS/functions/messageText");
+
+function isCommandMessage(msg) {
+  if (!msg?.message || msg.key?.fromMe) return false;
+  const prefix = require("../config/config").prefix || ".";
+  const text = extractMessageText(msg).trim();
+  return text.startsWith(prefix) && text.length > prefix.length;
+}
 
 function registerMessagesEvent(conn, processIncomingMessage) {
   conn.ev.on("messages.upsert", async ({ messages }) => {
     for (const msg of messages || []) {
       try {
-        contactNameCache.rememberMessage(msg);
-        await runWithMessage(msg, () => processIncomingMessage(msg));
+        await runWithMessage(msg, async () => {
+          const stopTyping = isCommandMessage(msg)
+            ? await startCommandTyping(conn, msg.key.remoteJid)
+            : null;
+          try {
+            contactNameCache.rememberMessage(msg);
+            return await processIncomingMessage(msg);
+          } finally {
+            await stopTyping?.();
+          }
+        });
       } catch (error) {
         runtimeLogger.error({ scope: "messages.upsert", error, code: "ERR_MESSAGE_EVENT" });
       }
@@ -39,4 +56,4 @@ function registerMessagesEvent(conn, processIncomingMessage) {
   });
 }
 
-module.exports = { registerMessagesEvent };
+module.exports = { registerMessagesEvent, isCommandMessage };

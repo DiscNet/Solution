@@ -98,9 +98,10 @@ module.exports = {
 
       // ATIVA PERMANENTE
       aluguel.ativarPermanente(grupoJid);
+      const avisoEnviado = await aluguel.anunciarAtivacao(conn, grupoJid, "permanente", null);
 
       await conn.sendMessage(from, {
-        text: `✅ *ʙᴏᴛ ᴛᴏʀɴᴀᴅᴏ ᴘᴇʀᴍᴀɴᴇɴᴛᴇ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${grupoNome}\n🆔 \`${grupoJid}\`\n♾️ *sᴛᴀᴛᴜs:* ᴘᴇʀᴍᴀɴᴇɴᴛᴇ\n\n📌 ᴏ ʙᴏᴛ ɴᴀ̃ᴏ ᴇxᴘɪʀᴀʀᴀ́ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ!`,
+        text: `✅ *ʙᴏᴛ ᴛᴏʀɴᴀᴅᴏ ᴘᴇʀᴍᴀɴᴇɴᴛᴇ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${grupoNome}\n🆔 \`${grupoJid}\`\n♾️ *sᴛᴀᴛᴜs:* ᴘᴇʀᴍᴀɴᴇɴᴛᴇ\n\n📌 ᴏ ʙᴏᴛ ɴᴀ̃ᴏ ᴇxᴘɪʀᴀʀᴀ́ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ!${avisoEnviado ? "" : "\n\n⚠️ O aviso no grupo não pôde ser enviado."}`,
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,

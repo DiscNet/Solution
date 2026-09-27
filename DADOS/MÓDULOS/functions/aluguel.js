@@ -111,6 +111,34 @@ function listarGrupos() {
   return carregarDb().grupos;
 }
 
+async function anunciarAtivacao(conn, grupoId, plano, dataExpiracao) {
+  const nomePlano = String(plano || "").toUpperCase();
+  const duracao = PLANOS[plano]?.dias;
+  const validade = dataExpiracao
+    ? new Intl.DateTimeFormat("pt-BR", {
+        timeZone: "America/Fortaleza",
+        dateStyle: "short",
+        timeStyle: "short",
+      }).format(new Date(dataExpiracao))
+    : "Sem prazo de expiração";
+
+  try {
+    await conn.sendMessage(grupoId, {
+      text: [
+        "╭─〔 🧊 ALUGUEL ATIVADO 〕",
+        "├̬⌑ؔ͟ *Plano:* " + nomePlano +
+          (Number.isFinite(duracao) ? " (" + duracao + " dia" + (duracao === 1 ? "" : "s") + ")" : ""),
+        "├̬⌑ؔ͟ *Validade:* " + validade,
+        "╰─〔 O bot está disponível neste grupo. 〕",
+      ].join("\n"),
+    });
+    return true;
+  } catch (error) {
+    console.error("[ALUGUEL AVISO]", error?.message || error);
+    return false;
+  }
+}
+
 module.exports = {
   PLANOS,
   isGrupoAtivo,
@@ -121,5 +149,6 @@ module.exports = {
   marcarNotificada,
   calcularExpiracao,
   getInfoAluguel,
-  listarGrupos
+  listarGrupos,
+  anunciarAtivacao
 };

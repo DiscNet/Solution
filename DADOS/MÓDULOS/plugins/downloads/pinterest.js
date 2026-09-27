@@ -1,7 +1,6 @@
 // Menu: Downloads - Pinterest | Comando: pin
 const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { proto, generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
 const axios = require("axios");
 const tokitoApi = require("../../functions/apiClient");
 
@@ -130,87 +129,61 @@ function searchCaption(query, count) {
   ].join("\n");
 }
 
-async function sendCarousel(conn, msg, from, urls, query) {
-  const cards = [];
-
-  for (let index = 0; index < urls.length; index++) {
-    try {
-      const media = await prepareWAMessageMedia(
-        { image: { url: urls[index] } },
-        { upload: conn.waUploadToServer }
-      );
-
-      cards.push(proto.Message.InteractiveMessage.fromObject({
-        header: { hasMediaAttachment: true, ...media },
-        body: { text: "📌 Pinterest · " + (cards.length + 1) + "/" + urls.length },
-        footer: { text: displayBotName() },
-        nativeFlowMessage: {
-          buttons: [{
-            name: "cta_url",
-            buttonParamsJson: JSON.stringify({
-              display_text: "Abrir imagem",
-              url: urls[index],
-              merchant_url: urls[index],
-            }),
-          }],
-          messageVersion: 1,
-        },
-      }));
-    } catch (error) {
-      console.warn("[PINTEREST CARD]", index + 1, error.message);
-    }
+async function downloadImage(url) {
+  const response = await axios.get(url, {
+    responseType: "arraybuffer",
+    timeout: 15000,
+    maxContentLength: 8 * 1024 * 1024,
+    headers: { "user-agent": "Mozilla/5.0", accept: "image/*" },
+  });
+  const contentType = String(response.headers?.["content-type"] || "").toLowerCase();
+  const buffer = Buffer.from(response.data || []);
+  if (!contentType.startsWith("image/") || !buffer.length) {
+    throw new Error("O endereço não retornou uma imagem.");
   }
-
-  if (cards.length < 2) throw new Error("Não foi possível preparar o carrossel.");
-
-  const generated = generateWAMessageFromContent(from, {
-    viewOnceMessage: {
-      message: {
-        messageContextInfo: {
-          deviceListMetadata: {},
-          deviceListMetadataVersion: 2,
-        },
-        interactiveMessage: proto.Message.InteractiveMessage.fromObject({
-          header: { hasMediaAttachment: false },
-          body: { text: "🖼️ *RESULTADOS DO PINTEREST*\n\n🔎 " + query + "\nDeslize para ver as imagens." },
-          footer: { text: displayBotName() },
-          carouselMessage: { cards, messageVersion: 1 },
-        }),
-      },
-    },
-  }, {
-    quoted: createStatusQuoted(msg),
-  });
-
-  return conn.relayMessage(from, generated.message, {
-    messageId: generated.key.id,
-  });
+  return buffer;
 }
 
-async function sendAlbum(conn, msg, from, urls, query) {
+async function prepareImages(urls) {
+  const results = await Promise.all(urls.slice(0, 10).map(async url => {
+    try {
+      return await downloadImage(url);
+    } catch (error) {
+      console.warn("[PINTEREST IMAGEM]", error.message);
+      return null;
+    }
+  }));
+  return results.filter(Boolean);
+}
+
+async function sendAlbum(conn, msg, from, images) {
   const parent = await conn.sendMessage(from, {
     album: {
-      expectedImageCount: urls.length,
+      expectedImageCount: images.length,
       expectedVideoCount: 0,
     },
   }, { quoted: createStatusQuoted(msg) });
 
-  for (let index = 0; index < urls.length; index++) {
+  for (let index = 0; index < images.length; index++) {
     await conn.sendMessage(from, {
-      image: { url: urls[index] },
-      caption: index === 0 ? searchCaption(query, urls.length) : undefined,
+      image: images[index],
       albumParentKey: parent.key,
     });
   }
 }
 
-async function sendSequentialFallback(conn, msg, from, urls, query) {
-  for (let index = 0; index < urls.length; index++) {
-    await conn.sendMessage(from, {
-      image: { url: urls[index] },
-      caption: index === 0 ? searchCaption(query, urls.length) : undefined,
-    }, index === 0 ? { quoted: createStatusQuoted(msg) } : undefined);
+async function sendSequentialFallback(conn, msg, from, images) {
+  let sent = 0;
+  for (let index = 0; index < images.length; index++) {
+    try {
+      await conn.sendMessage(from, { image: images[index] },
+        sent === 0 ? { quoted: createStatusQuoted(msg) } : undefined);
+      sent++;
+    } catch (error) {
+      console.warn("[PINTEREST ENVIO]", error.message);
+    }
   }
+  if (!sent) throw new Error("Não foi possível enviar as imagens.");
 }
 
 module.exports = {
@@ -219,7 +192,7 @@ module.exports = {
   menuCategory: "Downloads",
   menuSection: "Pinterest",
   usage: "pin termo",
-  description: "Pesquisa imagens no Pinterest e envia os resultados em carrossel",
+  description: "Pesquisa imagens no Pinterest e envia um álbum navegável",
   async execute(conn, msg, args, from) {
     const query = args.join(" ").trim();
 
@@ -259,16 +232,30 @@ module.exports = {
         throw new Error("Nenhuma imagem encontrada para essa busca.");
       }
 
-      try {
-        await sendCarousel(conn, msg, from, urls, query);
-      } catch (carouselError) {
-        console.warn("[PINTEREST CAROUSEL]", carouselError.message);
+      const images = await prepareImages(urls);
+      if (!images.length) throw new Error("As imagens encontradas estão indisponíveis.");
 
+      // Esta confirmação é uma mensagem normal e permanece visível mesmo se o
+      // cliente não renderizar o agrupamento de mídia do WhatsApp.
+      await conn.sendMessage(from, {
+        text: searchCaption(query, images.length),
+      }, { quoted: createStatusQuoted(msg) });
+
+      let remaining = images;
+      try {
+        await conn.sendMessage(from, { image: images[0] }, { quoted: createStatusQuoted(msg) });
+        remaining = images.slice(1);
+      } catch (error) {
+        console.warn("[PINTEREST PRÉVIA]", error.message);
+      }
+
+      if (remaining.length) {
         try {
-          await sendAlbum(conn, msg, from, urls, query);
+          if (remaining.length < 2) throw new Error("Álbum requer duas imagens.");
+          await sendAlbum(conn, msg, from, remaining);
         } catch (albumError) {
           console.warn("[PINTEREST ALBUM]", albumError.message);
-          await sendSequentialFallback(conn, msg, from, urls.slice(0, 6), query);
+          await sendSequentialFallback(conn, msg, from, remaining);
         }
       }
 
@@ -286,7 +273,8 @@ module.exports = {
     imageUrls,
     collectPinterestImages,
     searchCaption,
-    sendCarousel,
+    prepareImages,
+    downloadImage,
     searchPinterestDirect,
   },
 };

@@ -3,11 +3,10 @@ const tokitoApi = require("./apiClient");
 const { createStatusQuoted } = require("./statusCard");
 const {
   generateWAMessageFromContent,
-  prepareWAMessageMedia,
   proto,
 } = require("@whiskeysockets/baileys");
 const { getVideo } = require("./youtubeClient");
-const { isTextOnly } = require("./uiMode");
+const { isTextOnly, sendButtons } = require("./uiMode");
 
 function textValue(value, fallback = "") {
   if (value === undefined || value === null) return fallback;
@@ -510,10 +509,14 @@ async function sendYoutubeFallback(conn, msg, from, video) {
   ].join("\n");
 
   if (video.thumbnail) {
-    return conn.sendMessage(from, {
-      image: { url: video.thumbnail },
-      caption: text,
-    }, { quoted: createStatusQuoted(msg) });
+    try {
+      return await conn.sendMessage(from, {
+        image: { url: video.thumbnail },
+        caption: text,
+      }, { quoted: createStatusQuoted(msg) });
+    } catch (error) {
+      console.warn("[YOUTUBE CAPA]", error?.message || error);
+    }
   }
 
   return conn.sendMessage(
@@ -524,60 +527,25 @@ async function sendYoutubeFallback(conn, msg, from, video) {
 }
 
 async function sendYoutubeChoice(conn, msg, from, video) {
-  if (isTextOnly(from)) return sendYoutubeFallback(conn, msg, from, video);
+  // O resultado visível usa uma mensagem comum. O servidor pode aceitar um
+  // relay interativo sem que o cliente WhatsApp mostre a mensagem.
+  const visible = await sendYoutubeFallback(conn, msg, from, video);
+  if (isTextOnly(from)) return visible;
   const prefix = config.prefix || ".";
-  let header = {
-    title: "🎬 YouTube",
-    hasMediaAttachment: false,
-  };
-
-  if (video?.thumbnail) {
-    try {
-      const media = await prepareWAMessageMedia(
-        { image: { url: video.thumbnail } },
-        { upload: conn.waUploadToServer }
-      );
-
-      header = {
-        title: "🎬 YouTube",
-        hasMediaAttachment: true,
-        imageMessage: media.imageMessage,
-      };
-    } catch {}
-  }
-
-  const interactiveMessage = {
-    header,
-    body: {
-      text: infoText(video) + "\n\nEscolha o formato:",
-    },
-    footer: {
-      text: botName(),
-    },
-    nativeFlowMessage: {
-      messageParamsJson: "",
-      buttons: [
-        quickReply("🎵 Áudio", prefix + "play " + video.url),
-        quickReply("📹 Vídeo", prefix + "ytmp4 " + video.url),
-        quickReply("📄 Documento", prefix + "playdoc " + video.url),
-      ],
-    },
-  };
-
   try {
-    const out = generateWAMessageFromContent(
-      from,
-      interactiveEnvelope(interactiveMessage),
-      { quoted: createStatusQuoted(msg) }
-    );
-
-    return await conn.relayMessage(from, out.message, {
-      messageId: out.key.id,
-    });
+    await sendButtons(conn, from, {
+      text: "🎬 *Escolha o formato do vídeo acima:*",
+      footer: botName(),
+      buttons: [
+        { id: prefix + "play " + video.url, text: "🎵 Áudio" },
+        { id: prefix + "ytmp4 " + video.url, text: "📹 Vídeo" },
+        { id: prefix + "playdoc " + video.url, text: "📄 Documento" },
+      ],
+    }, { quoted: createStatusQuoted(msg) });
   } catch (error) {
     console.warn("[YOUTUBE BUTTONS]", error?.message || error);
-    return sendYoutubeFallback(conn, msg, from, video);
   }
+  return visible;
 }
 
 module.exports = {

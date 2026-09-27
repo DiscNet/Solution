@@ -143,8 +143,10 @@ module.exports = {
       if (plano === "permanente") {
         aluguel.ativarPermanente(grupoJid);
 
+        const avisoEnviado = await aluguel.anunciarAtivacao(conn, grupoJid, plano, null);
+
         await conn.sendMessage(from, {
-          text: `✅ *ᴀʟᴜɢᴜᴇʟ ᴘᴇʀᴍᴀɴᴇɴᴛᴇ ᴀᴛɪᴠᴀᴅᴏ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${grupoNome}\n🆔 \`${grupoJid}\`\n♾️ *ᴘʟᴀɴᴏ:* ᴘᴇʀᴍᴀɴᴇɴᴛᴇ\n\n📌 ᴏ ʙᴏᴛ ʀᴇsᴘᴏɴᴅᴇʀᴀ́ ᴘᴀʀᴀ sᴇᴍᴘʀᴇ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ!`,
+          text: `✅ *ᴀʟᴜɢᴜᴇʟ ᴘᴇʀᴍᴀɴᴇɴᴛᴇ ᴀᴛɪᴠᴀᴅᴏ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${grupoNome}\n🆔 \`${grupoJid}\`\n♾️ *ᴘʟᴀɴᴏ:* ᴘᴇʀᴍᴀɴᴇɴᴛᴇ\n\n📌 ᴏ ʙᴏᴛ ʀᴇsᴘᴏɴᴅᴇʀᴀ́ ᴘᴀʀᴀ sᴇᴍᴘʀᴇ ɴᴇsᴛᴇ ɢʀᴜᴘᴏ!${avisoEnviado ? "" : "\n\n⚠️ O aviso no grupo não pôde ser enviado."}`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,
@@ -159,13 +161,15 @@ module.exports = {
         const dataExpiracao = aluguel.calcularExpiracao(plano);
         aluguel.ativarAluguel(grupoJid, plano, dataExpiracao);
 
+        const avisoEnviado = await aluguel.anunciarAtivacao(conn, grupoJid, plano, dataExpiracao);
+
         const dataExp = new Date(dataExpiracao);
         const dataFormatada = dataExp.toLocaleDateString("pt-BR");
         const horaFormatada = dataExp.toLocaleTimeString("pt-BR");
         const dias = aluguel.PLANOS[plano].dias;
 
         await conn.sendMessage(from, {
-          text: `✅ *ᴀʟᴜɢᴜᴇʟ ᴀᴛɪᴠᴀᴅᴏ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${grupoNome}\n🆔 \`${grupoJid}\`\n📊 *ᴘʟᴀɴᴏ:* ${plano.toUpperCase()} (${dias} ᴅɪᴀs)\n📅 *ᴇxᴘɪʀᴀ ᴇᴍ:* ${dataFormatada} às ${horaFormatada}\n\n📌 ᴏ ʙᴏᴛ ʀᴇsᴘᴏɴᴅᴇʀᴀ́ ᴀᴛᴇ́ ᴀ ᴅᴀᴛᴀ ᴅᴇ ᴇxᴘɪʀᴀᴄ̧ᴀ̃ᴏ!`,
+          text: `✅ *ᴀʟᴜɢᴜᴇʟ ᴀᴛɪᴠᴀᴅᴏ!*\n\n📌 *ɢʀᴜᴘᴏ:* ${grupoNome}\n🆔 \`${grupoJid}\`\n📊 *ᴘʟᴀɴᴏ:* ${plano.toUpperCase()} (${dias} ᴅɪᴀs)\n📅 *ᴇxᴘɪʀᴀ ᴇᴍ:* ${dataFormatada} às ${horaFormatada}\n\n📌 ᴏ ʙᴏᴛ ʀᴇsᴘᴏɴᴅᴇʀᴀ́ ᴀᴛᴇ́ ᴀ ᴅᴀᴛᴀ ᴅᴇ ᴇxᴘɪʀᴀᴄ̧ᴀ̃ᴏ!${avisoEnviado ? "" : "\n\n⚠️ O aviso no grupo não pôde ser enviado."}`,
           contextInfo: {
             forwardingScore: 1,
             isForwarded: true,

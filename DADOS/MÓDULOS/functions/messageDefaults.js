@@ -74,6 +74,45 @@ function isChatJid(jid) {
     /@(g\.us|s\.whatsapp\.net|lid)$/.test(jid);
 }
 
+async function startCommandTyping(conn, jid) {
+  if (!isChatJid(jid) || typeof conn?.sendPresenceUpdate !== "function") {
+    return async () => {};
+  }
+
+  const context = messageContext.getStore();
+  let active = true;
+  let pending = Promise.resolve();
+  const compose = () => {
+    pending = pending.then(async () => {
+      if (active) await conn.sendPresenceUpdate("composing", jid);
+    }).catch(() => {});
+    return pending;
+  };
+
+  if (context) context.typingJid = jid;
+  await compose();
+  // Permite que o indicador chegue ao cliente antes de respostas imediatas.
+  await new Promise(resolve => setTimeout(resolve, 600));
+  // O WhatsApp descarta a presença depois de algum tempo; mantenha-a durante
+  // buscas e conversões longas, até a última resposta do comando.
+  const timer = setInterval(compose, 8000);
+  timer.unref?.();
+
+  return async () => {
+    active = false;
+    clearInterval(timer);
+    if (context) context.typingJid = null;
+    await pending;
+    try {
+      await conn.sendPresenceUpdate("paused", jid);
+    } catch (_) {}
+  };
+}
+
+function hasCommandTyping(jid) {
+  return messageContext.getStore()?.typingJid === jid;
+}
+
 async function sendWithTyping(conn, jid, send) {
   if (!isChatJid(jid) || typeof conn.sendPresenceUpdate !== "function") {
     return send();
@@ -159,7 +198,7 @@ function installMessageDefaults(conn) {
   conn.sendMessage = async (jid, content, options = {}) => {
     const outgoing = prepareOutgoing(content, options);
     const send = () => originalSendMessage(jid, outgoing.content, outgoing.options);
-    return shouldShowTyping(content)
+    return shouldShowTyping(content) && !hasCommandTyping(jid)
       ? sendWithTyping(conn, jid, send)
       : send();
   };
@@ -168,7 +207,9 @@ function installMessageDefaults(conn) {
     conn.relayMessage = (jid, message, options = {}) => {
       const outgoing = prepareRelayMessage(message);
       const send = () => originalRelayMessage(jid, outgoing, options);
-      return outgoing === message ? send() : sendWithTyping(conn, jid, send);
+      return outgoing === message || hasCommandTyping(jid)
+        ? send()
+        : sendWithTyping(conn, jid, send);
     };
   }
 
@@ -184,5 +225,7 @@ module.exports = {
   prepareOutgoing,
   prepareRelayMessage,
   sendWithTyping,
+  startCommandTyping,
+  hasCommandTyping,
   installMessageDefaults,
 };

@@ -370,8 +370,8 @@ const textPages = Object.freeze({
     title: "📥 Downloads",
     summary: "Busca e mídia",
     sections: [
-      ["YouTube", [["ytsearch termo", "pesquise vídeos"], ["play termo/link", "receba áudio"], ["ytmp3 link", "baixe áudio"], ["ytmp4 link", "baixe vídeo"]]],
-      ["Outras fontes", [["spotify link", "música por link"], ["ttkmp4 link", "vídeo curto"], ["igvideo link", "vídeo do Instagram"], ["pin termo", "pesquise imagens"]]],
+      ["YouTube", [["ytsearch termo", "pesquise vídeos"], ["ytplay termo/link", "informações e formatos"], ["play termo/link", "receba áudio"], ["ytmp3 link", "baixe áudio"], ["ytmp4 link", "baixe vídeo"]]],
+      ["Outras fontes", [["spotify música/link", "informações e áudio"], ["ttkmp4 link", "vídeo curto"], ["igvideo link", "vídeo do Instagram"], ["pin termo", "pesquise imagens"]]],
       ["Biblioteca", [["playlist", "organize uma playlist"], ["play_audio termo", "áudio por pesquisa"]]],
     ],
   },
@@ -403,7 +403,7 @@ const textPages = Object.freeze({
     summary: "Criação, conversão e edição",
     sections: [
       ["Criar", [["s", "converta uma mídia em figurinha"], ["sbrat texto", "figurinha com texto"], ["stext texto", "texto em figurinha"], ["emoji", "figurinha de emoji"]]],
-      ["Editar", [["rename nome|autor", "altere informações"], ["toimg", "converta para imagem"], ["togif", "converta para GIF"], ["stbg", "altere o fundo"]]],
+      ["Editar", [["take", "assine a figurinha com seu nome"], ["rename nome|autor", "altere informações"], ["toimg", "converta para imagem"], ["togif", "converta para GIF"], ["stbg", "altere o fundo"]]],
       ["Extras", [["figperfil", "foto de perfil em figurinha"], ["stickergif", "figurinha animada"]]],
     ],
   },
