@@ -12,7 +12,9 @@ module.exports=h.factory({
   "menuSection": "Configuração",
   "usage": "abrir",
   "description": "Uso: .abrir"
-},async ({conn,args,from})=>{
+},async ({conn,from,permission})=>{
+ const metadata = permission.metadata || await conn.groupMetadata(from);
+ if (metadata.announce === false) return "O grupo já está aberto para todos.";
  await conn.groupSettingUpdate(from,"not_announcement");
- return "Configuração do grupo atualizada.";
+ return "Grupo aberto: todos os membros podem enviar mensagens.";
 });

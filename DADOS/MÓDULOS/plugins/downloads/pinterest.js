@@ -1,9 +1,9 @@
 // Menu: Downloads - Pinterest | Comando: pin
 const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
-const { generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
+const { proto, generateWAMessageFromContent, prepareWAMessageMedia } = require("@whiskeysockets/baileys");
+const axios = require("axios");
 const tokitoApi = require("../../functions/apiClient");
-const { isTextOnly } = require("../../functions/uiMode");
 
 function displayBotName() {
   return String(config.botName || "Bot")
@@ -14,6 +14,7 @@ function displayBotName() {
 function addUrl(urls, value) {
   const url = String(value || "").trim();
   if (!/^https?:\/\//i.test(url)) return;
+  if (/^https?:\/\/(?:www\.)?pinterest\.[^/]+\/(?:pin|search)\//i.test(url)) return;
   if (!urls.includes(url)) urls.push(url);
 }
 
@@ -36,20 +37,28 @@ function collectPinterestImages(value, urls, depth = 0) {
   if (typeof value !== "object") return;
 
   const candidates = [
-    value.image,
-    value.imagem,
-    value.src,
-    value.thumbnail,
-    value.thumb,
-    value.media?.url,
     value.images?.orig?.url,
     value.images?.original?.url,
     value.images?.["736x"]?.url,
     value.images?.["564x"]?.url,
     value.images?.[0]?.url,
+    value.image_url,
+    value.imageUrl,
+    value.image?.url,
+    value.imagem?.url,
+    value.image,
+    value.imagem,
+    value.media?.image?.url,
+    value.media?.url,
+    value.src,
+    value.thumbnail,
+    value.thumb,
+    value.url,
   ];
 
-  for (const candidate of candidates) addUrl(urls, candidate);
+  // Um resultado é um card. Evita repetir o mesmo pin em resoluções distintas.
+  const candidate = candidates.find(item => typeof item === "string" && /^https?:\/\//i.test(item));
+  if (candidate) addUrl(urls, candidate);
 
   const containers = [
     value.pins,
@@ -59,7 +68,7 @@ function collectPinterestImages(value, urls, depth = 0) {
     value.result,
     value.resultado,
     value.data,
-    value.images,
+    ...(candidate ? [] : [value.images, value.image, value.imagem, value.media]),
   ];
 
   for (const container of containers) {
@@ -82,6 +91,34 @@ function imageUrls(data) {
   return urls.slice(0, 10);
 }
 
+async function searchPinterestDirect(query) {
+  const userAgent = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 Chrome/124.0 Safari/537.36";
+  const home = await axios.get("https://www.pinterest.com/", {
+    timeout: 15000,
+    headers: { "user-agent": userAgent },
+  });
+  const cookie = (home.headers?.["set-cookie"] || [])
+    .map(value => String(value).split(";")[0])
+    .join("; ");
+
+  const response = await axios.get("https://www.pinterest.com/resource/BaseSearchResource/get/", {
+    timeout: 30000,
+    headers: {
+      "user-agent": userAgent,
+      referer: "https://www.pinterest.com/",
+      "x-requested-with": "XMLHttpRequest",
+      ...(cookie ? { cookie } : {}),
+    },
+    params: {
+      source_url: "/search/pins/?q=" + encodeURIComponent(query),
+      data: JSON.stringify({ options: {
+        isPrefetch: false, query, scope: "pins", bookmarks: [""], page_size: 25,
+      }, context: {} }),
+    },
+  });
+  return imageUrls(response.data?.resource_response?.data?.results || []);
+}
+
 function searchCaption(query, count) {
   return [
     "🖼️ *RESULTADO DA BUSCA*",
@@ -97,45 +134,48 @@ async function sendCarousel(conn, msg, from, urls, query) {
   const cards = [];
 
   for (let index = 0; index < urls.length; index++) {
-    const media = await prepareWAMessageMedia(
-      { image: { url: urls[index] } },
-      { upload: conn.waUploadToServer }
-    );
+    try {
+      const media = await prepareWAMessageMedia(
+        { image: { url: urls[index] } },
+        { upload: conn.waUploadToServer }
+      );
 
-    cards.push({
-      header: {
-        hasMediaAttachment: true,
-        imageMessage: media.imageMessage,
-      },
-      body: {
-        text:
-          "📌 *Pinterest*\n" +
-          "🔎 " + query + "\n" +
-          "🖼️ " + (index + 1) + "/" + urls.length,
-      },
-      footer: {
-        text: displayBotName(),
-      },
-      nativeFlowMessage: {
-        buttons: [],
-      },
-    });
+      cards.push(proto.Message.InteractiveMessage.fromObject({
+        header: { hasMediaAttachment: true, ...media },
+        body: { text: "📌 Pinterest · " + (cards.length + 1) + "/" + urls.length },
+        footer: { text: displayBotName() },
+        nativeFlowMessage: {
+          buttons: [{
+            name: "cta_url",
+            buttonParamsJson: JSON.stringify({
+              display_text: "Abrir imagem",
+              url: urls[index],
+              merchant_url: urls[index],
+            }),
+          }],
+          messageVersion: 1,
+        },
+      }));
+    } catch (error) {
+      console.warn("[PINTEREST CARD]", index + 1, error.message);
+    }
   }
 
-  if (!cards.length) throw new Error("Nenhum card pôde ser preparado.");
+  if (cards.length < 2) throw new Error("Não foi possível preparar o carrossel.");
 
   const generated = generateWAMessageFromContent(from, {
-    interactiveMessage: {
-      body: {
-        text: "🖼️ *RESULTADOS DO PINTEREST*\n\nDeslize para ver as imagens encontradas.",
-      },
-      footer: {
-        text: displayBotName(),
-      },
-      carouselMessage: {
-        cards,
-        messageVersion: 1,
-        carouselCardType: 1,
+    viewOnceMessage: {
+      message: {
+        messageContextInfo: {
+          deviceListMetadata: {},
+          deviceListMetadataVersion: 2,
+        },
+        interactiveMessage: proto.Message.InteractiveMessage.fromObject({
+          header: { hasMediaAttachment: false },
+          body: { text: "🖼️ *RESULTADOS DO PINTEREST*\n\n🔎 " + query + "\nDeslize para ver as imagens." },
+          footer: { text: displayBotName() },
+          carouselMessage: { cards, messageVersion: 1 },
+        }),
       },
     },
   }, {
@@ -194,20 +234,29 @@ module.exports = {
         react: { text: "🔎", key: msg.key },
       }).catch(() => {});
 
-      const data = await tokitoApi.get("/api/pinterest-search", {
-        text: query,
-        query,
-        q: query,
-      });
-
-      const urls = imageUrls(data);
-      if (!urls.length) {
-        throw new Error("Nenhuma imagem encontrada para essa busca.");
+      let urls = [];
+      try {
+        const data = await tokitoApi.get("/api/pinterest-search", {
+          text: query,
+          query,
+          q: query,
+        });
+        urls = imageUrls(data);
+      } catch (error) {
+        console.warn("[PINTEREST API]", tokitoApi.errorInfo(error).message);
       }
 
-      if (isTextOnly(from)) {
-        await sendSequentialFallback(conn, msg, from, urls.slice(0, 6), query);
-        return;
+      if (urls.length < 2) {
+        try {
+          const directUrls = await searchPinterestDirect(query);
+          urls = [...new Set([...urls, ...directUrls])].slice(0, 10);
+        } catch (error) {
+          if (!urls.length) throw error;
+          console.warn("[PINTEREST DIRETO]", error.message);
+        }
+      }
+      if (!urls.length) {
+        throw new Error("Nenhuma imagem encontrada para essa busca.");
       }
 
       try {
@@ -238,5 +287,6 @@ module.exports = {
     collectPinterestImages,
     searchCaption,
     sendCarousel,
+    searchPinterestDirect,
   },
 };

@@ -1,6 +1,6 @@
 const state = require("./adminState");
 const h = require("./adminHelpers");
-const { isAdminParticipant } = require("./permissions");
+const { isAdminParticipant, sameIdentity, botIdentityCandidates } = require("./permissions");
 const block = require("./blockcmd");
 function rest(msg, args) {
   return h.context(msg).participant &&
@@ -242,15 +242,17 @@ async function run({ conn, msg, args, from, def }) {
   if (name === "apagarmensagem") {
     const c = h.context(msg);
     h.need(
-      c.stanzaId && c.participant,
+      c.stanzaId && c.quotedMessage && c.participant,
       "Responda à mensagem que deseja apagar.",
     );
+    const fromMe = botIdentityCandidates(conn)
+      .some(jid => sameIdentity(c.participant, jid));
     await conn.sendMessage(from, {
       delete: {
         remoteJid: from,
         id: c.stanzaId,
         participant: c.participant,
-        fromMe: [conn.user?.id, conn.user?.lid].includes(c.participant),
+        fromMe,
       },
     });
     return;

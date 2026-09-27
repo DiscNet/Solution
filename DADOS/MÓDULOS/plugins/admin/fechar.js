@@ -12,7 +12,9 @@ module.exports=h.factory({
   "menuSection": "Configuração",
   "usage": "fechar",
   "description": "Uso: .fechar"
-},async ({conn,args,from})=>{
+},async ({conn,from,permission})=>{
+ const metadata = permission.metadata || await conn.groupMetadata(from);
+ if (metadata.announce === true) return "O grupo já está fechado para mensagens dos membros.";
  await conn.groupSettingUpdate(from,"announcement");
- return "Configuração do grupo atualizada.";
+ return "Grupo fechado: somente administradores podem enviar mensagens.";
 });

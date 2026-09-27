@@ -3,7 +3,7 @@ const { factory } = require("../../functions/adminHelpers");
 const { run } = require("../../functions/groupAdmin");
 module.exports = factory({
   "name": "apagarmensagem",
-  "aliases": [],
+  "aliases": ["del", "delete", "d", "apagar"],
   "menuCategory": "Grupos",
   "menuSection": "Moderação",
   "usage": "apagarmensagem (responda à mensagem)",

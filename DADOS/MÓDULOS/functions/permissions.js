@@ -47,6 +47,24 @@ function participantMatches(participant, candidates) {
   return values.some(value => candidates.some(candidate => sameIdentity(value, candidate)));
 }
 
+function botIdentityCandidates(conn) {
+  return [
+    conn?.user?.id,
+    conn?.user?.lid,
+    config.botLid,
+    config.pairingNumber && `${digits(config.pairingNumber)}@s.whatsapp.net`,
+  ].filter(Boolean);
+}
+
+function ownerDeletingBotMessage({ conn, msg, command, group, owner }) {
+  if (!group || !owner || command?.name !== "apagarmensagem") return false;
+  const { context } = require("./adminHelpers");
+  const quoted = context(msg);
+  if (!quoted.stanzaId || !quoted.quotedMessage || !quoted.participant) return false;
+  return botIdentityCandidates(conn)
+    .some(botJid => sameIdentity(quoted.participant, botJid));
+}
+
 async function checkCommandPermissions({ conn, msg, command, from }) {
   const permissions = command?.permissions || {};
   const group = isGroupJid(from);
@@ -55,6 +73,12 @@ async function checkCommandPermissions({ conn, msg, command, from }) {
   if (permissions.owner && !owner) return { ok: false, code: "OWNER_ONLY" };
   if (permissions.group && !group) return { ok: false, code: "GROUP_ONLY" };
   if (permissions.private && group) return { ok: false, code: "PRIVATE_ONLY" };
+
+  // O autor pode excluir uma mensagem própria sem ser administrador.
+  // No caso do bot, essa exceção é concedida somente ao dono.
+  if (ownerDeletingBotMessage({ conn, msg, command, group, owner })) {
+    return { ok: true, owner, group, metadata: null };
+  }
 
   if (!permissions.admin && !permissions.botAdmin) {
     return { ok: true, owner, group, metadata: null };
@@ -81,7 +105,7 @@ async function checkCommandPermissions({ conn, msg, command, from }) {
   }
 
   if (permissions.botAdmin) {
-    const botCandidates = [conn?.user?.id, conn?.user?.lid].filter(Boolean);
+    const botCandidates = botIdentityCandidates(conn);
     const bot = participants.find(item => participantMatches(item, botCandidates));
     if (!isAdminParticipant(bot)) return { ok: false, code: "BOT_ADMIN_REQUIRED", metadata };
   }
@@ -98,6 +122,6 @@ module.exports = {
   isGroupJid,
   isAdminParticipant,
   checkCommandPermissions,
-  participantMatches
+  participantMatches,
+  botIdentityCandidates
 };
-

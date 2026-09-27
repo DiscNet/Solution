@@ -3,7 +3,7 @@ const { factory } = require("../../functions/adminHelpers");
 const { run } = require("../../functions/groupAdmin");
 module.exports = factory({
   "name": "linkgrupo",
-  "aliases": [],
+  "aliases": ["linkgp", "linkg"],
   "menuCategory": "Grupos",
   "menuSection": "Configuração",
   "usage": "linkgrupo",
