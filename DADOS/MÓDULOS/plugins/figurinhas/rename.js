@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 const webp = require("node-webpmux");
-const config = require("../../../config/config");
+const config = require("../../../config/config");\nconst { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
 function getRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -73,8 +73,8 @@ module.exports = {
         }, { quoted: msg });
       }
 
-      let packname = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      let author = "ᴅᴇᴠ: ᴋxʟʏɴ";
+      let packname = defaultStickerPack();
+      let author = defaultStickerAuthor();
       const argsText = args.join(" ");
       if (argsText.includes("|")) {
         const parts = argsText.split("|");
