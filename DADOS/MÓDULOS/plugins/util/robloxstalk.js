@@ -382,7 +382,6 @@ function caption(profile) {
       : null,
     `⎾📝⏌ 𝙳𝚎𝚜𝚌𝚛𝚒𝚌̧𝚊̃𝚘: *${bio}*`,
     `⎾🌐⏌ 𝙿𝚎𝚛𝚏𝚒𝚕: ${profile.profileUrl}`,
-    "⎾⚡⏌ 𝙵𝚘𝚗𝚝𝚎: *Tokito API*",
   ]);
 }
 
