@@ -160,6 +160,7 @@ function stagingRemote() {
     try {
       git(['clone', '--quiet', '--depth', '1', '--branch', BRANCH, url, dir], { cwd: ROOT });
     } catch (_) {
+      fs.rmSync(dir, { recursive: true, force: true });
       if (!token()) {
         const err = new Error('Configure BOT_UPDATE_TOKEN com acesso de leitura ao repositório privado.');
         err.code = 'UPDATE_TOKEN_REQUIRED';
@@ -259,8 +260,8 @@ function backupChanges(changes, remote, managedPaths) {
     try {
       fs.lstatSync(target);
       existed = true;
-      copyPath(target, safePath(files, change.path));
     } catch (_) {}
+    if (existed) copyPath(target, safePath(files, change.path));
     return { path: change.path, existed, type: change.type };
   });
 
