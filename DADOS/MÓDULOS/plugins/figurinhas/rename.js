@@ -4,7 +4,8 @@ const fs = require("fs");
 const path = require("path");
 const { downloadMediaMessage } = require("@whiskeysockets/baileys");
 const webp = require("node-webpmux");
-const config = require("../../../config/config");\nconst { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
+const config = require("../../../config/config");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
 function getRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
