@@ -8,6 +8,20 @@ function smallcaps(value) {
   return String(value ?? "").replace(/[a-z]/gi, char => SMALLCAPS[char.toLowerCase()] || char);
 }
 
+function adminRow(icon, label, value) {
+  return `⎾${icon}⏌ ${smallcaps(label)}: ${value}`;
+}
+
+function adminCard(title, lines = []) {
+  const edge = "┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄";
+  return [
+    `╭${edge}╮`,
+    `├̬⌑ؔ͟ ⎾🧊⏌ *${smallcaps(title)}*`,
+    ...lines.map(line => `├̬⌑ؔ͟ ${line}`),
+    `╰${edge}╯`,
+  ].join("\n");
+}
+
 function permissionMessage(code) {
   switch (code) {
     case "OWNER_ONLY": return "❌ ᴇsᴛᴇ ᴄᴏᴍᴀɴᴅᴏ ᴇ́ ᴅɪsᴘᴏɴɪ́ᴠᴇʟ ᴀᴘᴇɴᴀs ᴘᴀʀᴀ ᴏ ᴅᴏɴᴏ.";
@@ -35,6 +49,8 @@ async function errorReply(conn, msg, text = "❌ ᴏᴄᴏʀʀᴇᴜ ᴜᴍ ᴇ�
 module.exports = {
   SMALLCAPS,
   smallcaps,
+  adminRow,
+  adminCard,
   permissionMessage,
   reply,
   errorReply

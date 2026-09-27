@@ -26,6 +26,8 @@ function group(d, jid) {
     rules: "",
     slowmode: 0,
     warnLimit: 3,
+    approvalNotice: false,
+    autoApprove: false,
   });
 }
 // All mutations are synchronous and atomic; never retain this object across an await.

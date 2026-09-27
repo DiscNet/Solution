@@ -2,6 +2,7 @@ const state = require("./adminState");
 const h = require("./adminHelpers");
 const { isAdminParticipant, sameIdentity, botIdentityCandidates } = require("./permissions");
 const block = require("./blockcmd");
+const ui = require("./ui");
 function rest(msg, args) {
   return h.context(msg).participant &&
     !h.context(msg).mentionedJid?.length &&
@@ -169,9 +170,27 @@ async function run({ conn, msg, args, from, def }) {
     change((g) => (g.slowmode = n));
     return `Intervalo entre mensagens: ${n}s. Administradores são isentos.`;
   }
-  if (name === "filtros") return list(g.filters);
-  if (name === "configgrupo")
-    return `Advertências: limite ${g.warnLimit || 3}\nModo lento: ${g.slowmode || 0}s\nComandos só para admins: ${!!g.commandsAdminOnly}\nNotas: ${Object.keys(g.notes || {}).length}\nRegras: ${g.rules ? "cadastradas" : "não cadastradas"}\nFiltros:\n${list(g.filters)}\nCooldowns:\n${list(g.cooldowns)}`;
+  if (name === "filtros") {
+    const entries = Object.entries(g.filters || {});
+    return ui.adminCard("Filtros do grupo", entries.length
+      ? entries.map(([key, value]) => ui.adminRow("🛡️", key, typeof value === "boolean" ? (value ? "ativo" : "inativo") : value))
+      : ["⎾🛡️⏌ Nenhum filtro configurado."]);
+  }
+  if (name === "configgrupo") {
+    const antiSpam = require("./antispam").isAntispamAtivo(from);
+    return ui.adminCard("Configuração do grupo", [
+      ui.adminRow("⚠️", "Limite de advertências", g.warnLimit || 3),
+      ui.adminRow("⏳", "Modo lento", `${g.slowmode || 0}s`),
+      ui.adminRow("🛡️", "Anti-spam", antiSpam ? "ativo" : "inativo"),
+      ui.adminRow("📥", "Aprovação", g.approvalNotice ? "avisos ativos" : "avisos inativos"),
+      ui.adminRow("🤖", "Autoaprovação", g.autoApprove ? "ativa" : "inativa"),
+      ui.adminRow("🔒", "Comandos só admins", g.commandsAdminOnly ? "sim" : "não"),
+      ui.adminRow("📝", "Regras", g.rules ? "cadastradas" : "não cadastradas"),
+      ui.adminRow("📌", "Notas", Object.keys(g.notes || {}).length),
+      ui.adminRow("🧊", "Filtros", Object.entries(g.filters || {}).filter(([,v]) => Boolean(v)).length),
+      ui.adminRow("⏱️", "Cooldowns", Object.keys(g.cooldowns || {}).length),
+    ]);
+  }
   if (name === "cmdsadmin") {
     const v = h.onoff(args[0]);
     change((g) => (g.commandsAdminOnly = v));
@@ -216,7 +235,15 @@ async function run({ conn, msg, args, from, def }) {
   }
   if (name === "infogrupo") {
     const m = await conn.groupMetadata(from);
-    return `Grupo: ${m.subject}\nID: ${from}\nMembros: ${m.participants.length}\nAdmins: ${m.participants.filter(isAdminParticipant).length}\nEnvio: ${m.announce ? "só admins" : "todos"}\nEdição: ${m.restrict ? "só admins" : "todos"}\nDescrição: ${(m.desc || "Sem descrição").slice(0, 2000)}`;
+    return ui.adminCard("Informações do grupo", [
+      ui.adminRow("👥", "Grupo", m.subject || "Sem nome"),
+      ui.adminRow("🆔", "ID/LID", `\`${from}\``),
+      ui.adminRow("🔹", "Membros", m.participants?.length || 0),
+      ui.adminRow("👑", "Admins", (m.participants || []).filter(isAdminParticipant).length),
+      ui.adminRow("🔒", "Mensagens", m.announce ? "somente admins" : "todos"),
+      ui.adminRow("🛠️", "Edição", m.restrict ? "somente admins" : "todos"),
+      ui.adminRow("📝", "Descrição", String(m.desc || "Sem descrição").replace(/\s+/g, " ").slice(0, 1200)),
+    ]);
   }
   if (name === "veradmin") {
     const { p } = await h.resolveMember(conn, from, msg, args);
