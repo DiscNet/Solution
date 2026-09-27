@@ -186,7 +186,7 @@ const commands = [
     menuCategory: "IA",
     section: "Áudio",
     usage: "transcrever (responda ao áudio)",
-    description: "Transcreve áudio pela Tokito API",
+    description: "Transcreve áudio automaticamente",
     async execute(conn, msg, args, from, http) {
       try {
         const media = await kit.downloadMedia(msg);
@@ -256,7 +256,7 @@ const commands = [
           ""
         ).trim();
 
-        if (!text) throw new Error("A Tokito API não retornou texto.");
+        if (!text) throw new Error("O serviço de transcrição não retornou texto.");
 
         const meta = [
           result?.idioma || result?.language,
@@ -274,7 +274,8 @@ const commands = [
       } catch (e) {
         const info = tokitoApi.errorInfo(e);
         if (info.status || e?.code === "TOKITO_API_NOT_CONFIGURED") {
-          await kit.reply(conn, msg, from, tokitoApi.userError(e));
+          const status = info.status ? " (" + info.status + ")" : "";
+          await kit.reply(conn, msg, from, "❌ O serviço de transcrição está indisponível" + status + ".");
         } else {
           await kit.fail(conn, msg, from, e, "Não foi possível transcrever o áudio.");
         }
