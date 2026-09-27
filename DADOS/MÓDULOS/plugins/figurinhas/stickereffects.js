@@ -10,12 +10,13 @@ const util = require("util");
 const execPromise = util.promisify(exec);
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const webp = require("node-webpmux");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
 // ==============================================
 // CONFIGURAÇÕES PADRÃO (IGUAL AO STICKER.JS)
 // ==============================================
-const PACKNAME = `Created by LᴜᴋᴀMᴏᴅᴢᴢ Rᴏʙᴏᴛ\nDev & Owner: Kxʟʏɴ\n`;
-const AUTHOR = `\nBᴏᴛ: +55 (63) 9200-3562\nMy hatred shall build empires.`;
+const PACKNAME = defaultStickerPack();
+const AUTHOR = defaultStickerAuthor();
 
 function getRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
