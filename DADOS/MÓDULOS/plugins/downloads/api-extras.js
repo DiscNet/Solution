@@ -1,5 +1,6 @@
 const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
+const { createMetadinhaPair } = require("../../functions/metadinha");
 
 function firstYoutube(data) {
   return tokitoApi.list(data).find(item => item?.url || item?.link || item?.videoId) || tokitoApi.list(data)[0] || null;
@@ -176,7 +177,7 @@ module.exports = [
     menuCategory: "Brincadeiras",
     menuSection: "Imagens",
     usage: "metadinha",
-    description: "Obtém uma metadinha pela API",
+    description: "Envia duas imagens combinando para usar como foto de perfil",
     async execute(conn, msg, args, from) {
       try {
         await conn.sendMessage(from, { react: { text: "💞", key: msg.key } }).catch(() => {});
@@ -231,10 +232,22 @@ module.exports = [
         await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
       } catch (error) {
         const info = tokitoApi.errorInfo(error);
-        console.error("[API METADINHA]", info.status || "-", info.message);
-        await conn.sendMessage(from, {
-          text: tokitoApi.userError(error, "Não foi possível gerar a metadinha."),
-        });
+        console.warn("[API METADINHA]", info.status || "-", info.message);
+        try {
+          const pair = await createMetadinhaPair();
+          for (let index = 0; index < pair.length; index++) {
+            await conn.sendMessage(from, {
+              image: pair[index],
+              caption: index === 0 ? "💞 *METADINHA* — parte 1/2" : "💞 *METADINHA* — parte 2/2",
+            }, index === 0 ? { quoted: createStatusQuoted(msg) } : undefined);
+          }
+          await conn.sendMessage(from, { react: { text: "✅", key: msg.key } }).catch(() => {});
+        } catch (fallbackError) {
+          console.error("[METADINHA LOCAL]", fallbackError.message);
+          await conn.sendMessage(from, {
+            text: "❌ Não foi possível gerar a metadinha agora.",
+          }, { quoted: createStatusQuoted(msg) });
+        }
       }
     },
   },

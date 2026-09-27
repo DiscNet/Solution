@@ -44,29 +44,44 @@ function trackInfo(data, input) {
 }
 
 async function resolveTrack(input) {
-  try {
-    const data = await tokitoApi.get("/api/spotify-play", { query: input, q: input }, { timeout: 30000 });
-    const track = trackInfo(data, input);
-    if (!isSpotifyUrl(input) || track.title !== input) return track;
-  } catch (error) {
-    if (!isSpotifyUrl(input)) throw error;
-    console.warn("[SPOTIFY INFO]", tokitoApi.errorInfo(error).message);
+  if (!isSpotifyUrl(input)) {
+    const data = await tokitoApi.get("/api/spotify-search", { q: input, limit: 5 }, { timeout: 30000 });
+    const item = tokitoApi.list(data).find(value => value?.url || value?.link);
+    if (!item) throw new Error("Nenhuma música encontrada para essa busca.");
+    return trackInfo(item, input);
   }
 
-  // O endpoint de download aceita link, mas não devolve dados da música.
-  // O oEmbed público fornece título e capa para preservar o card informativo.
+  // O oEmbed identifica a faixa por link. A busca online complementa o card
+  // com álbum, duração e data quando encontra exatamente a mesma faixa.
   const response = await axios.get("https://open.spotify.com/oembed", {
     params: { url: input },
     timeout: 15000,
   }).catch(() => ({ data: {} }));
   const info = response.data || {};
-  return {
+  const fallback = {
     ...trackInfo(info, input),
     title: field(info.title, "Música do Spotify"),
     artist: field(info.author_name, "Desconhecido"),
     cover: imageUrl(info.thumbnail_url),
     link: input,
   };
+
+  try {
+    if (!info.title) return fallback;
+    const data = await tokitoApi.get("/api/spotify-search", {
+      q: [info.title, info.author_name].filter(Boolean).join(" "), limit: 10,
+    }, { timeout: 30000 });
+    const id = input.match(/\/track\/([a-zA-Z0-9]+)/)?.[1];
+    const item = tokitoApi.list(data).find(value => {
+      const link = String(value?.url || value?.link || "");
+      return id && link.includes("/track/" + id);
+    });
+    if (!item) return fallback;
+    return { ...trackInfo(item, input), link: input, cover: imageUrl(item.thumbnail) || fallback.cover };
+  } catch (error) {
+    console.warn("[SPOTIFY INFO]", tokitoApi.errorInfo(error).message);
+    return fallback;
+  }
 }
 
 function infoCaption(track) {

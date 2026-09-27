@@ -53,7 +53,7 @@ function errorInfo(error) {
 
   let message = sanitize(apiMessage || error?.message || "Erro desconhecido na API.");
   if (status === 401) message = "Chave da API inválida ou não autenticada.";
-  else if (status === 403) message = "A chave da API não tem permissão para este endpoint.";
+  else if (status === 403) message = "A Tokito recusou a chave configurada no servidor. Confira TOKITO_API e as permissões da conta para esta rota.";
   else if (status === 404) message = "Endpoint não encontrado na API.";
   else if (status === 429) message = "Limite de requisições da API atingido.";
   else if (status >= 500) message = "A API está com erro interno.";
