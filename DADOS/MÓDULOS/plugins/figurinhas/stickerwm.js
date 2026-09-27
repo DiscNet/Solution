@@ -2,18 +2,11 @@
 const fs = require("fs");
 const { exec } = require("child_process");
 const webp = require("node-webpmux");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 
-const PACKNAME = `○֩�Lᴜᴋᴀ.ᴍᴏᴅᴢᴢ🍥҈
-
- ۩                                L͟u͟k͟a͟                                 🂱
-
-
-      `;
-
-const AUTHOR = `🔱҉⃤𝙾𝚠𝚗𝚎𝚛: 63 98467-3123 ꪜ
-📍҉⃤𝐵𝑜𝑡: 63 99200-3562 ꪜ
-🕋҉⃤ℒ𝓊𝓀𝒶ℳℴ𝒹𝓏𝓏 ꪜ`;
+const PACKNAME = defaultStickerPack();
+const AUTHOR = defaultStickerAuthor();
 
 async function addMeta(file) {
   const img = new webp.Image();
