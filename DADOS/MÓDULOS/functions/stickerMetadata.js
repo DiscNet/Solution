@@ -1,9 +1,6 @@
 const webp = require("node-webpmux");
 const config = require("../../config/config");
 
-const FRAME_TOP = "╭┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╮";
-const FRAME_BOTTOM = "╰┄─✿─┉ᝳ─̵֟͟͡─᳘֯─҃❀─᳘҃֯͞─̱֟͛─ᝳ͡┉─✿─┄╯";
-
 function cleanLabel(value, fallback) {
   const text = String(value || "")
     .replace(/[\x00-\x1f\x7f]/g, " ")
@@ -23,23 +20,26 @@ function cleanMetadata(value, fallback) {
   return (text || fallback).slice(0, 700);
 }
 
+function stickerBotName() {
+  const configured = String(config.botName || "")
+    .replace(/[\x00-\x1f\x7f]/g, " ")
+    .replace(/^\s*[̵̲͞\s]+/u, "")
+    .replace(/\s+/g, " ")
+    .trim();
+  return configured || "GrimmJowBOT";
+}
+
 function defaultStickerPack() {
-  const bot = cleanLabel(config.botName, "Kxlyn");
+  const bot = cleanLabel(stickerBotName(), "GrimmJowBOT");
   return [
-    FRAME_TOP,
-    "├̬⌑ؔ͟ ⎾🧊⏌ 𝙵𝙸𝙶𝚄𝚁𝙸𝙽𝙷𝙰 𝙳𝙾 𝙱𝙾𝚃",
-    `├̬⌑ؔ͟ ⎾🤖⏌ 𝙱𝚘𝚝: ${bot}`,
-    FRAME_BOTTOM,
+    "⎾🧊⏌ 𝙿𝙰𝙲𝙺 𝙳𝙴 𝙵𝙸𝙶𝚄𝚁𝙸𝙽𝙷𝙰𝚂",
+    `⎾🤖⏌ 𝙱𝚘𝚝: ${bot}`,
   ].join("\n");
 }
 
 function defaultStickerAuthor() {
   const owner = cleanLabel(config.ownerName, "Kxlyn");
-  return [
-    FRAME_TOP,
-    `├̬⌑ؔ͟ ⎾👑⏌ 𝙲𝚛𝚒𝚊𝚍𝚘𝚛: ${owner}`,
-    FRAME_BOTTOM,
-  ].join("\n");
+  return `⎾👑⏌ 𝙲𝚛𝚒𝚊𝚍𝚘𝚛: ${owner}`;
 }
 
 function exifBuffer(packname, author, emojis = ["🧊"]) {
@@ -77,6 +77,7 @@ async function applyStickerMetadata(buffer, options = {}) {
 module.exports = {
   cleanLabel,
   cleanMetadata,
+  stickerBotName,
   defaultStickerPack,
   defaultStickerAuthor,
   exifBuffer,
