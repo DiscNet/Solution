@@ -76,30 +76,67 @@ async function createPrivnote(http, text) {
   form.append("notify_email", "");
   form.append("notify_ref", "");
 
-  const response = await http.post(
-    PRIVNOTE_BASE_URL + "/",
-    form.toString(),
-    {
-      timeout: 30000,
-      maxRedirects: 5,
-      validateStatus: () => true,
-      headers: {
-        "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "x-requested-with": "XMLHttpRequest",
-        origin: PRIVNOTE_BASE_URL,
-        referer: PRIVNOTE_BASE_URL + "/",
-        "user-agent":
-          "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
-          "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
-        accept: "application/json, text/javascript, */*; q=0.01",
-        "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
-      },
-    },
-  );
+  const browserHeaders = {
+    "user-agent":
+      "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 " +
+      "(KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36",
+    accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+    "accept-language": "pt-BR,pt;q=0.9,en;q=0.8",
+  };
 
-  if (response.status < 200 || response.status >= 300) {
-    const error = new Error("Privnote respondeu HTTP " + response.status + ".");
-    error.httpStatus = response.status;
+  const home = await http.get(PRIVNOTE_BASE_URL + "/", {
+    timeout: 30000,
+    maxRedirects: 5,
+    validateStatus: () => true,
+    headers: browserHeaders,
+  });
+
+  const cookies = Array.isArray(home.headers?.["set-cookie"])
+    ? home.headers["set-cookie"]
+        .map(value => String(value).split(";")[0])
+        .filter(Boolean)
+        .join("; ")
+    : "";
+
+  if (home.status < 200 || home.status >= 400) {
+    const error = new Error("Privnote recusou a sessão inicial com HTTP " + home.status + ".");
+    error.httpStatus = home.status;
+    throw error;
+  }
+
+  const postHeaders = {
+    ...browserHeaders,
+    "content-type": "application/x-www-form-urlencoded; charset=UTF-8",
+    "x-requested-with": "XMLHttpRequest",
+    origin: PRIVNOTE_BASE_URL,
+    referer: PRIVNOTE_BASE_URL + "/",
+    accept: "application/json, text/javascript, */*; q=0.01",
+    ...(cookies ? { cookie: cookies } : {}),
+  };
+
+  let response = null;
+  for (const endpoint of ["/legacy/", "/"]) {
+    response = await http.post(
+      PRIVNOTE_BASE_URL + endpoint,
+      form.toString(),
+      {
+        timeout: 30000,
+        maxRedirects: 5,
+        validateStatus: () => true,
+        headers: postHeaders,
+      },
+    );
+
+    if (response.status >= 200 && response.status < 300) break;
+    if (response.status !== 403 && response.status !== 404) break;
+  }
+
+  if (!response || response.status < 200 || response.status >= 300) {
+    const status = Number(response?.status || 0);
+    const error = new Error(
+      "Privnote respondeu HTTP " + (status || "desconhecido") + "."
+    );
+    error.httpStatus = status || null;
     throw error;
   }
 
