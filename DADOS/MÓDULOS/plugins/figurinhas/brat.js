@@ -7,14 +7,15 @@ const { existsSync, mkdirSync, unlinkSync, writeFileSync } = require('fs');
 const { join } = require('path');
 const config = require("../../../config/config");
 const webp = require("node-webpmux");
+const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
 const execPromise = promisify(exec);
 
 // ==============================================
 // CONFIGURAÇÕES PADRÃO
 // ==============================================
-const PACKNAME = `Created by LᴜᴋᴀMᴏᴅᴢᴢ Rᴏʙᴏᴛ\nDev & Owner: Kxʟʏɴ\n`;
-const AUTHOR = `\nBᴏᴛ: +55 (63) 9200-3562\nMy hatred shall build empires.`;
+const PACKNAME = defaultStickerPack();
+const AUTHOR = defaultStickerAuthor();
 
 function getRandomNumber(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min;
