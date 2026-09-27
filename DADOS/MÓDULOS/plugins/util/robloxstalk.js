@@ -4,7 +4,16 @@ const profiles = require("../../functions/publicProfiles");
 const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
-const TOKITO_ROUTE = "/api/pesquisa/roblox-stalker";
+const TOKITO_ROUTES = [
+  "/api/pesquisa/roblox-stalker",
+  "/api/pesquisa/robloxstalker",
+  "/api/pesquisa/roblox-stalk",
+  "/api/stalker/roblox-stalker",
+  "/api/tools/roblox-stalker",
+  "/api/pesquisa/roblox",
+];
+
+let workingTokitoRoute = null;
 
 function boolLabel(value) {
   if (value === undefined || value === null || value === "") return "Desconhecido";
@@ -240,6 +249,14 @@ function caption(profile) {
   return lines.join("\n");
 }
 
+async function requestTokitoRoblox(route, clean) {
+  return tokitoApi.get(
+    route,
+    { username: clean },
+    { timeout: 45000 }
+  );
+}
+
 async function fetchTokitoRoblox(username) {
   const clean = String(username || "")
     .trim()
@@ -251,21 +268,48 @@ async function fetchTokitoRoblox(username) {
     throw error;
   }
 
-  const data = await tokitoApi.get(
-    TOKITO_ROUTE,
-    { username: clean },
-    { timeout: 45000 }
-  );
+  const routes = workingTokitoRoute
+    ? [workingTokitoRoute, ...TOKITO_ROUTES.filter(route => route !== workingTokitoRoute)]
+    : TOKITO_ROUTES;
 
-  const profile = normalizeTokitoProfile(data, clean);
+  let last404 = null;
 
-  if (!profile.username) {
-    const error = new Error("A Tokito API não retornou um perfil válido.");
-    error.code = "INVALID_RESPONSE";
-    throw error;
+  for (const route of routes) {
+    try {
+      const data = await requestTokitoRoblox(route, clean);
+      const profile = normalizeTokitoProfile(data, clean);
+
+      if (!profile.username) {
+        const error = new Error("A Tokito API não retornou um perfil válido.");
+        error.code = "INVALID_RESPONSE";
+        throw error;
+      }
+
+      workingTokitoRoute = route;
+      return profile;
+    } catch (error) {
+      const status = Number(error?.response?.status || error?.httpStatus || 0);
+
+      if (status === 404) {
+        last404 = error;
+
+        if (workingTokitoRoute === route) {
+          workingTokitoRoute = null;
+        }
+
+        continue;
+      }
+
+      throw error;
+    }
   }
 
-  return profile;
+  const error = new Error(
+    "Nenhuma rota Roblox Stalker conhecida respondeu na Tokito API."
+  );
+  error.code = "TOKITO_ROBLOX_ROUTE_NOT_FOUND";
+  error.cause = last404;
+  throw error;
 }
 
 module.exports = {
@@ -329,12 +373,19 @@ module.exports = {
         react: { text: "❌", key: msg.key },
       }).catch(() => {});
 
-      const detail = error?.code === "INVALID_USERNAME"
-        ? "❌ Informe um usuário válido do Roblox."
-        : tokitoApi.userError(
-            error,
-            "Não foi possível consultar esse perfil do Roblox."
-          );
+      let detail;
+
+      if (error?.code === "INVALID_USERNAME") {
+        detail = "❌ Informe um usuário válido do Roblox.";
+      } else if (error?.code === "TOKITO_ROBLOX_ROUTE_NOT_FOUND") {
+        detail =
+          "❌ O endpoint Roblox Stalker da Tokito mudou ou não está disponível nessa versão da API.";
+      } else {
+        detail = tokitoApi.userError(
+          error,
+          "Não foi possível consultar esse perfil do Roblox."
+        );
+      }
 
       return conn.sendMessage(from, {
         text: detail,
@@ -348,6 +399,8 @@ module.exports = {
     numberValue,
     normalizeTokitoProfile,
     caption,
+    requestTokitoRoblox,
     fetchTokitoRoblox,
+    TOKITO_ROUTES,
   },
 };
