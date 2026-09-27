@@ -31,6 +31,9 @@ module.exports = {
 
     const rows = entries.map((entry, index) => {
       const when = new Date(entry.at).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" });
+      if (entry.automatic) {
+        return `${index + 1}. ${sc(entry.action)}\n   • ${sc("por")}: ${sc("Bot")}\n   • ${sc("origem")}: ${sc(entry.command)}\n   • ${sc("alvo")}: \`${entry.args?.[0] || "?"}\`\n   • ${sc("motivo")}: ${sc(entry.args?.[1] || "não informado")}\n   • ${sc("quando")}: ${when}`;
+      }
       const argsText = entry.args?.length ? `\n   • args: \`${entry.args.join(" ")}\`` : "";
       return `${index + 1}. ${sc(entry.action)}\n   • ${sc("por")}: ${entry.actorName}\n   • ${sc("comando")}: \`${config.prefix || "."}${entry.requestedName || entry.command}\`\n   • ${sc("quando")}: ${when}${argsText}`;
     });

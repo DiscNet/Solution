@@ -19,7 +19,7 @@ async function ordinaryMember(conn, msg, from) {
 async function enforce(conn, msg, from, metadata, member, reason, title, extraRows = []) {
   const deleted = await conn.sendMessage(from, { delete: msg.key })
     .then(() => true, () => false);
-  const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: member });
+  const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: member, reason });
   if (result.enabled && !result.protected && !result.pending) {
     await conn.sendMessage(from, {
       text: autoban.card(result, reason),

@@ -63,7 +63,7 @@ async function run({ conn, msg, args, from, def }) {
     });
     const limit = state.groupSettings(from).warnLimit || 3;
     if (n >= limit && autoban.isEnabled(from)) {
-      const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: p });
+      const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: p, reason: "limite de advertências" });
       if (result.removed) {
         change(group => { delete (group.warnings || {})[jid]; });
       }

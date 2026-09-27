@@ -22,6 +22,8 @@ function group(d, jid) {
     mutes: {},
     notes: {},
     filters: {},
+    words: [],
+    blacklist: [],
     cooldowns: {},
     rules: "",
     slowmode: 0,

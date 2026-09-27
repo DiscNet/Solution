@@ -1,10 +1,12 @@
 const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
 const approval = require("../MÓDULOS/plugins/admin/solicitacoes");
+const { rejectBlacklistedEntrants } = require("../MÓDULOS/functions/groupProtection");
 
 function registerGroupEvents(conn, processGroupParticipantsUpdate) {
   conn.ev.on("group-participants.update", async update => {
     try {
-      await processGroupParticipantsUpdate(update);
+      const allowed = await rejectBlacklistedEntrants(conn, update);
+      if (allowed?.participants?.length) await processGroupParticipantsUpdate(allowed);
     } catch (error) {
       runtimeLogger.error({ scope: "group-participants.update", error, code: "ERR_GROUP_EVENT" });
     }

@@ -11,6 +11,8 @@ const MAX_PER_GROUP = 250;
 
 const ACTIONS = {
   ban: "removeu um membro",
+  autoban: "removeu automaticamente um membro",
+  listanegra: "barrou a entrada pela lista negra",
   promover: "promoveu um membro",
   rebaixar: "rebaixou um administrador",
   "set-desc": "alterou a descrição do grupo",
@@ -78,6 +80,26 @@ function record({ command, name, requestedName, msg, args = [], from }) {
   return true;
 }
 
+function recordAutomatic({ from, target, reason, command = "autoban", bot = "" }) {
+  if (!String(from || "").endsWith("@g.us") || !["autoban", "listanegra"].includes(command)) return false;
+  const db = normalizeDb(store.read(true));
+  if (!Array.isArray(db.groups[from])) db.groups[from] = [];
+  db.groups[from].unshift({
+    id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
+    at: Date.now(),
+    actor: cleanArg(bot),
+    actorName: "Bot",
+    command,
+    requestedName: command,
+    action: ACTIONS[command],
+    args: [target, reason].map(cleanArg).filter(Boolean),
+    automatic: true,
+  });
+  db.groups[from] = db.groups[from].slice(0, MAX_PER_GROUP);
+  store.write(db);
+  return true;
+}
+
 function list(groupId, limit = 15) {
   const db = normalizeDb(store.read());
   const n = Math.max(1, Math.min(30, Math.floor(Number(limit) || 15)));
@@ -97,6 +119,7 @@ function actionLabel(command) {
 
 module.exports = {
   record,
+  recordAutomatic,
   list,
   clear,
   actionLabel,
@@ -104,4 +127,3 @@ module.exports = {
   filePath,
   MAX_PER_GROUP
 };
-

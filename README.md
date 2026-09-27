@@ -29,6 +29,12 @@ Com botões, `.menu` conserva a lista interativa e a imagem de apresentação. S
 
 Grupos novos recebem respostas **sem botões** por padrão. Um administrador pode consultar ou alterar esse modo com `.sembotoes`, `.sembotoes 1` (texto) e `.sembotoes 0` (permitir botões). A escolha é salva por grupo. No modo de texto, opções interativas aparecem como comandos para digitar; por exemplo, `.autofigu` mostra o estado e indica `.autofigu 0` quando estiver ativo.
 
+## 🛡️ Proteção dos grupos
+
+Administradores podem cadastrar palavras ou frases com `.addpalavra texto`, consultar `.listapalavra`, remover com `.delpalavra texto` e ativar o filtro usando `.antipalavra 1`. O filtro apaga a mensagem detectada; com `.autoban 1`, também remove o autor. As remoções automáticas ficam registradas em `.modlog` com o motivo.
+
+Para impedir o retorno de um membro, use `.addlistanegra @membro` (ou informe número/ID). `.listanegra` mostra os bloqueios e `.dellistanegra número-da-lista` retira um deles. O bot recusa pedidos de entrada bloqueados e remove o membro se ele entrar por outro caminho, desde que tenha permissão de administrador no grupo.
+
 ## 🎨 Visual dos menus
 
 <div align="center">

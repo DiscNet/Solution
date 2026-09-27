@@ -42,7 +42,8 @@ module.exports = h.factory({
     ...[["antisticker", "sticker"], ["anticontato", "contato"],
       ["antilocalizacao", "localizacao"], ["antienquete", "enquete"],
       ["antiencaminhado", "encaminhado"], ["antimencao", "mencao"],
-      ["antilongo", "longo"]].map(([name, key]) => [name, Boolean(filters[key])]),
+      ["antilongo", "longo"], ["antipalavra", "palavra"]]
+      .map(([name, key]) => [name, Boolean(filters[key])]),
   ];
   const autos = [
     ["autofigu", autofiguEnabled(from)],
@@ -58,5 +59,7 @@ module.exports = h.factory({
     ui.adminRow("🤖", "Autos ativos", `${count(autos)}/${autos.length}`),
     ui.adminRow("🔹", "Automações ligadas", activeLines(autos)),
     ui.adminRow("⚠️", "Limite de avisos", settings.warnLimit || 3),
+    ui.adminRow("📝", "Palavras proibidas", (settings.words || []).length),
+    ui.adminRow("🚫", "Lista negra", (settings.blacklist || []).length),
   ]);
 });

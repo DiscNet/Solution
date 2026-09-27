@@ -8,6 +8,7 @@ const {
 } = require("./permissions");
 const ui = require("./ui");
 const autoban = require("./groupAutoban");
+const { blockedWord } = require("./groupProtection");
 const cooldowns = new Map();
 const slow = new Map();
 const stats = new Map();
@@ -148,6 +149,7 @@ async function moderateMessage(conn, msg, from, text) {
   const b = h.body(msg),
     c = h.context(msg);
   const tests = {
+    palavra: blockedWord(text, g.words) !== null,
     sticker: !!b.stickerMessage,
     contato: !!(b.contactMessage || b.contactsArrayMessage),
     localizacao: !!(b.locationMessage || b.liveLocationMessage),
@@ -173,7 +175,7 @@ async function moderateMessage(conn, msg, from, text) {
   if (!reason) return false;
   await conn.sendMessage(from, { delete: msg.key }).catch(() => {});
   if (matchedFilter) {
-    const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: p });
+    const result = await autoban.tryAutoban(conn, { from, msg, metadata, participant: p, reason });
     if (result.enabled && !result.protected && !result.pending) {
       await conn.sendMessage(from, {
         text: autoban.card(result, "filtro " + matchedFilter[0]),

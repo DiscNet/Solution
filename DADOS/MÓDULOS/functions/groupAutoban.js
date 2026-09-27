@@ -1,5 +1,6 @@
 const state = require("./adminState");
 const ui = require("./ui");
+const modLog = require("./modLog");
 const {
   isAdminParticipant,
   isOwner,
@@ -30,8 +31,7 @@ function confirmed(results) {
     results.every(item => ["", "200"].includes(String(item?.status ?? "")));
 }
 
-async function tryAutoban(conn, { from, msg, metadata, participant }) {
-  if (!isEnabled(from)) return { enabled: false, removed: false };
+async function removeMember(conn, { from, msg, metadata, participant, reason, command } = {}) {
   const group = metadata || await conn.groupMetadata(from);
   const members = Array.isArray(group?.participants) ? group.participants : [];
   const target = participant || members.find(item =>
@@ -54,14 +54,23 @@ async function tryAutoban(conn, { from, msg, metadata, participant }) {
   if (!ids.length) {
     return { enabled: true, removed: false, error: "não foi possível identificar o membro" };
   }
-  const lock = `${from}:${target.id || target.jid || target.lid}`;
+  const lock = `${from}:${target.id || target.jid || target.phoneNumber || target.lid}`;
   if (removals.has(lock)) return { enabled: true, removed: false, pending: true };
   removals.add(lock);
   try {
     for (const jid of ids) {
       try {
         const results = await conn.groupParticipantsUpdate(from, [jid], "remove");
-        if (confirmed(results)) return { enabled: true, removed: true, jid: ids[0] };
+        if (confirmed(results)) {
+          if (command) {
+            try {
+              modLog.recordAutomatic({ from, target: ids[0], reason, command, bot: botIds[0] });
+            } catch (error) {
+              console.error("Falha ao registrar remoção automática:", error);
+            }
+          }
+          return { enabled: true, removed: true, jid: ids[0] };
+        }
       } catch (_) {
         // Tenta o telefone e o LID, quando o grupo fornece ambos.
       }
@@ -70,6 +79,11 @@ async function tryAutoban(conn, { from, msg, metadata, participant }) {
   } finally {
     removals.delete(lock);
   }
+}
+
+async function tryAutoban(conn, options) {
+  if (!isEnabled(options.from)) return { enabled: false, removed: false };
+  return removeMember(conn, { ...options, command: "autoban" });
 }
 
 function card(result, reason) {
@@ -82,4 +96,4 @@ function card(result, reason) {
   ]);
 }
 
-module.exports = { isEnabled, tryAutoban, card };
+module.exports = { isEnabled, tryAutoban, removeMember, card };

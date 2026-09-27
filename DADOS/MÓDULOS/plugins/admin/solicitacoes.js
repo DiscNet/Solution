@@ -2,6 +2,8 @@
 const h = require("../../functions/adminHelpers");
 const ui = require("../../functions/ui");
 const state = require("../../functions/adminState");
+const { findBlacklisted } = require("../../functions/groupProtection");
+const modLog = require("../../functions/modLog");
 const { sameIdentity } = require("../../functions/permissions");
 const { sendInteractiveMessage } = require("../../functions/uiMode");
 const config = require("../../../config/config");
@@ -130,6 +132,8 @@ async function run(name, { conn, msg, args, from }) {
     selected = [request];
   }
   const approve = name.startsWith("aprovar");
+  if (approve) h.need(!selected.some(request => findBlacklisted(from, requestValues(request))),
+    "A solicitação pertence a um membro da lista negra. Retire-o da lista antes de aprovar.");
   const result = await decide(conn, from, selected, approve ? "approve" : "reject");
   return statusCard(approve ? "Pedidos aprovados" : "Pedidos recusados", [
     ui.adminRow("✅", "Concluídos", result.ok),
@@ -156,8 +160,31 @@ const commands = definitions.map(([name, aliases, usage, description]) =>
     menuSection: "Solicitações",
   }, context => run(name, context)));
 
+async function rejectBlockedRequest(conn, groupId, request) {
+  if (!findBlacklisted(groupId, requestValues(request))) return false;
+  const result = await decide(conn, groupId, [request], "reject");
+  const jid = requestId(request);
+  if (result.ok) {
+    try {
+      modLog.recordAutomatic({
+        from: groupId, target: jid, reason: "pedido de entrada bloqueado", command: "listanegra",
+        bot: conn.user?.id || conn.user?.lid,
+      });
+    } catch (error) { console.error("Falha ao registrar pedido bloqueado:", error); }
+  }
+  await conn.sendMessage(groupId, {
+    text: statusCard("Lista negra", [
+      ui.adminRow("👤", "Pedido", `\`${jid}\``),
+      ui.adminRow(result.ok ? "✅" : "⚠️", "Entrada", ui.smallcaps(
+        result.ok ? "recusada automaticamente" : "não foi possível recusar o pedido")),
+    ]),
+  });
+  return true;
+}
+
 async function notifyRequest(conn, groupId, request) {
   const group = state.groupSettings(groupId);
+  if (await rejectBlockedRequest(conn, groupId, request)) return;
   if (!group.approvalNotice && !group.autoApprove) return;
   const jid = requestId(request);
   if (!jid) return;
@@ -204,7 +231,7 @@ async function notifyRequest(conn, groupId, request) {
 async function onJoinRequest(conn, update) {
   if (update?.action !== "created" || !String(update.id || "").endsWith("@g.us")) return;
   const group = state.groupSettings(update.id);
-  if (!group.approvalNotice && !group.autoApprove) return;
+  if (!group.approvalNotice && !group.autoApprove && !(group.blacklist || []).length) return;
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt) await new Promise(resolve => setTimeout(resolve, 800));
     const requests = await pending(conn, update.id);
@@ -224,7 +251,8 @@ function hasRequestTag(node, depth = 0) {
 async function onMembershipNotification(conn, node) {
   const groupId = String(node?.attrs?.from || "");
   if (!groupId.endsWith("@g.us") || !hasRequestTag(node)) return;
-  if (!state.groupSettings(groupId).approvalNotice) return;
+  const group = state.groupSettings(groupId);
+  if (!group.approvalNotice && !group.autoApprove && !(group.blacklist || []).length) return;
   for (const request of await pending(conn, groupId))
     await notifyRequest(conn, groupId, request);
 }
