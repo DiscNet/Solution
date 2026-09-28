@@ -1,6 +1,16 @@
+const axios = require("axios");
 const sharp = require("sharp");
-const tokitoApi = require("../../functions/apiClient");
+const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
+
+function apiUrl(route, params = {}) {
+  const base = String(config.tokitoApiUrl || "https://tokito-apis.com.br").replace(/\/+$/, "");
+  const query = new URLSearchParams({
+    ...params,
+    apikey: String(config.tokitoApi || ""),
+  });
+  return `${base}${route}?${query.toString()}`;
+}
 
 const commands = [
   {
@@ -10,24 +20,22 @@ const commands = [
     menuSection: "Imagens",
     usage: "brat texto",
     description: "Cria figurinha Brat pela Tokito API",
+
     async execute(conn, msg, args, from) {
       const text = args.join(" ").trim();
       if (!text) {
         return conn.sendMessage(from, {
-          text: "❌ Uso: .brat <texto>"
+          text: "❌ Uso: .brat <texto>",
         }, { quoted: createStatusQuoted(msg) });
       }
 
       try {
-        const result = await tokitoApi.buffer("/api/stickers/brat-img", { text }, {
-          timeout: 60000,
-        });
+        const response = await axios.get(
+          apiUrl("/api/stickers/brat-img", { text }),
+          { responseType: "arraybuffer" }
+        );
 
-        if (!result.buffer.length || !/image/i.test(result.contentType)) {
-          throw new Error("A Tokito API não retornou uma imagem Brat válida.");
-        }
-
-        const webp = await sharp(result.buffer)
+        const webp = await sharp(Buffer.from(response.data))
           .resize(512, 512, { fit: "inside", withoutEnlargement: true })
           .webp({ quality: 90 })
           .toBuffer();
@@ -36,14 +44,14 @@ const commands = [
           sticker: webp,
         }, { quoted: createStatusQuoted(msg) });
       } catch (error) {
-        const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO BRAT]", info.status || "-", info.message);
+        console.error("[BRAT]", error?.response?.status || "-", error.message);
         await conn.sendMessage(from, {
-          text: tokitoApi.userError(error, "Não foi possível criar o Brat.")
+          text: `❌ API${error?.response?.status ? ` (${error.response.status})` : ""}: falha ao gerar o Brat.`,
         }, { quoted: createStatusQuoted(msg) });
       }
     },
   },
+
   {
     name: "bratvid",
     aliases: ["bratvideo"],
@@ -51,34 +59,31 @@ const commands = [
     menuSection: "Imagens",
     usage: "bratvid texto",
     description: "Gera Brat animado pela Tokito API",
+
     async execute(conn, msg, args, from) {
       const text = args.join(" ").trim();
       if (!text) {
         return conn.sendMessage(from, {
-          text: "❌ Uso: .bratvid <texto>"
+          text: "❌ Uso: .bratvid <texto>",
         }, { quoted: createStatusQuoted(msg) });
       }
 
       try {
-        const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
-          timeout: 90000,
-        });
-
-        if (!result.buffer.length || !/video/i.test(result.contentType)) {
-          throw new Error("A Tokito API não retornou um vídeo Brat válido.");
-        }
+        const response = await axios.get(
+          apiUrl("/api/stickers/brat-vid", { text }),
+          { responseType: "arraybuffer" }
+        );
 
         await conn.sendMessage(from, {
-          video: result.buffer,
-          mimetype: result.contentType.split(";")[0] || "video/mp4",
+          video: Buffer.from(response.data),
+          mimetype: response.headers?.["content-type"]?.split(";")[0] || "video/mp4",
           gifPlayback: true,
           caption: "🧊 Brat • Tokito API",
         }, { quoted: createStatusQuoted(msg) });
       } catch (error) {
-        const info = tokitoApi.errorInfo(error);
-        console.error("[TOKITO BRATVID]", info.status || "-", info.message);
+        console.error("[BRATVID]", error?.response?.status || "-", error.message);
         await conn.sendMessage(from, {
-          text: tokitoApi.userError(error, "Não foi possível criar o Brat animado.")
+          text: `❌ API${error?.response?.status ? ` (${error.response.status})` : ""}: falha ao gerar o Brat animado.`,
         }, { quoted: createStatusQuoted(msg) });
       }
     },
