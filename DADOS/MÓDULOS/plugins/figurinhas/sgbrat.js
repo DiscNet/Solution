@@ -1,8 +1,7 @@
 // Menu: Figurinhas - Texto | Comando: gsbrat
 const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/midia/gsbrat.js
 const config = require("../../../config/config");
-const axios = require("axios");
+const tokitoApi = require("../../functions/apiClient");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
@@ -59,24 +58,21 @@ module.exports = {
 
   async execute(conn, msg, args, from) {
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
       const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const API_KEY = config.tokitoApi;
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      const text = args.join(' ') || 'brat';
+      const text = args.join(" ") || "brat";
 
       await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
 
-      // 🔥 Passo 1: chamada básica da API
-      const base = String(config.tokitoApiUrl || "https://tokito-apis.com.br").replace(/\/+$/, "");
-      const url = `${base}/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(config.tokitoApi || "")}`;
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const videoBuffer = Buffer.from(response.data);
+      const result = await tokitoApi.buffer(
+        "/api/stickers/brat-vid",
+        { text },
+        { timeout: 60000 }
+      );
 
-      // 🔥 Passo 2: Salva o vídeo temporariamente
+      if (!result.buffer.length) {
+        throw new Error("A API não retornou vídeo.");
+      }
+
       const tempDir = path.join(__dirname, "..", "..", "..", "temp");
       if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
 
@@ -84,9 +80,8 @@ module.exports = {
       const tempInput = path.join(tempDir, `gsbrat_${uniqueId}.mp4`);
       const tempOutput = path.join(tempDir, `gsbrat_${uniqueId}.webp`);
 
-      fs.writeFileSync(tempInput, videoBuffer);
+      fs.writeFileSync(tempInput, result.buffer);
 
-      // 🔥 Passo 3: Converte MP4 para WebP animado
       const ffmpegCmd = `ffmpeg -i "${tempInput}" -vf "scale=512:512,fps=10" -c:v libwebp -lossless 0 -q:v 70 -preset default -loop 0 -an "${tempOutput}"`;
       await execPromise(ffmpegCmd, { timeout: 20000 });
 
@@ -94,37 +89,52 @@ module.exports = {
         throw new Error("Falha na conversão");
       }
 
-      // 🔥 Passo 4: Adiciona metadados
       const stickerBuffer = fs.readFileSync(tempOutput);
       const finalSticker = await addStickerMetadata(stickerBuffer, PACKNAME, AUTHOR);
 
-      // 🔥 Passo 5: Envia a figurinha animada
       await conn.sendMessage(from, {
         sticker: finalSticker,
         mimetype: "image/webp",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: bot,
+            serverMessageId: 116,
+          },
+        },
       }, {
-        quoted: createStatusQuoted(msg)
+        quoted: createStatusQuoted(msg),
       });
 
-      try { fs.unlinkSync(tempInput); } catch (e) {}
-      try { fs.unlinkSync(tempOutput); } catch (e) {}
+      try { fs.unlinkSync(tempInput); } catch (_) {}
+      try { fs.unlinkSync(tempOutput); } catch (_) {}
 
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
     } catch (error) {
-      console.error("ɢsʙʀᴀᴛ:", error);
+      const info = tokitoApi.errorInfo(error);
+      console.error("[GSBRAT]", info.status || "-", info.message);
+
       await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ғɪɢᴜʀɪɴʜᴀ ᴀɴɪᴍᴀᴅᴀ!*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"}`, serverMessageId: 116 } }
+        text: tokitoApi.userError(error, "Não foi possível criar a figurinha animada."),
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: `${config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"}`,
+            serverMessageId: 116,
+          },
+        },
       }, { quoted: msg });
     }
-  }
+  },
 };
 
 Object.assign(module.exports, {
-  "menuCategory": "Figurinhas",
-  "menuSection": "Texto",
-  "usage": "gsbrat texto",
-  "description": "Uso: .gsbrat texto"
+  menuCategory: "Figurinhas",
+  menuSection: "Texto",
+  usage: "gsbrat texto",
+  description: "Uso: .gsbrat texto",
 });
