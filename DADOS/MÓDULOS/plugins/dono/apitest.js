@@ -43,7 +43,15 @@ function inspectGeneratedUrl(target, cfg) {
   };
 }
 
-async function probeAxios(target = buildProbeUrl()) {
+async function probeRaw(target) {
+  return tokitoApi.rawAxios.get(target, {
+    responseType: "arraybuffer",
+    timeout: 30000,
+    validateStatus: () => true,
+  });
+}
+
+async function probeV10(target = buildProbeUrl()) {
   return tokitoApi.axios.get(target, {
     responseType: "arraybuffer",
     timeout: 30000,
@@ -52,7 +60,7 @@ async function probeAxios(target = buildProbeUrl()) {
   });
 }
 
-function probeNative(target) {
+function probeNativeV10(target) {
   return new Promise((resolve, reject) => {
     const req = https.get(target, {
       timeout: 30000,
@@ -102,42 +110,41 @@ module.exports = {
       const urlCheck = inspectGeneratedUrl(generatedUrl, cfg);
       const publicStatusUrl = cfg.baseUrl + "/status";
 
-      const publicStatus = await probeAxios(publicStatusUrl);
-      const first = await probeAxios(generatedUrl);
-      const second = await probeAxios(buildProbeUrl());
-      const native = await probeNative(buildProbeUrl());
+      const publicRaw = await probeRaw(publicStatusUrl);
+      const publicV10 = await probeV10(publicStatusUrl);
+      const first = await probeV10(generatedUrl);
+      const second = await probeV10(buildProbeUrl());
+      const native = await probeNativeV10(buildProbeUrl());
 
       let diagnosis =
         "As respostas foram diferentes do padrão esperado; compare os códigos abaixo.";
 
       if (
-        publicStatus.status === 403 &&
+        publicRaw.status === 403 &&
+        publicV10.status >= 200 && publicV10.status < 300
+      ) {
+        diagnosis =
+          "O perfil HTTP oficial do Tokito V10 passou enquanto a chamada crua foi bloqueada. O cliente do bot foi alinhado ao V10 e este era o ponto que faltava.";
+      } else if (
+        publicRaw.status === 403 &&
+        publicV10.status === 403 &&
         first.status === 403 &&
-        second.status === 403 &&
         native.status === 403
       ) {
         diagnosis =
-          "O Cloudflare bloqueou até o endpoint público /status neste ambiente. A requisição está sendo recusada antes da Tokito API validar a chave; isso aponta para bloqueio da origem/rede/ambiente, não para corrupção da API key.";
+          "Mesmo o perfil oficial do Tokito V10 foi bloqueado pelo Cloudflare neste ambiente. Isso indica bloqueio da origem/IP/rede antes da API; a chave e a montagem da requisição não são a causa.";
       } else if (
-        publicStatus.status >= 200 && publicStatus.status < 300 &&
-        first.status === 403 && native.status === 403
+        publicV10.status >= 200 && publicV10.status < 300 &&
+        first.status === 403
       ) {
         diagnosis =
-          "O domínio está acessível, mas a rota /api/* é bloqueada pelo Cloudflare tanto no Axios quanto no HTTPS nativo. Isso aponta para regra/proteção da API ou bloqueio do ambiente/IP antes da autenticação.";
-      }
-
-      else if (first.status >= 200 && first.status < 300 && second.status === 403) {
-        diagnosis =
-          "A primeira chamada passou e a segunda foi bloqueada. Isso indica bloqueio/controle do lado da API para chamadas consecutivas.";
-      } else if (first.status === 403 && second.status === 403) {
-        diagnosis =
-          "As duas chamadas foram recusadas. A chave está sendo carregada, mas o acesso da rota foi bloqueado ou recusado pela API.";
+          "O perfil V10 acessa o domínio, mas a rota autenticada foi recusada. Nesse caso, o bloqueio está ligado à rota, conta/chave/plano ou regra específica da API.";
       } else if (
         first.status >= 200 && first.status < 300 &&
         second.status >= 200 && second.status < 300
       ) {
         diagnosis =
-          "As duas chamadas passaram. O cliente HTTP está acessando a API normalmente.";
+          "As chamadas autenticadas passaram usando o mesmo perfil HTTP do Tokito V10.";
       }
 
       const text = [
@@ -153,15 +160,18 @@ module.exports = {
         `Chave enviada = chave carregada: *${urlCheck.exactMatch ? "SIM" : "NÃO"}*`,
         `Tamanho enviado: *${urlCheck.sentLength} caracteres*`,
         "",
-        "*Conectividade pública*",
-        summarize(publicStatus, "STATUS"),
+        "*Conectividade pública — chamada crua*",
+        summarize(publicRaw, "RAW"),
         "",
-        "*Rota autenticada via Axios*",
+        "*Conectividade pública — padrão Tokito V10*",
+        summarize(publicV10, "V10"),
+        "",
+        "*Rota autenticada — padrão Tokito V10*",
         summarize(first, 1),
         "",
         summarize(second, 2),
         "",
-        "*Mesma rota via HTTPS nativo do Node*",
+        "*Mesma rota via HTTPS nativo + headers V10*",
         summarize(native, "NATIVO"),
         "",
         `Diagnóstico: ${diagnosis}`,
