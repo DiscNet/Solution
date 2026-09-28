@@ -4,12 +4,7 @@ const fs = require("fs");
 const path = require("path");
 const { execFileCompat, writableTempDir } = require("../../functions/runtimeCompat");
 
-let sharp = null;
-try {
-  sharp = require("sharp");
-} catch (error) {
-  console.warn("[TOIMG] Sharp indisponível; usando FFmpeg quando possível:", error?.message || error);
-}
+const sharp = require("../../functions/sharpCompat");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
@@ -120,7 +115,6 @@ async function downloadSticker(stickerMessage) {
 }
 
 async function convertWithSharp(stickerBuffer) {
-  if (!sharp) throw new Error("SHARP_UNAVAILABLE");
   return sharp(stickerBuffer, {
     animated: false,
     failOn: "none",
@@ -238,7 +232,11 @@ module.exports = {
       await sendWithStatus(conn, from, {
         text:
           `╭━━━〔 🧊 ᴛᴏɪᴍɢ 〕━━━╮\n` +
-          `┃ ❌ ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇ ᴄᴏɴᴠᴇʀᴛᴇʀ\n` +
+          (permissionError
+            ? `┃ ❌ ᴏ ᴀɴᴅʀᴏɪᴅ ʙʟᴏǫᴜᴇᴏᴜ ᴀ ᴇxᴇᴄᴜᴄ̧ᴀ̃ᴏ ᴅᴏ ғғᴍᴘᴇɢ\n`
+            : missingTool
+              ? `┃ ❌ ғғᴍᴘᴇɢ ɴᴀ̃ᴏ ᴇsᴛᴀ́ ɪɴsᴛᴀʟᴀᴅᴏ\n`
+              : `┃ ❌ ɴᴀ̃ᴏ ғᴏɪ ᴘᴏssɪ́ᴠᴇ ᴄᴏɴᴠᴇʀᴛᴇʀ\n`) +
           `┃ 🔄 ᴛᴇɴᴛᴇ ᴏᴜᴛʀᴀ ғɪɢᴜʀɪɴʜᴀ\n` +
           `╰━━━━━━━━━━━━━━━━━━╯`,
         contextInfo: newsletterContext(bot)
