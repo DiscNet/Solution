@@ -1,4 +1,5 @@
 const path = require('path');
+require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
 const { spawn } = require('child_process');
 
 const ROOT = path.resolve(__dirname, '..');
