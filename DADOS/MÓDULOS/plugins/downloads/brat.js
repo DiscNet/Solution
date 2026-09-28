@@ -1,4 +1,4 @@
-const sharp = require("sharp");
+const sharp = require("../../functions/sharpCompat");
 const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
