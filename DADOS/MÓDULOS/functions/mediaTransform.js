@@ -1,12 +1,10 @@
 const fs = require("fs");
 const path = require("path");
-const { execFile } = require("child_process");
-const { promisify } = require("util");
+const { execFileCompat, writableTempDir } = require("./runtimeCompat");
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const { createStatusQuoted } = require("./statusCard");
 
-const execFileAsync = promisify(execFile);
-const TEMP_DIR = path.join(__dirname, "..", "..", "temp");
+const TEMP_DIR = writableTempDir("solution-media");
 const MAX_INPUT_BYTES = 80 * 1024 * 1024;
 const MAX_OUTPUT_BYTES = 65 * 1024 * 1024;
 const MAX_DURATION_SECONDS = 300;
@@ -137,7 +135,7 @@ function codedError(code, cause) {
 async function probe(file) {
   let stdout;
   try {
-    ({ stdout } = await execFileAsync(
+    ({ stdout } = await execFileCompat(
       "ffprobe",
       [
         "-v",
@@ -153,7 +151,12 @@ async function probe(file) {
       { timeout: 15000, maxBuffer: 2 * 1024 * 1024 },
     ));
   } catch (error) {
-    if (error?.code === "ENOENT") throw codedError("ERR_MEDIA_TOOLS_MISSING", error);
+    if (error?.code === "ERR_EXEC_MISSING") {
+      throw codedError("ERR_MEDIA_TOOLS_MISSING", error);
+    }
+    if (error?.code === "ERR_EXEC_PERMISSION") {
+      throw codedError("ERR_MEDIA_TOOLS_PERMISSION", error);
+    }
     throw codedError("ERR_MEDIA_PROBE", error);
   }
 
@@ -264,13 +267,18 @@ function smallcaps(text) {
 async function executeFfmpeg(def, input, output, meta, userArgs) {
   const run = async (activeDef) => {
     try {
-      await execFileAsync("ffmpeg", buildArgs(activeDef, input, output, meta, userArgs), {
+      await execFileCompat("ffmpeg", buildArgs(activeDef, input, output, meta, userArgs), {
         timeout: 180000,
         killSignal: "SIGKILL",
         maxBuffer: 8 * 1024 * 1024,
       });
     } catch (error) {
-      if (error?.code === "ENOENT") throw codedError("ERR_MEDIA_TOOLS_MISSING", error);
+      if (error?.code === "ERR_EXEC_MISSING") {
+        throw codedError("ERR_MEDIA_TOOLS_MISSING", error);
+      }
+      if (error?.code === "ERR_EXEC_PERMISSION") {
+        throw codedError("ERR_MEDIA_TOOLS_PERMISSION", error);
+      }
       throw error;
     }
   };
@@ -403,7 +411,9 @@ async function runTransform(def, { conn, msg, args = [], from, requestedName }) 
       ERR_MEDIA_PROBE:
         "Não foi possível identificar o formato da mídia. Tente reenviar como arquivo comum.",
       ERR_MEDIA_TOOLS_MISSING:
-        "FFmpeg/FFprobe não está disponível no servidor do bot.",
+        "FFmpeg/FFprobe não está instalado ou não foi encontrado neste ambiente.",
+      ERR_MEDIA_TOOLS_PERMISSION:
+        "O Android/Termux bloqueou a execução do FFmpeg/FFprobe. O bot agora procura primeiro os binários internos do Termux; confirme que ffmpeg está instalado pelo gerenciador de pacotes do Termux.",
       ERR_MEDIA_FFMPEG:
         "O FFmpeg não conseguiu processar este arquivo. Tente reenviar a mídia em um formato comum.",
     };
