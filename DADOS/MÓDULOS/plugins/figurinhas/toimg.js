@@ -2,15 +2,19 @@
 // commands/sticker/toimg.js
 const fs = require("fs");
 const path = require("path");
-const util = require("util");
-const { execFile } = require("child_process");
-const sharp = require("sharp");
+const { execFileCompat, writableTempDir } = require("../../functions/runtimeCompat");
+
+let sharp = null;
+try {
+  sharp = require("sharp");
+} catch (error) {
+  console.warn("[TOIMG] Sharp indisponível; usando FFmpeg quando possível:", error?.message || error);
+}
 const { downloadContentFromMessage } = require("@whiskeysockets/baileys");
 const config = require("../../../config/config");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
-const execFilePromise = util.promisify(execFile);
-const TEMP_DIR = path.join(__dirname, "..", "..", "..", "temp");
+const TEMP_DIR = writableTempDir("solution-toimg");
 const MAX_STICKER_BYTES = 20 * 1024 * 1024;
 
 function ensureTempDir() {
@@ -116,6 +120,7 @@ async function downloadSticker(stickerMessage) {
 }
 
 async function convertWithSharp(stickerBuffer) {
+  if (!sharp) throw new Error("SHARP_UNAVAILABLE");
   return sharp(stickerBuffer, {
     animated: false,
     failOn: "none",
@@ -135,7 +140,7 @@ async function convertWithFfmpeg(stickerBuffer) {
   try {
     fs.writeFileSync(inputPath, stickerBuffer);
 
-    await execFilePromise(
+    await execFileCompat(
       "ffmpeg",
       [
         "-y",
@@ -221,6 +226,13 @@ module.exports = {
     } catch (error) {
       const detail = error?.stderr || error?.cause?.stderr || error?.message || String(error);
       console.error("toimg:", detail);
+
+      const permissionError =
+        error?.code === "ERR_EXEC_PERMISSION" ||
+        error?.cause?.code === "ERR_EXEC_PERMISSION";
+      const missingTool =
+        error?.code === "ERR_EXEC_MISSING" ||
+        error?.cause?.code === "ERR_EXEC_MISSING";
 
       await conn.sendMessage(from, { react: { text: "❌", key: msg.key } }).catch(() => {});
       await sendWithStatus(conn, from, {
