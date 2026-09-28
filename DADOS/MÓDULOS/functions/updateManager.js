@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execFileSync } = require('child_process');
+const { execFileCompatSync } = require('./runtimeCompat');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const UPDATE_DIR = path.join(ROOT, '.update');
@@ -92,7 +92,7 @@ function gitEnv(useToken = false) {
 }
 
 function git(args, { cwd = ROOT, binary = false, useToken = false, inherit = false } = {}) {
-  return execFileSync('git', args, {
+  return execFileCompatSync('git', args, {
     cwd,
     encoding: binary ? null : 'utf8',
     stdio: inherit ? 'inherit' : ['ignore', 'pipe', 'pipe'],
@@ -298,7 +298,7 @@ const dependenciesTouched = changes => changes.some(item => item.path === 'packa
 
 function installDependencies(log = () => {}) {
   log('Dependências alteradas; sincronizando node_modules...');
-  execFileSync('npm', ['install', '--omit=dev', '--no-audit', '--no-fund'], {
+  execFileCompatSync('npm', ['install', '--omit=dev', '--no-audit', '--no-fund'], {
     cwd: ROOT,
     stdio: 'inherit',
     env: process.env
