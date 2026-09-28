@@ -1,16 +1,6 @@
-const axios = require("axios");
 const sharp = require("sharp");
-const config = require("../../../config/config");
+const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
-
-function apiUrl(route, params = {}) {
-  const base = String(config.tokitoApiUrl || "https://tokito-apis.com.br").replace(/\/+$/, "");
-  const query = new URLSearchParams({
-    ...params,
-    apikey: String(config.tokitoApi || ""),
-  });
-  return `${base}${route}?${query.toString()}`;
-}
 
 const commands = [
   {
@@ -30,12 +20,17 @@ const commands = [
       }
 
       try {
-        const response = await axios.get(
-          apiUrl("/api/stickers/brat-img", { text }),
-          { responseType: "arraybuffer" }
+        const result = await tokitoApi.buffer(
+          "/api/stickers/brat-img",
+          { text },
+          { timeout: 45000 }
         );
 
-        const webp = await sharp(Buffer.from(response.data))
+        if (!result.buffer.length) {
+          throw new Error("A API não retornou imagem.");
+        }
+
+        const webp = await sharp(result.buffer)
           .resize(512, 512, { fit: "inside", withoutEnlargement: true })
           .webp({ quality: 90 })
           .toBuffer();
@@ -44,9 +39,11 @@ const commands = [
           sticker: webp,
         }, { quoted: createStatusQuoted(msg) });
       } catch (error) {
-        console.error("[BRAT]", error?.response?.status || "-", error.message);
+        const info = tokitoApi.errorInfo(error);
+        console.error("[BRAT]", info.status || "-", info.message);
+
         await conn.sendMessage(from, {
-          text: `❌ API${error?.response?.status ? ` (${error.response.status})` : ""}: falha ao gerar o Brat.`,
+          text: tokitoApi.userError(error, "Não foi possível gerar o Brat."),
         }, { quoted: createStatusQuoted(msg) });
       }
     },
@@ -69,21 +66,28 @@ const commands = [
       }
 
       try {
-        const response = await axios.get(
-          apiUrl("/api/stickers/brat-vid", { text }),
-          { responseType: "arraybuffer" }
+        const result = await tokitoApi.buffer(
+          "/api/stickers/brat-vid",
+          { text },
+          { timeout: 60000 }
         );
 
+        if (!result.buffer.length) {
+          throw new Error("A API não retornou vídeo.");
+        }
+
         await conn.sendMessage(from, {
-          video: Buffer.from(response.data),
-          mimetype: response.headers?.["content-type"]?.split(";")[0] || "video/mp4",
+          video: result.buffer,
+          mimetype: result.contentType.split(";")[0] || "video/mp4",
           gifPlayback: true,
-          caption: "🧊 Brat • Tokito API",
+          caption: "🧊 Brat",
         }, { quoted: createStatusQuoted(msg) });
       } catch (error) {
-        console.error("[BRATVID]", error?.response?.status || "-", error.message);
+        const info = tokitoApi.errorInfo(error);
+        console.error("[BRATVID]", info.status || "-", info.message);
+
         await conn.sendMessage(from, {
-          text: `❌ API${error?.response?.status ? ` (${error.response.status})` : ""}: falha ao gerar o Brat animado.`,
+          text: tokitoApi.userError(error, "Não foi possível gerar o Brat animado."),
         }, { quoted: createStatusQuoted(msg) });
       }
     },
