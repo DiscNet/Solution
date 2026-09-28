@@ -1,95 +1,84 @@
 const axios = require("axios");
-const https = require("https");
-const crypto = require("crypto");
-const configLoader = require("./configLoader");
-
-const TOKITO_HEADERS = Object.freeze({
-  "User-Agent": "TokitoBot/10",
-  accept: "application/json",
-});
-
-const tokitoHttpsAgent = new https.Agent({
-  keepAlive: true,
-  maxSockets: 8,
-  maxFreeSockets: 4,
-});
-
-function firstNonEmpty(...values) {
-  for (const value of values) {
-    const text = String(value ?? "").trim();
-    if (text) return text;
-  }
-  return "";
-}
+const config = require("../../config/config");
 
 function settings() {
-  const config = configLoader.getBaseConfig();
-  const rawKey = firstNonEmpty(config.tokitoApi, config.API_KEY_TOKITO);
-  const source = firstNonEmpty(config.tokitoApi)
-    ? "config.js:tokitoApi"
-    : firstNonEmpty(config.API_KEY_TOKITO)
-      ? "config.js:API_KEY_TOKITO"
-      : "config.js";
-
-  const apiKey = rawKey.trim();
-  const keyFingerprint = apiKey
-    ? crypto.createHash("sha256").update(apiKey, "utf8").digest("hex").slice(0, 12)
-    : "";
-
   return {
-    baseUrl: firstNonEmpty(
-      config.tokitoApiUrl,
-      config.API_URL,
+    baseUrl: String(
+      config.tokitoApiUrl ||
+      config.API_URL ||
       "https://tokito-apis.com.br"
     ).replace(/\/+$/, ""),
-    apiKey,
-    source,
-    keyLength: apiKey.length,
-    keyFingerprint,
-    suspiciousKey:
-      /^https?:\/\//i.test(apiKey) ||
-      /^apikey=/i.test(apiKey) ||
-      /[\r\n]/.test(rawKey),
+    apiKey: String(
+      config.tokitoApi ||
+      config.API_KEY_TOKITO ||
+      ""
+    ).trim(),
   };
 }
 
 function ensureConfigured() {
   const cfg = settings();
+
   if (!cfg.apiKey) {
-    const error = new Error("Chave da API não configurada no config.js.");
+    const error = new Error("Chave da Tokito API não configurada no config.js.");
     error.code = "TOKITO_API_NOT_CONFIGURED";
     throw error;
   }
-  if (cfg.suspiciousKey) {
-    const error = new Error("A chave Tokito no config.js parece estar em formato inválido.");
-    error.code = "TOKITO_API_BAD_FORMAT";
-    throw error;
-  }
+
   return cfg;
 }
 
 function url(route, params = {}) {
   const { baseUrl, apiKey } = ensureConfigured();
-  const base =
-    baseUrl +
-    (String(route || "").startsWith("/") ? "" : "/") +
-    String(route || "");
-  const target = new URL(base);
+  const normalized = String(route || "").startsWith("/")
+    ? String(route)
+    : "/" + String(route || "");
 
-  for (const [key, value] of Object.entries({ ...params, apikey: apiKey })) {
+  const target = new URL(baseUrl + normalized);
+
+  for (const [key, value] of Object.entries(params || {})) {
     if (value === undefined || value === null || value === "") continue;
     target.searchParams.set(key, String(value));
   }
 
+  target.searchParams.set("apikey", apiKey);
   return target.toString();
 }
 
-const tokitoAxios = axios.create({
-  headers: {
-    "User-Agent": "TokitoBot/10",
-  },
-  httpsAgent: tokitoHttpsAgent,
-});
+async function get(route, params = {}, options = {}) {
+  const response = await axios.get(url(route, params), options);
+  return response.data;
+}
+
+async function post(route, body = {}, options = {}) {
+  const { baseUrl, apiKey } = ensureConfigured();
+  const normalized = String(route || "").startsWith("/")
+    ? String(route)
+    : "/" + String(route || "");
+
+  const response = await axios.post(baseUrl + normalized, body, {
+    ...options,
+    params: {
+      ...(options.params || {}),
+      apikey: apiKey,
+    },
+  });
+
+  return response.data;
+}
+
+async function buffer(route, params = {}, options = {}) {
+  const response = await axios.get(url(route, params), {
+    ...options,
+    responseType: "arraybuffer",
+  });
+
+  return {
+    buffer: Buffer.from(response.data || []),
+    contentType: String(response.headers?.["content-type"] || ""),
+    status: response.status,
+  };
+}
 
 function sanitize(value) {
   const { apiKey } = settings();
@@ -101,99 +90,27 @@ function sanitize(value) {
 function errorInfo(error) {
   const status = Number(error?.response?.status || 0) || null;
   const data = error?.response?.data;
-  const apiMessage = typeof data === "string"
-    ? data
-    : data?.resultado || data?.mensagem || data?.message || data?.error || data?.erro || "";
 
-  let message = sanitize(apiMessage || error?.message || "Erro desconhecido na API.");
-  if (status === 401) message = "Chave da API inválida ou não autenticada.";
-  else if (status === 403) {
-    const contentType = String(error?.response?.headers?.["content-type"] || "");
-    const bodyLooksHtml = typeof data === "string" && /<html|<!doctype/i.test(data);
-    const safeApiMessage = !bodyLooksHtml && apiMessage ? sanitize(apiMessage) : "";
-    message = safeApiMessage ||
-      (/html/i.test(contentType)
-        ? "A camada de proteção da Tokito recusou a requisição HTTP (403)."
-        : "A Tokito API recusou a requisição (403). Confira a chave, o plano e o acesso desta rota.");
-  }
-  else if (status === 404) message = "Endpoint não encontrado na API.";
-  else if (status === 429) message = "Limite de requisições da API atingido.";
-  else if (status >= 500) message = "A API está com erro interno.";
+  const message = sanitize(
+    (typeof data === "string" ? data : data?.message || data?.error || data?.erro) ||
+    error?.message ||
+    "Erro desconhecido na API."
+  );
 
-  return { status, message: String(message).slice(0, 500) };
+  return {
+    status,
+    message: String(message).slice(0, 500),
+  };
 }
 
 function userError(error, fallback = "Não foi possível consultar a API.") {
   if (error?.code === "TOKITO_API_NOT_CONFIGURED") {
-    return "❌ A chave da API não está configurada no config.js.";
+    return "❌ A chave da Tokito API não está configurada no config.js.";
   }
-  if (error?.code === "TOKITO_API_BAD_FORMAT") {
-    return "❌ A chave Tokito no config.js está em formato inválido. Salve apenas o token, sem URL e sem 'apikey='.";
-  }
+
   const info = errorInfo(error);
-  if (info.status) return "❌ API (" + info.status + "): " + info.message;
-  return "❌ " + (info.message || fallback);
-}
-
-async function get(route, params = {}, options = {}) {
-  const { timeout = 120000, headers = {}, ...rest } = options;
-  const response = await tokitoAxios.get(url(route, params), {
-    timeout,
-    headers: {
-      ...headers,
-      ...TOKITO_HEADERS,
-    },
-    ...rest,
-  });
-  return response.data;
-}
-
-async function post(route, body = {}, options = {}) {
-  const { baseUrl, apiKey } = ensureConfigured();
-  const normalized = String(route || "").startsWith("/")
-    ? String(route)
-    : "/" + String(route || "");
-  const { timeout = 120000, headers = {}, params = {}, ...rest } = options;
-
-  const response = await tokitoAxios.post(baseUrl + normalized, body, {
-    timeout,
-    params: { ...params, apikey: apiKey },
-    headers: {
-      ...headers,
-      ...TOKITO_HEADERS,
-    },
-    ...rest,
-  });
-
-  return response.data;
-}
-
-async function buffer(route, params = {}, options = {}) {
-  const {
-    timeout = 120000,
-    headers = {},
-    maxContentLength = 40 * 1024 * 1024,
-    maxBodyLength = 40 * 1024 * 1024,
-    ...rest
-  } = options;
-
-  const response = await tokitoAxios.get(url(route, params), {
-    responseType: "arraybuffer",
-    timeout,
-    maxContentLength,
-    maxBodyLength,
-    headers: {
-      ...headers,
-      ...TOKITO_HEADERS,
-    },
-    ...rest,
-  });
-
-  return {
-    buffer: Buffer.from(response.data || []),
-    contentType: String(response.headers?.["content-type"] || ""),
-    status: response.status,
-  };
+  if (info.status) return `❌ API (${info.status}): ${info.message}`;
+  return `❌ ${info.message || fallback}`;
 }
 
 function firstObject(data) {
@@ -227,6 +144,7 @@ function geminiText(value) {
     [];
 
   if (!Array.isArray(candidates) || !candidates.length) return "";
+
   return String(
     candidates[0]?.content?.parts
       ?.map(part => part?.text || "")
@@ -267,20 +185,18 @@ function text(data) {
 }
 
 module.exports = {
-  axios: tokitoAxios,
-  rawAxios: axios,
+  axios,
   settings,
   ensureConfigured,
   url,
-  sanitize,
-  errorInfo,
-  userError,
   get,
   post,
   buffer,
+  sanitize,
+  errorInfo,
+  userError,
   firstObject,
   list,
   geminiText,
   text,
-  TOKITO_HEADERS,
 };
