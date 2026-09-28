@@ -91,6 +91,12 @@ function tokitoHeaders(defaults, headers) {
   return { ...defaults, ...(headers || {}) };
 }
 
+const tokitoAxios = axios.create({
+  headers: {
+    "User-Agent": "Mozilla/5.0",
+  },
+});
+
 function sanitize(value) {
   const { apiKey } = settings();
   let text = String(value || "");
@@ -137,7 +143,7 @@ function userError(error, fallback = "Não foi possível consultar a API.") {
 
 async function get(route, params = {}, options = {}) {
   const { timeout = 120000, headers = {}, ...rest } = options;
-  const response = await axios.get(url(route, params), {
+  const response = await tokitoAxios.get(url(route, params), {
     timeout,
     headers: {
       ...TOKITO_HEADERS,
@@ -155,7 +161,7 @@ async function post(route, body = {}, options = {}) {
     : "/" + String(route || "");
   const { timeout = 120000, headers = {}, params = {}, ...rest } = options;
 
-  const response = await axios.post(baseUrl + normalized, body, {
+  const response = await tokitoAxios.post(baseUrl + normalized, body, {
     timeout,
     params: { ...params, apikey: apiKey },
     headers: {
@@ -177,7 +183,7 @@ async function buffer(route, params = {}, options = {}) {
     ...rest
   } = options;
 
-  const response = await axios.get(url(route, params), {
+  const response = await tokitoAxios.get(url(route, params), {
     responseType: "arraybuffer",
     timeout,
     maxContentLength,
@@ -268,7 +274,8 @@ function text(data) {
 }
 
 module.exports = {
-  axios,
+  axios: tokitoAxios,
+  rawAxios: axios,
   settings,
   ensureConfigured,
   url,
