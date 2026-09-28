@@ -1,4 +1,5 @@
 process.chdir(require('path').resolve(__dirname, '..'));
+require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
 
 const manager = require('./MÓDULOS/functions/updateManager');
 
