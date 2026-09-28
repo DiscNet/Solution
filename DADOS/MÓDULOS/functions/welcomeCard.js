@@ -1,7 +1,7 @@
 const dns = require("dns");
 const net = require("net");
 const axios = require("axios");
-const sharp = require("sharp");
+const sharp = require("./sharpCompat");
 
 const CARD_SIZE = 1080;
 const CARD_INSET = 24;
