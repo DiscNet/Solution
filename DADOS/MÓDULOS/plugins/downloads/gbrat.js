@@ -2,7 +2,7 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/gbrat.js
 const config = require("../../../config/config");
-const axios = require("axios");
+const tokitoApi = require("../../functions/apiClient");
 
 module.exports = {
   name: "gbrat",
@@ -22,14 +22,12 @@ module.exports = {
       await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
 
       // 🔥 Baixa o vídeo como buffer e envia
-      const apiUrl = `https://tokito-apis.com.br/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${API_KEY}`;
-
-      const response = await axios.get(apiUrl, {
-        responseType: "arraybuffer",
-        timeout: 30000
+      const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
+        timeout: 30000,
+        headers: { accept: "video/*,*/*" },
       });
 
-      const videoBuffer = Buffer.from(response.data);
+      const videoBuffer = result.buffer;
 
       if (videoBuffer.length < 5000) {
         throw new Error("Vídeo muito pequeno");
