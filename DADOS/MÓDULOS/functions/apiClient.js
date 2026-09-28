@@ -5,11 +5,16 @@ function settings() {
   const config = configLoader.getBaseConfig();
   return {
     baseUrl: String(
+      process.env.TOKITO_API_URL ||
+      process.env.API_URL ||
       config.tokitoApiUrl ||
       config.API_URL ||
       "https://tokito-apis.com.br"
     ).replace(/\/+$/, ""),
     apiKey: String(
+      process.env.TOKITO_API ||
+      process.env.TOKITO_API_KEY ||
+      process.env.API_KEY_TOKITO ||
       config.tokitoApi ||
       config.API_KEY_TOKITO ||
       ""
@@ -33,12 +38,22 @@ function url(route, params = {}) {
     ? String(route)
     : "/" + String(route || "");
 
-  const query = new URLSearchParams({
-    ...params,
-    apikey: apiKey,
-  });
+  const query = new URLSearchParams();
 
+  for (const [key, value] of Object.entries(params || {})) {
+    if (value === undefined || value === null || value === "") continue;
+    query.set(key, String(value));
+  }
+
+  query.set("apikey", apiKey);
   return `${baseUrl}${path}?${query.toString()}`;
+}
+
+function sanitize(value) {
+  const { apiKey } = settings();
+  let output = String(value ?? "");
+  if (apiKey) output = output.split(apiKey).join("[API_KEY]");
+  return output.replace(/([?&]apikey=)[^&\s]+/gi, "$1[API_KEY]");
 }
 
 function errorInfo(error) {
@@ -59,7 +74,7 @@ function errorInfo(error) {
 
   return {
     status,
-    message: String(message).slice(0, 500),
+    message: sanitize(message).slice(0, 500),
   };
 }
 
@@ -185,6 +200,7 @@ module.exports = {
   settings,
   ensureConfigured,
   url,
+  sanitize,
   errorInfo,
   userError,
   get,
