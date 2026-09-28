@@ -4,9 +4,7 @@ const config = require("../../../config/config");
 const tokitoApi = require("../../functions/apiClient");
 const fs = require("fs");
 const path = require("path");
-const { exec } = require("child_process");
-const util = require("util");
-const execPromise = util.promisify(exec);
+const { execFileCompat, writableTempDir } = require("../../functions/runtimeCompat");
 const webp = require("node-webpmux");
 const { defaultStickerPack, defaultStickerAuthor } = require("../../functions/stickerMetadata");
 
@@ -73,8 +71,7 @@ module.exports = {
         throw new Error("A API não retornou vídeo.");
       }
 
-      const tempDir = path.join(__dirname, "..", "..", "..", "temp");
-      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
+      const tempDir = writableTempDir("solution-gsbrat");
 
       const uniqueId = Date.now();
       const tempInput = path.join(tempDir, `gsbrat_${uniqueId}.mp4`);
@@ -82,8 +79,24 @@ module.exports = {
 
       fs.writeFileSync(tempInput, result.buffer);
 
-      const ffmpegCmd = `ffmpeg -i "${tempInput}" -vf "scale=512:512,fps=10" -c:v libwebp -lossless 0 -q:v 70 -preset default -loop 0 -an "${tempOutput}"`;
-      await execPromise(ffmpegCmd, { timeout: 20000 });
+      await execFileCompat(
+        "ffmpeg",
+        [
+          "-y",
+          "-hide_banner",
+          "-loglevel", "error",
+          "-i", tempInput,
+          "-vf", "scale=512:512,fps=10",
+          "-c:v", "libwebp",
+          "-lossless", "0",
+          "-q:v", "70",
+          "-preset", "default",
+          "-loop", "0",
+          "-an",
+          tempOutput,
+        ],
+        { timeout: 30000, maxBuffer: 8 * 1024 * 1024 }
+      );
 
       if (!fs.existsSync(tempOutput) || fs.statSync(tempOutput).size === 0) {
         throw new Error("Falha na conversão");
@@ -116,8 +129,15 @@ module.exports = {
       const info = tokitoApi.errorInfo(error);
       console.error("[GSBRAT]", info.status || "-", info.message);
 
+      const text =
+        error?.code === "ERR_EXEC_PERMISSION"
+          ? "❌ O Android/Termux bloqueou a execução do FFmpeg."
+          : error?.code === "ERR_EXEC_MISSING"
+            ? "❌ FFmpeg não foi encontrado neste ambiente."
+            : tokitoApi.userError(error, "Não foi possível criar a figurinha animada.");
+
       await conn.sendMessage(from, {
-        text: tokitoApi.userError(error, "Não foi possível criar a figurinha animada."),
+        text,
         contextInfo: {
           forwardingScore: 1,
           isForwarded: true,
