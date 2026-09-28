@@ -2,6 +2,12 @@ const config = require("../../../config/config");
 const https = require("https");
 const tokitoApi = require("../../functions/apiClient");
 
+const tokitoV10Agent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 8,
+  maxFreeSockets: 4,
+});
+
 function header(response, name) {
   return String(response?.headers?.[name] || response?.headers?.[name.toLowerCase()] || "").trim();
 }
@@ -60,6 +66,19 @@ async function probeV10(target = buildProbeUrl()) {
   });
 }
 
+async function probeV10Ia(target = buildProbeUrl()) {
+  return tokitoApi.rawAxios.get(target, {
+    responseType: "arraybuffer",
+    timeout: 30000,
+    headers: {
+      accept: "application/json",
+      "user-agent": "TokitoBot/10",
+    },
+    httpsAgent: tokitoV10Agent,
+    validateStatus: () => true,
+  });
+}
+
 function probeNativeV10(target) {
   return new Promise((resolve, reject) => {
     const req = https.get(target, {
@@ -112,6 +131,7 @@ module.exports = {
 
       const publicRaw = await probeRaw(publicStatusUrl);
       const publicV10 = await probeV10(publicStatusUrl);
+      const publicV10Ia = await probeV10Ia(publicStatusUrl);
       const first = await probeV10(generatedUrl);
       const second = await probeV10(buildProbeUrl());
       const native = await probeNativeV10(buildProbeUrl());
@@ -128,6 +148,7 @@ module.exports = {
       } else if (
         publicRaw.status === 403 &&
         publicV10.status === 403 &&
+        publicV10Ia.status === 403 &&
         first.status === 403 &&
         native.status === 403
       ) {
@@ -163,8 +184,11 @@ module.exports = {
         "*Conectividade pública — chamada crua*",
         summarize(publicRaw, "RAW"),
         "",
-        "*Conectividade pública — padrão Tokito V10*",
-        summarize(publicV10, "V10"),
+        "*Conectividade pública — cliente de downloads V10*",
+        summarize(publicV10, "V10-DL"),
+        "",
+        "*Conectividade pública — cliente IA V10*",
+        summarize(publicV10Ia, "V10-IA"),
         "",
         "*Rota autenticada — padrão Tokito V10*",
         summarize(first, 1),
