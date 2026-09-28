@@ -1,61 +1,47 @@
-// Menu: Downloads - Imagens | Comando: gbrat
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/midia/gbrat.js
+const axios = require("axios");
 const config = require("../../../config/config");
-const tokitoApi = require("../../functions/apiClient");
+const { createStatusQuoted } = require("../../functions/statusCard");
 
 module.exports = {
   name: "gbrat",
-  description: "🎨 ɢᴇʀᴀ ɢɪғ ᴀɴɪᴍᴀᴅᴏ ʙʀᴀᴛ",
+  menuCategory: "Downloads",
+  menuSection: "Imagens",
+  usage: "gbrat texto",
+  description: "Uso: .gbrat texto",
 
   async execute(conn, msg, args, from) {
     try {
-      const owner = config.ownerName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const bot = config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ";
-      const API_KEY = config.tokitoApi;
-
-      let pushName = "ᴜsᴜᴀ́ʀɪᴏ";
-      try { pushName = msg.pushName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; } catch (e) { pushName = "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"; }
-
-      const text = args.join(' ') || 'brat';
+      const text = args.join(" ") || "brat";
+      const bot = config.botName || "GrimmJow";
+      const base = String(config.tokitoApiUrl || "https://tokito-apis.com.br").replace(/\/+$/, "");
+      const url = `${base}/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(config.tokitoApi || "")}`;
 
       await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
 
-      // 🔥 Baixa o vídeo como buffer e envia
-      const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
-        timeout: 30000,
-      });
-
-      const videoBuffer = result.buffer;
-
-      if (videoBuffer.length < 5000) {
-        throw new Error("Vídeo muito pequeno");
-      }
+      const response = await axios.get(url, { responseType: "arraybuffer" });
+      const videoBuffer = Buffer.from(response.data);
 
       await conn.sendMessage(from, {
         video: videoBuffer,
         gifPlayback: true,
         caption: `🎨 *ʙʀᴀᴛ ɢɪғ*\n📝 ${text}`,
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, {
-        quoted: createStatusQuoted(msg)
-      });
+        contextInfo: {
+          forwardingScore: 1,
+          isForwarded: true,
+          forwardedNewsletterMessageInfo: {
+            newsletterJid: "120363426698503859@newsletter",
+            newsletterName: bot,
+            serverMessageId: 116
+          }
+        }
+      }, { quoted: createStatusQuoted(msg) });
 
       await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
     } catch (error) {
-      console.error("ɢʙʀᴀᴛ:", error);
+      console.error("[GBRAT]", error?.response?.status || "-", error.message);
       await conn.sendMessage(from, {
-        text: "❌ *ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ɢɪғ ʙʀᴀᴛ!*",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${config.botName || "ʟᴜᴋᴀᴍᴏᴅᴢᴢ"}`, serverMessageId: 116 } }
+        text: `❌ API${error?.response?.status ? ` (${error.response.status})` : ""}: falha ao criar o gbrat.`
       }, { quoted: msg });
     }
   }
 };
-
-Object.assign(module.exports, {
-  "menuCategory": "Downloads",
-  "menuSection": "Imagens",
-  "usage": "gbrat texto",
-  "description": "Uso: .gbrat texto"
-});
