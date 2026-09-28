@@ -1,12 +1,6 @@
 const config = require("../../../config/config");
 const tokitoApi = require("../../functions/apiClient");
 
-function keySource() {
-  if (String(process.env.TOKITO_API || "").trim()) return "variável TOKITO_API";
-  if (String(config.tokitoApi || "").trim()) return "config.js";
-  return "não configurada";
-}
-
 function header(response, name) {
   return String(response?.headers?.[name] || response?.headers?.[name.toLowerCase()] || "").trim();
 }
@@ -31,10 +25,25 @@ function summarize(response, index) {
   ].join("\n");
 }
 
-async function probe() {
-  const target = tokitoApi.url("/api/stickers/brat-img", {
+function buildProbeUrl() {
+  return tokitoApi.url("/api/stickers/brat-img", {
     text: "solution-api-test-" + Date.now(),
   });
+}
+
+function inspectGeneratedUrl(target, cfg) {
+  const parsed = new URL(target);
+  const values = parsed.searchParams.getAll("apikey");
+  const sentKey = values[0] || "";
+  return {
+    count: values.length,
+    exactMatch: sentKey === cfg.apiKey,
+    sentLength: sentKey.length,
+  };
+}
+
+async function probe() {
+  const target = buildProbeUrl();
 
   return tokitoApi.axios.get(target, {
     responseType: "arraybuffer",
@@ -65,6 +74,8 @@ module.exports = {
         }, { quoted: msg });
       }
 
+      const generatedUrl = buildProbeUrl();
+      const urlCheck = inspectGeneratedUrl(generatedUrl, cfg);
       const first = await probe();
       const second = await probe();
 
@@ -88,8 +99,13 @@ module.exports = {
       const text = [
         "🧪 *DIAGNÓSTICO TOKITO API*",
         "",
-        `Chave carregada de: *${keySource()}*`,
+        `Chave carregada de: *${cfg.source}*`,
+        `Tamanho da chave: *${cfg.keyLength} caracteres*`,
+        `Fingerprint SHA-256: *${cfg.keyFingerprint || "vazio"}*`,
         `Base: *${cfg.baseUrl}*`,
+        `Parâmetro apikey na URL: *${urlCheck.count}x*`,
+        `Chave enviada = chave carregada: *${urlCheck.exactMatch ? "SIM" : "NÃO"}*`,
+        `Tamanho enviado: *${urlCheck.sentLength} caracteres*`,
         "",
         summarize(first, 1),
         "",
