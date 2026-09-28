@@ -140,8 +140,8 @@ async function get(route, params = {}, options = {}) {
   const response = await tokitoAxios.get(url(route, params), {
     timeout,
     headers: {
-      ...TOKITO_HEADERS,
       ...headers,
+      ...TOKITO_HEADERS,
     },
     ...rest,
   });
@@ -159,8 +159,8 @@ async function post(route, body = {}, options = {}) {
     timeout,
     params: { ...params, apikey: apiKey },
     headers: {
-      ...TOKITO_HEADERS,
       ...headers,
+      ...TOKITO_HEADERS,
     },
     ...rest,
   });
@@ -183,9 +183,8 @@ async function buffer(route, params = {}, options = {}) {
     maxContentLength,
     maxBodyLength,
     headers: {
-      ...TOKITO_HEADERS,
-      accept: "*/*",
       ...headers,
+      ...TOKITO_HEADERS,
     },
     ...rest,
   });
