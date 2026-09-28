@@ -115,6 +115,28 @@ function execFileCompatSync(name, args = [], options = {}) {
   }
 }
 
+function applyRuntimeEnvironment() {
+  if (!isTermux()) return runtimeInfo();
+
+  const prefix = String(process.env.PREFIX || "");
+  if (prefix) {
+    const bin = path.join(prefix, "bin");
+    const currentPath = String(process.env.PATH || "");
+      const parts = currentPath.split(path.delimiter).filter(Boolean);
+    process.env.PATH = [bin, ...parts.filter(item => item !== bin)].join(path.delimiter);
+
+    const tmp = path.join(prefix, "tmp");
+    try {
+      fs.mkdirSync(tmp, { recursive: true });
+      process.env.TMPDIR = tmp;
+      process.env.TMP = tmp;
+      process.env.TEMP = tmp;
+    } catch (_) {}
+  }
+
+  return runtimeInfo();
+}
+
 function runtimeInfo() {
   return {
     termux: isTermux(),
@@ -133,5 +155,6 @@ module.exports = {
   resolveExecutable,
   execFileCompat,
   execFileCompatSync,
+  applyRuntimeEnvironment,
   runtimeInfo,
 };
