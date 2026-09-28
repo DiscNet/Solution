@@ -107,6 +107,14 @@ module.exports = {
         "As respostas foram diferentes do padrão esperado; compare os códigos abaixo.";
 
       if (
+        publicStatus.status === 403 &&
+        first.status === 403 &&
+        second.status === 403 &&
+        native.status === 403
+      ) {
+        diagnosis =
+          "O Cloudflare bloqueou até o endpoint público /status neste ambiente. A requisição está sendo recusada antes da Tokito API validar a chave; isso aponta para bloqueio da origem/rede/ambiente, não para corrupção da API key.";
+      } else if (
         publicStatus.status >= 200 && publicStatus.status < 300 &&
         first.status === 403 && native.status === 403
       ) {
