@@ -11,10 +11,31 @@ function generic() {
 }
 
 function commandExecution(code = "ERR_COMMAND_EXECUTION") {
+  const normalized = String(code || "ERR_COMMAND_EXECUTION");
+
+  if (normalized === "EACCES" || normalized === "ERR_EXEC_PERMISSION") {
+    return [
+      "❌ *O Android/Termux negou permissão para executar uma ferramenta do comando.*",
+      "",
+      "• Código: " + normalized,
+      "• O bot já tenta usar os binários internos do Termux automaticamente.",
+      "• Bot: " + botName(),
+    ].join("\n");
+  }
+
+  if (normalized === "ENOENT" || normalized === "ERR_EXEC_MISSING") {
+    return [
+      "❌ *Uma ferramenta necessária ao comando não foi encontrada.*",
+      "",
+      "• Código: " + normalized,
+      "• Bot: " + botName(),
+    ].join("\n");
+  }
+
   return [
     "❌ *Não foi possível executar o comando.*",
     "",
-    "• Código: " + String(code || "ERR_COMMAND_EXECUTION"),
+    "• Código: " + normalized,
     "• Bot: " + botName(),
   ].join("\n");
 }
