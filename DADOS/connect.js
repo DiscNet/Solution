@@ -1,4 +1,5 @@
 process.chdir(__dirname);
+require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
 // conect.js
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason, makeCacheableSignalKeyStore } = require("@whiskeysockets/baileys");
 const pino = require("pino");
