@@ -1,4 +1,5 @@
 const config = require("../../../config/config");
+const https = require("https");
 const tokitoApi = require("../../functions/apiClient");
 
 function header(response, name) {
@@ -42,13 +43,32 @@ function inspectGeneratedUrl(target, cfg) {
   };
 }
 
-async function probe() {
-  const target = buildProbeUrl();
-
+async function probeAxios(target = buildProbeUrl()) {
   return tokitoApi.axios.get(target, {
     responseType: "arraybuffer",
     timeout: 30000,
     validateStatus: () => true,
+  });
+}
+
+function probeNative(target) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(target, { timeout: 30000 }, response => {
+      const chunks = [];
+      response.on("data", chunk => chunks.push(Buffer.from(chunk)));
+      response.on("end", () => {
+        resolve({
+          status: response.statusCode,
+          headers: response.headers || {},
+          data: Buffer.concat(chunks),
+        });
+      });
+    });
+
+    req.on("timeout", () => {
+      req.destroy(new Error("Timeout no HTTPS nativo"));
+    });
+    req.on("error", reject);
   });
 }
 
@@ -76,13 +96,25 @@ module.exports = {
 
       const generatedUrl = buildProbeUrl();
       const urlCheck = inspectGeneratedUrl(generatedUrl, cfg);
-      const first = await probe();
-      const second = await probe();
+      const publicStatusUrl = cfg.baseUrl + "/status";
+
+      const publicStatus = await probeAxios(publicStatusUrl);
+      const first = await probeAxios(generatedUrl);
+      const second = await probeAxios(buildProbeUrl());
+      const native = await probeNative(buildProbeUrl());
 
       let diagnosis =
         "As respostas foram diferentes do padrão esperado; compare os códigos abaixo.";
 
-      if (first.status >= 200 && first.status < 300 && second.status === 403) {
+      if (
+        publicStatus.status >= 200 && publicStatus.status < 300 &&
+        first.status === 403 && native.status === 403
+      ) {
+        diagnosis =
+          "O domínio está acessível, mas a rota /api/* é bloqueada pelo Cloudflare tanto no Axios quanto no HTTPS nativo. Isso aponta para regra/proteção da API ou bloqueio do ambiente/IP antes da autenticação.";
+      }
+
+      else if (first.status >= 200 && first.status < 300 && second.status === 403) {
         diagnosis =
           "A primeira chamada passou e a segunda foi bloqueada. Isso indica bloqueio/controle do lado da API para chamadas consecutivas.";
       } else if (first.status === 403 && second.status === 403) {
@@ -107,9 +139,16 @@ module.exports = {
         `Chave enviada = chave carregada: *${urlCheck.exactMatch ? "SIM" : "NÃO"}*`,
         `Tamanho enviado: *${urlCheck.sentLength} caracteres*`,
         "",
+        "*Conectividade pública*",
+        summarize(publicStatus, "STATUS"),
+        "",
+        "*Rota autenticada via Axios*",
         summarize(first, 1),
         "",
         summarize(second, 2),
+        "",
+        "*Mesma rota via HTTPS nativo do Node*",
+        summarize(native, "NATIVO"),
         "",
         `Diagnóstico: ${diagnosis}`,
       ].join("\n");
