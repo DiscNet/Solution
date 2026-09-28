@@ -5,6 +5,15 @@ const configPath = path.join(__dirname, "..", "..", "config", "config.js");
 const resolvedConfigPath = require.resolve(configPath);
 const CHECK_INTERVAL_MS = Math.max(250, Number(process.env.CONFIG_CHECK_INTERVAL_MS || 1000));
 
+const BASE_ONLY_KEYS = new Set([
+  "tokitoApi",
+  "tokitoApiUrl",
+  "API_KEY_TOKITO",
+  "API_URL",
+  "tokitoLikeToken",
+  "tokitoSalaToken",
+]);
+
 function getRuntimeConfigPath() {
   if (process.env.BOT_CONFIG_PATH) return path.resolve(process.env.BOT_CONFIG_PATH);
   if (process.env.RAILWAY_VOLUME_MOUNT_PATH) {
@@ -39,6 +48,16 @@ function isPlainObject(value) {
 
 function syncStableConfig() {
   const merged = { ...baseConfig, ...runtimeConfig };
+
+  // Credenciais/endpoint da Tokito pertencem somente ao config.js local.
+  // Um runtime.json antigo não pode sobrescrever silenciosamente a chave.
+  for (const key of BASE_ONLY_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(baseConfig, key)) {
+      merged[key] = baseConfig[key];
+    } else {
+      delete merged[key];
+    }
+  }
 
   for (const key of Object.keys(configCache)) {
     if (!Object.prototype.hasOwnProperty.call(merged, key)) delete configCache[key];
@@ -119,7 +138,11 @@ function salvarConfig(patch) {
 
   // Usa o último estado válido e mescla apenas os campos enviados.
   carregarConfig(true);
-  const nextRuntime = { ...runtimeConfig, ...patch };
+  const safePatch = { ...patch };
+  for (const key of BASE_ONLY_KEYS) delete safePatch[key];
+
+  const nextRuntime = { ...runtimeConfig, ...safePatch };
+  for (const key of BASE_ONLY_KEYS) delete nextRuntime[key];
   const tempPath = `${runtimeConfigPath}.${process.pid}.${Date.now()}.tmp`;
 
   fs.writeFileSync(tempPath, `${JSON.stringify(nextRuntime, null, 2)}\n`, "utf8");
@@ -131,10 +154,17 @@ function salvarConfig(patch) {
   return syncStableConfig();
 }
 
+function getBaseConfig() {
+  carregarConfig();
+  return { ...baseConfig };
+}
+
 module.exports = {
   carregarConfig,
   recarregarConfig,
   salvarConfig,
   getConfig: carregarConfig,
-  getRuntimeConfigPath
+  getBaseConfig,
+  getRuntimeConfigPath,
+  BASE_ONLY_KEYS
 };
