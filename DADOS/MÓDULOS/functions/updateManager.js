@@ -1,7 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { execFileCompatSync } = require('./runtimeCompat');
+const {
+  execFileCompatSync,
+  isTermux,
+  writableTempDir
+} = require('./runtimeCompat');
 
 const ROOT = path.resolve(__dirname, '..', '..', '..');
 const UPDATE_DIR = path.join(ROOT, '.update');
@@ -12,6 +16,35 @@ const REPOSITORY = String(process.env.BOT_UPDATE_REPOSITORY || 'DiscNet/Solution
 const BRANCH = String(process.env.BOT_UPDATE_BRANCH || 'main').trim();
 const REMOTE = String(process.env.BOT_UPDATE_REMOTE || 'origin').trim();
 const MAX_BACKUPS = Math.max(1, Number(process.env.BOT_UPDATE_MAX_BACKUPS || 5) || 5);
+
+function isAndroidExternalStorage(value = ROOT) {
+  const normalized = path.resolve(String(value || '')).replace(/\\/g, '/');
+  return (
+    normalized === '/sdcard' ||
+    normalized.startsWith('/sdcard/') ||
+    normalized.startsWith('/storage/') ||
+    normalized.startsWith('/mnt/media_rw/')
+  );
+}
+
+function codedUpdateError(code, message, cause) {
+  const error = new Error(message || code);
+  error.code = code;
+  if (cause) error.cause = cause;
+  return error;
+}
+
+function errorDetail(error) {
+  const raw =
+    error?.stderr ||
+    error?.cause?.stderr ||
+    error?.cause?.message ||
+    error?.message ||
+    String(error || '');
+  return Buffer.isBuffer(raw)
+    ? raw.toString('utf8').trim().slice(0, 1200)
+    : String(raw || '').trim().slice(0, 1200);
+}
 
 const PROTECTED = [
   '.git/',
@@ -102,7 +135,26 @@ function git(args, { cwd = ROOT, binary = false, useToken = false, inherit = fal
 }
 
 function gitAvailable(cwd = ROOT) {
-  try { git(['--version'], { cwd }); return true; } catch (_) { return false; }
+  try {
+    git(['--version'], { cwd });
+    return true;
+  } catch (error) {
+    if (error?.code === 'ERR_EXEC_MISSING') {
+      throw codedUpdateError(
+        'UPDATE_GIT_MISSING',
+        'Git não está instalado ou não foi encontrado neste ambiente.',
+        error
+      );
+    }
+    if (error?.code === 'ERR_EXEC_PERMISSION') {
+      throw codedUpdateError(
+        'UPDATE_GIT_PERMISSION',
+        'O Android/Termux negou permissão para executar o Git.',
+        error
+      );
+    }
+    return false;
+  }
 }
 
 function parseTree(output) {
@@ -129,6 +181,10 @@ function remoteMatches(url) {
 
 function localGitRemote() {
   try {
+    // Repositórios Git em armazenamento compartilhado do Android são
+    // deliberadamente evitados. Git depende de permissões/symlinks que esse
+    // filesystem não oferece de forma confiável.
+    if (isTermux() && isAndroidExternalStorage(ROOT)) return null;
     if (!fs.existsSync(path.join(ROOT, '.git'))) return null;
     const url = git(['remote', 'get-url', REMOTE]).trim();
     if (!remoteMatches(url)) return null;
@@ -151,39 +207,94 @@ function localGitRemote() {
 }
 
 function stagingRemote() {
-  if (!gitAvailable()) throw new Error('Git não está instalado neste ambiente.');
-  ensure(UPDATE_DIR);
-  const dir = path.join(UPDATE_DIR, `staging-${process.pid}-${Date.now()}`);
+  gitAvailable();
+
+  // No Termux o clone temporário sempre vai para o armazenamento privado do
+  // app, mesmo que o usuário tenha colocado o bot em /sdcard ou ~/storage.
+  const stagingBase = isTermux()
+    ? writableTempDir('solution-updater')
+    : UPDATE_DIR;
+
+  ensure(stagingBase);
+  const dir = path.join(stagingBase, `staging-${process.pid}-${Date.now()}`);
   const url = `https://github.com/${REPOSITORY}.git`;
 
   try {
+    let firstError = null;
+
     try {
-      git(['clone', '--quiet', '--depth', '1', '--branch', BRANCH, url, dir], { cwd: ROOT });
-    } catch (_) {
+      git(['clone', '--quiet', '--depth', '1', '--branch', BRANCH, url, dir], {
+        cwd: stagingBase
+      });
+    } catch (error) {
+      firstError = error;
       fs.rmSync(dir, { recursive: true, force: true });
-      if (!token()) {
-        const err = new Error('Configure BOT_UPDATE_TOKEN com acesso de leitura ao repositório privado.');
-        err.code = 'UPDATE_TOKEN_REQUIRED';
-        throw err;
+
+      // Token é uma segunda tentativa, não a explicação automática para todo
+      // erro de clone. DiscNet/Solution é público e deve funcionar sem token.
+      if (token()) {
+        git(['clone', '--quiet', '--depth', '1', '--branch', BRANCH, url, dir], {
+          cwd: stagingBase,
+          useToken: true
+        });
+      } else {
+        const detail = errorDetail(error);
+        throw codedUpdateError(
+          'UPDATE_GIT_CLONE_FAILED',
+          detail
+            ? `Falha ao clonar a atualização: ${detail}`
+            : 'Falha ao clonar a atualização do GitHub.',
+          error
+        );
       }
-      git(['clone', '--quiet', '--depth', '1', '--branch', BRANCH, url, dir], { cwd: ROOT, useToken: true });
     }
 
     const commit = git(['rev-parse', 'HEAD'], { cwd: dir }).trim();
     const previous = state();
+
     return {
-      source: 'git-staging',
+      source: isTermux() ? 'git-staging-termux' : 'git-staging',
       cwd: dir,
       commit,
       baselineCommit: previous.lastRemoteCommit || null,
       tree: treeAt(dir, 'HEAD'),
       baselinePaths: Array.isArray(previous.managedPaths) ? previous.managedPaths : [],
-      cleanup() { fs.rmSync(dir, { recursive: true, force: true }); }
+      cleanup() {
+        fs.rmSync(dir, { recursive: true, force: true });
+      }
     };
   } catch (error) {
     fs.rmSync(dir, { recursive: true, force: true });
-    if (error?.code === 'UPDATE_TOKEN_REQUIRED') throw error;
-    throw new Error('Não foi possível obter a versão mais recente do repositório. Verifique acesso ao GitHub e BOT_UPDATE_TOKEN.');
+
+    if (
+      error?.code === 'UPDATE_GIT_MISSING' ||
+      error?.code === 'UPDATE_GIT_PERMISSION' ||
+      error?.code === 'UPDATE_GIT_CLONE_FAILED' ||
+      error?.code === 'UPDATE_TOKEN_REQUIRED'
+    ) {
+      throw error;
+    }
+
+    if (error?.code === 'ERR_EXEC_MISSING') {
+      throw codedUpdateError('UPDATE_GIT_MISSING', 'Git não foi encontrado.', error);
+    }
+
+    if (error?.code === 'ERR_EXEC_PERMISSION') {
+      throw codedUpdateError(
+        'UPDATE_GIT_PERMISSION',
+        'O Android/Termux negou permissão para executar o Git.',
+        error
+      );
+    }
+
+    const detail = errorDetail(error);
+    throw codedUpdateError(
+      'UPDATE_FETCH_FAILED',
+      detail
+        ? `Não foi possível obter a atualização: ${detail}`
+        : 'Não foi possível obter a versão mais recente do repositório.',
+      error
+    );
   }
 }
 
@@ -290,7 +401,15 @@ function writeRemoteFile(rel, item, data) {
   if (item.mode === '120000') fs.symlinkSync(data.toString('utf8'), target);
   else {
     fs.writeFileSync(target, data);
-    if (item.mode === '100755') fs.chmodSync(target, 0o755);
+    if (item.mode === '100755') {
+      try {
+        fs.chmodSync(target, 0o755);
+      } catch (error) {
+        // /sdcard e /storage não implementam permissões Unix corretamente.
+        // Arquivos JS continuam utilizáveis via Node mesmo sem chmod.
+        if (!(isTermux() && isAndroidExternalStorage(ROOT))) throw error;
+      }
+    }
   }
 }
 
@@ -445,4 +564,42 @@ function rollback() {
   return { restored: true, version: manifest.previousCommit || 'anterior', from: manifest.targetCommit || null, files: manifest.entries.length };
 }
 
-module.exports = { ROOT, PROTECTED, checkUpdate, installUpdate, rollback, isProtected, shortSha };
+function describeError(error) {
+  const code = String(error?.code || 'UPDATE_FAILED');
+  const detail = errorDetail(error);
+
+  const messages = {
+    UPDATE_GIT_MISSING:
+      'Git não está instalado no Termux.',
+    UPDATE_GIT_PERMISSION:
+      'O Android/Termux bloqueou a execução do Git.',
+    UPDATE_GIT_CLONE_FAILED:
+      'O Git não conseguiu baixar a atualização do GitHub.',
+    UPDATE_FETCH_FAILED:
+      'Não foi possível consultar a versão mais recente no GitHub.',
+    UPDATE_TOKEN_REQUIRED:
+      'A atualização exige um token de acesso ao repositório.',
+    ERR_EXEC_MISSING:
+      'Uma ferramenta necessária para a atualização não foi encontrada.',
+    ERR_EXEC_PERMISSION:
+      'O Android negou permissão para executar uma ferramenta do updater.'
+  };
+
+  return {
+    code,
+    message: messages[code] || error?.message || 'Falha desconhecida no updater.',
+    detail: detail && detail !== error?.message ? detail : ''
+  };
+}
+
+module.exports = {
+  ROOT,
+  PROTECTED,
+  checkUpdate,
+  installUpdate,
+  rollback,
+  isProtected,
+  shortSha,
+  describeError,
+  isAndroidExternalStorage
+};
