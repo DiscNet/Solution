@@ -1,4 +1,6 @@
 const axios = require("axios");
+const http = require("http");
+const https = require("https");
 const config = require("../../config/config");
 
 function settings() {
@@ -21,6 +23,53 @@ function ensureConfigured() {
   }
   return cfg;
 }
+
+function transportHeaders(headers = {}) {
+  return {
+    ...headers,
+    connection: "close",
+    "cache-control": "no-cache",
+    pragma: "no-cache",
+  };
+}
+
+async function request(options = {}) {
+  const httpAgent = new http.Agent({
+    keepAlive: false,
+    maxSockets: 1,
+  });
+  const httpsAgent = new https.Agent({
+    keepAlive: false,
+    maxSockets: 1,
+    maxCachedSessions: 0,
+  });
+
+  const { headers = {}, ...rest } = options;
+
+  try {
+    return await axios.request({
+      ...rest,
+      adapter: "http",
+      proxy: false,
+      httpAgent,
+      httpsAgent,
+      headers: transportHeaders(headers),
+    });
+  } finally {
+    httpAgent.destroy();
+    httpsAgent.destroy();
+  }
+}
+
+const client = {
+  request,
+  get(target, options = {}) {
+    return request({ ...options, method: "GET", url: target });
+  },
+  post(target, data = {}, options = {}) {
+    return request({ ...options, method: "POST", url: target, data });
+  },
+};
 
 function url(route, params = {}) {
   const { baseUrl, apiKey } = ensureConfigured();
@@ -53,7 +102,15 @@ function errorInfo(error) {
 
   let message = sanitize(apiMessage || error?.message || "Erro desconhecido na API.");
   if (status === 401) message = "Chave da API inválida ou não autenticada.";
-  else if (status === 403) message = "A Tokito recusou a chave configurada no servidor. Confira TOKITO_API e as permissões da conta para esta rota.";
+  else if (status === 403) {
+    const contentType = String(error?.response?.headers?.["content-type"] || "");
+    const bodyLooksHtml = typeof data === "string" && /<html|<!doctype/i.test(data);
+    const safeApiMessage = !bodyLooksHtml && apiMessage ? sanitize(apiMessage) : "";
+    message = safeApiMessage ||
+      (/html/i.test(contentType)
+        ? "A camada de proteção da Tokito recusou a requisição HTTP (403)."
+        : "A Tokito API recusou a requisição (403). Confira a chave, o plano e o acesso desta rota.");
+  }
   else if (status === 404) message = "Endpoint não encontrado na API.";
   else if (status === 429) message = "Limite de requisições da API atingido.";
   else if (status >= 500) message = "A API está com erro interno.";
@@ -72,10 +129,9 @@ function userError(error, fallback = "Não foi possível consultar a API.") {
 
 async function get(route, params = {}, options = {}) {
   const { timeout = 120000, headers = {}, ...rest } = options;
-  const response = await axios.get(url(route, params), {
+  const response = await client.get(url(route, params), {
     timeout,
     headers: {
-      "user-agent": "WhatsAppBot/1.0",
       accept: "application/json",
       ...headers,
     },
@@ -91,11 +147,10 @@ async function post(route, body = {}, options = {}) {
     : "/" + String(route || "");
   const { timeout = 120000, headers = {}, params = {}, ...rest } = options;
 
-  const response = await axios.post(baseUrl + normalized, body, {
+  const response = await client.post(baseUrl + normalized, body, {
     timeout,
     params: { ...params, apikey: apiKey },
     headers: {
-      "user-agent": "WhatsAppBot/1.0",
       accept: "application/json",
       ...headers,
     },
@@ -114,13 +169,12 @@ async function buffer(route, params = {}, options = {}) {
     ...rest
   } = options;
 
-  const response = await axios.get(url(route, params), {
+  const response = await client.get(url(route, params), {
     responseType: "arraybuffer",
     timeout,
     maxContentLength,
     maxBodyLength,
     headers: {
-      "user-agent": "WhatsAppBot/1.0",
       accept: "*/*",
       ...headers,
     },
@@ -205,7 +259,9 @@ function text(data) {
 }
 
 module.exports = {
-  axios,
+  axios: client,
+  rawAxios: axios,
+  request,
   settings,
   ensureConfigured,
   url,
