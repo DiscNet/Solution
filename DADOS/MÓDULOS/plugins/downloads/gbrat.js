@@ -24,7 +24,6 @@ module.exports = {
       // 🔥 Baixa o vídeo como buffer e envia
       const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
         timeout: 30000,
-        headers: { accept: "video/*,*/*" },
       });
 
       const videoBuffer = result.buffer;
