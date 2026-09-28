@@ -63,18 +63,32 @@ function ensureConfigured() {
 
 function url(route, params = {}) {
   const { baseUrl, apiKey } = ensureConfigured();
-  const normalized = String(route || "").startsWith("/")
-    ? String(route)
-    : "/" + String(route || "");
+  const base =
+    baseUrl +
+    (String(route || "").startsWith("/") ? "" : "/") +
+    String(route || "");
+  const target = new URL(base);
 
-  const query = Object.entries({ ...params, apikey: apiKey })
-    .filter(([, value]) => value !== undefined && value !== null && value !== "")
-    .map(([key, value]) =>
-      encodeURIComponent(String(key)) + "=" + encodeURIComponent(String(value))
-    )
-    .join("&");
+  for (const [key, value] of Object.entries({ ...params, apikey: apiKey })) {
+    if (value === undefined || value === null || value === "") continue;
+    target.searchParams.set(key, String(value));
+  }
 
-  return baseUrl + normalized + (query ? "?" + query : "");
+  return target.toString();
+}
+
+const TOKITO_JSON_HEADERS = {
+  "User-Agent": "Mozilla/5.0",
+  accept: "application/json",
+};
+
+const TOKITO_BUFFER_HEADERS = {
+  "User-Agent": "Mozilla/5.0",
+  accept: "*/*",
+};
+
+function tokitoHeaders(defaults, headers) {
+  return { ...defaults, ...(headers || {}) };
 }
 
 function sanitize(value) {
