@@ -61,14 +61,15 @@ function url(route, params = {}) {
   const normalized = String(route || "").startsWith("/")
     ? String(route)
     : "/" + String(route || "");
-  const target = new URL(baseUrl + normalized);
 
-  for (const [key, value] of Object.entries({ ...params, apikey: apiKey })) {
-    if (value === undefined || value === null || value === "") continue;
-    target.searchParams.set(key, String(value));
-  }
+  const query = Object.entries({ ...params, apikey: apiKey })
+    .filter(([, value]) => value !== undefined && value !== null && value !== "")
+    .map(([key, value]) =>
+      encodeURIComponent(String(key)) + "=" + encodeURIComponent(String(value))
+    )
+    .join("&");
 
-  return target.toString();
+  return baseUrl + normalized + (query ? "?" + query : "");
 }
 
 function sanitize(value) {
@@ -116,13 +117,10 @@ function userError(error, fallback = "Não foi possível consultar a API.") {
 }
 
 async function get(route, params = {}, options = {}) {
-  const { timeout = 120000, headers = {}, ...rest } = options;
+  const { timeout = 120000, headers, ...rest } = options;
   const response = await axios.get(url(route, params), {
     timeout,
-    headers: {
-      accept: "application/json",
-      ...headers,
-    },
+    ...(headers ? { headers } : {}),
     ...rest,
   });
   return response.data;
@@ -133,15 +131,12 @@ async function post(route, body = {}, options = {}) {
   const normalized = String(route || "").startsWith("/")
     ? String(route)
     : "/" + String(route || "");
-  const { timeout = 120000, headers = {}, params = {}, ...rest } = options;
+  const { timeout = 120000, headers, params = {}, ...rest } = options;
 
   const response = await axios.post(baseUrl + normalized, body, {
     timeout,
     params: { ...params, apikey: apiKey },
-    headers: {
-      accept: "application/json",
-      ...headers,
-    },
+    ...(headers ? { headers } : {}),
     ...rest,
   });
 
@@ -151,7 +146,7 @@ async function post(route, body = {}, options = {}) {
 async function buffer(route, params = {}, options = {}) {
   const {
     timeout = 120000,
-    headers = {},
+    headers,
     maxContentLength = 40 * 1024 * 1024,
     maxBodyLength = 40 * 1024 * 1024,
     ...rest
@@ -162,10 +157,7 @@ async function buffer(route, params = {}, options = {}) {
     timeout,
     maxContentLength,
     maxBodyLength,
-    headers: {
-      accept: "*/*",
-      ...headers,
-    },
+    ...(headers ? { headers } : {}),
     ...rest,
   });
 
