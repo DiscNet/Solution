@@ -21,7 +21,6 @@ const commands = [
       try {
         const result = await tokitoApi.buffer("/api/stickers/brat-img", { text }, {
           timeout: 60000,
-          headers: { accept: "image/*,*/*" },
         });
 
         if (!result.buffer.length || !/image/i.test(result.contentType)) {
@@ -63,7 +62,6 @@ const commands = [
       try {
         const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
           timeout: 90000,
-          headers: { accept: "video/*,*/*" },
         });
 
         if (!result.buffer.length || !/video/i.test(result.contentType)) {
