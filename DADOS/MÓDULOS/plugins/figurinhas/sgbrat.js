@@ -2,7 +2,7 @@
 const { createStatusQuoted } = require("../../functions/statusCard");
 // commands/midia/gsbrat.js
 const config = require("../../../config/config");
-const tokitoApi = require("../../functions/apiClient");
+const axios = require("axios");
 const fs = require("fs");
 const path = require("path");
 const { exec } = require("child_process");
@@ -70,12 +70,11 @@ module.exports = {
 
       await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
 
-      // 🔥 Passo 1: Baixa o vídeo da API
-      const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
-        timeout: 30000,
-      });
-
-      const videoBuffer = result.buffer;
+      // 🔥 Passo 1: chamada básica da API
+      const base = String(config.tokitoApiUrl || "https://tokito-apis.com.br").replace(/\/+$/, "");
+      const url = `${base}/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(config.tokitoApi || "")}`;
+      const response = await axios.get(url, { responseType: "arraybuffer" });
+      const videoBuffer = Buffer.from(response.data);
 
       // 🔥 Passo 2: Salva o vídeo temporariamente
       const tempDir = path.join(__dirname, "..", "..", "..", "temp");
