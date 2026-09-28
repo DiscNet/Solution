@@ -1,6 +1,4 @@
 const axios = require("axios");
-const http = require("http");
-const https = require("https");
 const config = require("../../config/config");
 
 function settings() {
@@ -23,53 +21,6 @@ function ensureConfigured() {
   }
   return cfg;
 }
-
-function transportHeaders(headers = {}) {
-  return {
-    ...headers,
-    connection: "close",
-    "cache-control": "no-cache",
-    pragma: "no-cache",
-  };
-}
-
-async function request(options = {}) {
-  const httpAgent = new http.Agent({
-    keepAlive: false,
-    maxSockets: 1,
-  });
-  const httpsAgent = new https.Agent({
-    keepAlive: false,
-    maxSockets: 1,
-    maxCachedSessions: 0,
-  });
-
-  const { headers = {}, ...rest } = options;
-
-  try {
-    return await axios.request({
-      ...rest,
-      adapter: "http",
-      proxy: false,
-      httpAgent,
-      httpsAgent,
-      headers: transportHeaders(headers),
-    });
-  } finally {
-    httpAgent.destroy();
-    httpsAgent.destroy();
-  }
-}
-
-const client = {
-  request,
-  get(target, options = {}) {
-    return request({ ...options, method: "GET", url: target });
-  },
-  post(target, data = {}, options = {}) {
-    return request({ ...options, method: "POST", url: target, data });
-  },
-};
 
 function url(route, params = {}) {
   const { baseUrl, apiKey } = ensureConfigured();
@@ -129,7 +80,7 @@ function userError(error, fallback = "Não foi possível consultar a API.") {
 
 async function get(route, params = {}, options = {}) {
   const { timeout = 120000, headers = {}, ...rest } = options;
-  const response = await client.get(url(route, params), {
+  const response = await axios.get(url(route, params), {
     timeout,
     headers: {
       accept: "application/json",
@@ -147,7 +98,7 @@ async function post(route, body = {}, options = {}) {
     : "/" + String(route || "");
   const { timeout = 120000, headers = {}, params = {}, ...rest } = options;
 
-  const response = await client.post(baseUrl + normalized, body, {
+  const response = await axios.post(baseUrl + normalized, body, {
     timeout,
     params: { ...params, apikey: apiKey },
     headers: {
@@ -169,7 +120,7 @@ async function buffer(route, params = {}, options = {}) {
     ...rest
   } = options;
 
-  const response = await client.get(url(route, params), {
+  const response = await axios.get(url(route, params), {
     responseType: "arraybuffer",
     timeout,
     maxContentLength,
@@ -259,9 +210,7 @@ function text(data) {
 }
 
 module.exports = {
-  axios: client,
-  rawAxios: axios,
-  request,
+  axios,
   settings,
   ensureConfigured,
   url,
