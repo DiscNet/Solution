@@ -132,6 +132,7 @@ module.exports = {
       const publicRaw = await probeRaw(publicStatusUrl);
       const publicV10 = await probeV10(publicStatusUrl);
       const publicV10Ia = await probeV10Ia(publicStatusUrl);
+      const authV10Ia = await probeV10Ia(generatedUrl);
       const first = await probeV10(generatedUrl);
       const second = await probeV10(buildProbeUrl());
       const native = await probeNativeV10(buildProbeUrl());
@@ -140,32 +141,22 @@ module.exports = {
         "As respostas foram diferentes do padrão esperado; compare os códigos abaixo.";
 
       if (
-        publicRaw.status === 403 &&
-        publicV10.status >= 200 && publicV10.status < 300
+        publicV10Ia.status >= 200 && publicV10Ia.status < 300 &&
+        authV10Ia.status >= 200 && authV10Ia.status < 300
       ) {
         diagnosis =
-          "O perfil HTTP oficial do Tokito V10 passou enquanto a chamada crua foi bloqueada. O cliente do bot foi alinhado ao V10 e este era o ponto que faltava.";
+          "CONFIRMADO: o perfil TokitoBot/10 + HTTPS keep-alive acessa tanto /status quanto a rota autenticada. O apiClient central foi alterado para usar exatamente esse transporte.";
       } else if (
-        publicRaw.status === 403 &&
-        publicV10.status === 403 &&
-        publicV10Ia.status === 403 &&
-        first.status === 403 &&
-        native.status === 403
+        publicV10Ia.status >= 200 && publicV10Ia.status < 300 &&
+        authV10Ia.status === 403
       ) {
         diagnosis =
-          "Mesmo o perfil oficial do Tokito V10 foi bloqueado pelo Cloudflare neste ambiente. Isso indica bloqueio da origem/IP/rede antes da API; a chave e a montagem da requisição não são a causa.";
+          "O transporte TokitoBot/10 passa no /status, mas a rota autenticada continua 403. Nesse caso o transporte foi resolvido e resta validar acesso da chave/plano à rota.";
       } else if (
-        publicV10.status >= 200 && publicV10.status < 300 &&
-        first.status === 403
+        publicV10Ia.status === 403
       ) {
         diagnosis =
-          "O perfil V10 acessa o domínio, mas a rota autenticada foi recusada. Nesse caso, o bloqueio está ligado à rota, conta/chave/plano ou regra específica da API.";
-      } else if (
-        first.status >= 200 && first.status < 300 &&
-        second.status >= 200 && second.status < 300
-      ) {
-        diagnosis =
-          "As chamadas autenticadas passaram usando o mesmo perfil HTTP do Tokito V10.";
+          "O perfil TokitoBot/10 também foi bloqueado nesta execução.";
       }
 
       const text = [
@@ -190,7 +181,10 @@ module.exports = {
         "*Conectividade pública — cliente IA V10*",
         summarize(publicV10Ia, "V10-IA"),
         "",
-        "*Rota autenticada — padrão Tokito V10*",
+        "*Rota autenticada — perfil vencedor V10-IA*",
+        summarize(authV10Ia, "V10-IA-AUTH"),
+        "",
+        "*Rota autenticada — comparação*",
         summarize(first, 1),
         "",
         summarize(second, 2),
