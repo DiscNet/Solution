@@ -77,20 +77,6 @@ function url(route, params = {}) {
   return target.toString();
 }
 
-const TOKITO_JSON_HEADERS = {
-  "User-Agent": "Mozilla/5.0",
-  accept: "application/json",
-};
-
-const TOKITO_BUFFER_HEADERS = {
-  "User-Agent": "Mozilla/5.0",
-  accept: "*/*",
-};
-
-function tokitoHeaders(defaults, headers) {
-  return { ...defaults, ...(headers || {}) };
-}
-
 const tokitoAxios = axios.create({
   headers: {
     "User-Agent": "Mozilla/5.0",
