@@ -1,5 +1,5 @@
 const axios = require("axios");
-const sharp = require("sharp");
+const sharp = require("./sharpCompat");
 const { _internals: welcomeInternals } = require("./welcomeCard");
 
 const WIDTH = 1680;
