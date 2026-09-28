@@ -1,5 +1,5 @@
-const axios = require("axios");
 const config = require("../../../config/config");
+const tokitoApi = require("../../functions/apiClient");
 const { createStatusQuoted } = require("../../functions/statusCard");
 
 module.exports = {
@@ -13,16 +13,24 @@ module.exports = {
     try {
       const text = args.join(" ") || "brat";
       const bot = config.botName || "GrimmJow";
-      const base = String(config.tokitoApiUrl || "https://tokito-apis.com.br").replace(/\/+$/, "");
-      const url = `${base}/api/stickers/brat-vid?text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(config.tokitoApi || "")}`;
-
-      await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
-
-      const response = await axios.get(url, { responseType: "arraybuffer" });
-      const videoBuffer = Buffer.from(response.data);
 
       await conn.sendMessage(from, {
-        video: videoBuffer,
+        react: { text: "🎨", key: msg.key },
+      });
+
+      const result = await tokitoApi.buffer(
+        "/api/stickers/brat-vid",
+        { text },
+        { timeout: 60000 }
+      );
+
+      if (!result.buffer.length) {
+        throw new Error("A API não retornou vídeo.");
+      }
+
+      await conn.sendMessage(from, {
+        video: result.buffer,
+        mimetype: result.contentType.split(";")[0] || "video/mp4",
         gifPlayback: true,
         caption: `🎨 *ʙʀᴀᴛ ɢɪғ*\n📝 ${text}`,
         contextInfo: {
@@ -31,17 +39,21 @@ module.exports = {
           forwardedNewsletterMessageInfo: {
             newsletterJid: "120363426698503859@newsletter",
             newsletterName: bot,
-            serverMessageId: 116
-          }
-        }
+            serverMessageId: 116,
+          },
+        },
       }, { quoted: createStatusQuoted(msg) });
 
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-    } catch (error) {
-      console.error("[GBRAT]", error?.response?.status || "-", error.message);
       await conn.sendMessage(from, {
-        text: `❌ API${error?.response?.status ? ` (${error.response.status})` : ""}: falha ao criar o gbrat.`
+        react: { text: "✅", key: msg.key },
+      });
+    } catch (error) {
+      const info = tokitoApi.errorInfo(error);
+      console.error("[GBRAT]", info.status || "-", info.message);
+
+      await conn.sendMessage(from, {
+        text: tokitoApi.userError(error, "Não foi possível criar o gbrat."),
       }, { quoted: msg });
     }
-  }
+  },
 };
