@@ -2,6 +2,11 @@ const axios = require("axios");
 const crypto = require("crypto");
 const configLoader = require("./configLoader");
 
+const TOKITO_HEADERS = Object.freeze({
+  "User-Agent": "Mozilla/5.0",
+  accept: "application/json",
+});
+
 function firstNonEmpty(...values) {
   for (const value of values) {
     const text = String(value ?? "").trim();
@@ -117,10 +122,13 @@ function userError(error, fallback = "Não foi possível consultar a API.") {
 }
 
 async function get(route, params = {}, options = {}) {
-  const { timeout = 120000, headers, ...rest } = options;
+  const { timeout = 120000, headers = {}, ...rest } = options;
   const response = await axios.get(url(route, params), {
     timeout,
-    ...(headers ? { headers } : {}),
+    headers: {
+      ...TOKITO_HEADERS,
+      ...headers,
+    },
     ...rest,
   });
   return response.data;
@@ -131,12 +139,15 @@ async function post(route, body = {}, options = {}) {
   const normalized = String(route || "").startsWith("/")
     ? String(route)
     : "/" + String(route || "");
-  const { timeout = 120000, headers, params = {}, ...rest } = options;
+  const { timeout = 120000, headers = {}, params = {}, ...rest } = options;
 
   const response = await axios.post(baseUrl + normalized, body, {
     timeout,
     params: { ...params, apikey: apiKey },
-    ...(headers ? { headers } : {}),
+    headers: {
+      ...TOKITO_HEADERS,
+      ...headers,
+    },
     ...rest,
   });
 
@@ -146,7 +157,7 @@ async function post(route, body = {}, options = {}) {
 async function buffer(route, params = {}, options = {}) {
   const {
     timeout = 120000,
-    headers,
+    headers = {},
     maxContentLength = 40 * 1024 * 1024,
     maxBodyLength = 40 * 1024 * 1024,
     ...rest
@@ -157,7 +168,11 @@ async function buffer(route, params = {}, options = {}) {
     timeout,
     maxContentLength,
     maxBodyLength,
-    ...(headers ? { headers } : {}),
+    headers: {
+      ...TOKITO_HEADERS,
+      accept: "*/*",
+      ...headers,
+    },
     ...rest,
   });
 
@@ -253,4 +268,5 @@ module.exports = {
   list,
   geminiText,
   text,
+  TOKITO_HEADERS,
 };
