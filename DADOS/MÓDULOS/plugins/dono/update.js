@@ -17,6 +17,27 @@ function shortList(changes) {
   return lines.join('\n');
 }
 
+async function sendUpdaterError(conn, msg, from, error) {
+  const info = manager.describeError(error);
+  const storageWarning =
+    manager.isAndroidExternalStorage(manager.ROOT)
+      ? '\n\n⚠️ O bot está em armazenamento compartilhado do Android. O updater agora usa o armazenamento interno do Termux para o clone temporário.'
+      : '';
+
+  const detail = info.detail
+    ? '\n• Detalhe: ' + info.detail.replace(/\s+/g, ' ').slice(0, 500)
+    : '';
+
+  await conn.sendMessage(from, {
+    text:
+      '*❌ Falha no updater*\n\n' +
+      '• Código: ' + info.code + '\n' +
+      '• Motivo: ' + info.message +
+      detail +
+      storageWarning
+  }, { quoted: msg });
+}
+
 module.exports = {
   permissions: { owner: true },
   name: 'update',
@@ -26,6 +47,7 @@ module.exports = {
   async execute(conn, msg, args, from) {
     const action = String(args?.[0] || 'check').trim().toLowerCase();
 
+    try {
     if (action === 'check' || action === 'info') {
       await conn.sendMessage(from, { react: { text: '🔎', key: msg.key } }).catch(() => {});
       const check = await manager.checkUpdate();
@@ -88,6 +110,11 @@ module.exports = {
     await conn.sendMessage(from, {
       text: `Use:\n${prefix}update check\n${prefix}update start\n${prefix}update rollback`
     }, { quoted: msg });
+    } catch (error) {
+      console.error('[UPDATE COMMAND]', error?.code || '-', error?.message || error);
+      await sendUpdaterError(conn, msg, from, error).catch(() => {});
+      return;
+    }
   }
 };
 
