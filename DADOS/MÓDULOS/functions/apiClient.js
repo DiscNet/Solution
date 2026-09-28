@@ -1,10 +1,17 @@
 const axios = require("axios");
+const https = require("https");
 const crypto = require("crypto");
 const configLoader = require("./configLoader");
 
 const TOKITO_HEADERS = Object.freeze({
-  "User-Agent": "Mozilla/5.0",
+  "User-Agent": "TokitoBot/10",
   accept: "application/json",
+});
+
+const tokitoHttpsAgent = new https.Agent({
+  keepAlive: true,
+  maxSockets: 8,
+  maxFreeSockets: 4,
 });
 
 function firstNonEmpty(...values) {
@@ -79,8 +86,9 @@ function url(route, params = {}) {
 
 const tokitoAxios = axios.create({
   headers: {
-    "User-Agent": "Mozilla/5.0",
+    "User-Agent": "TokitoBot/10",
   },
+  httpsAgent: tokitoHttpsAgent,
 });
 
 function sanitize(value) {
