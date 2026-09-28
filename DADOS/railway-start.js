@@ -1,4 +1,5 @@
 process.chdir(__dirname);
+require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
 const fs = require('fs');
 const path = require('path');
 const { authDir: repoAuthDir } = require('./conexão/sessao');
