@@ -58,10 +58,13 @@ async function probeRaw(target) {
 }
 
 async function probeV10(target = buildProbeUrl()) {
-  return tokitoApi.axios.get(target, {
+  return tokitoApi.rawAxios.get(target, {
     responseType: "arraybuffer",
     timeout: 30000,
-    headers: tokitoApi.TOKITO_HEADERS,
+    headers: {
+      "User-Agent": "Mozilla/5.0",
+      accept: "application/json",
+    },
     validateStatus: () => true,
   });
 }
