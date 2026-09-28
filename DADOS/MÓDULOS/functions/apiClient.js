@@ -1,22 +1,56 @@
 const axios = require("axios");
-const config = require("../../config/config");
+const crypto = require("crypto");
+const configLoader = require("./configLoader");
+
+function firstNonEmpty(...values) {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text) return text;
+  }
+  return "";
+}
 
 function settings() {
+  const config = configLoader.getBaseConfig();
+  const rawKey = firstNonEmpty(config.tokitoApi, config.API_KEY_TOKITO);
+  const source = firstNonEmpty(config.tokitoApi)
+    ? "config.js:tokitoApi"
+    : firstNonEmpty(config.API_KEY_TOKITO)
+      ? "config.js:API_KEY_TOKITO"
+      : "config.js";
+
+  const apiKey = rawKey.trim();
+  const keyFingerprint = apiKey
+    ? crypto.createHash("sha256").update(apiKey, "utf8").digest("hex").slice(0, 12)
+    : "";
+
   return {
-    baseUrl: String(
-      process.env.TOKITO_API_URL ||
-      config.tokitoApiUrl ||
+    baseUrl: firstNonEmpty(
+      config.tokitoApiUrl,
+      config.API_URL,
       "https://tokito-apis.com.br"
     ).replace(/\/+$/, ""),
-    apiKey: String(process.env.TOKITO_API || config.tokitoApi || "").trim(),
+    apiKey,
+    source,
+    keyLength: apiKey.length,
+    keyFingerprint,
+    suspiciousKey:
+      /^https?:\/\//i.test(apiKey) ||
+      /^apikey=/i.test(apiKey) ||
+      /[\r\n]/.test(rawKey),
   };
 }
 
 function ensureConfigured() {
   const cfg = settings();
   if (!cfg.apiKey) {
-    const error = new Error("Chave da API não configurada no ambiente.");
+    const error = new Error("Chave da API não configurada no config.js.");
     error.code = "TOKITO_API_NOT_CONFIGURED";
+    throw error;
+  }
+  if (cfg.suspiciousKey) {
+    const error = new Error("A chave Tokito no config.js parece estar em formato inválido.");
+    error.code = "TOKITO_API_BAD_FORMAT";
     throw error;
   }
   return cfg;
@@ -71,7 +105,10 @@ function errorInfo(error) {
 
 function userError(error, fallback = "Não foi possível consultar a API.") {
   if (error?.code === "TOKITO_API_NOT_CONFIGURED") {
-    return "❌ A chave da API não está configurada no servidor.";
+    return "❌ A chave da API não está configurada no config.js.";
+  }
+  if (error?.code === "TOKITO_API_BAD_FORMAT") {
+    return "❌ A chave Tokito no config.js está em formato inválido. Salve apenas o token, sem URL e sem 'apikey='.";
   }
   const info = errorInfo(error);
   if (info.status) return "❌ API (" + info.status + "): " + info.message;
