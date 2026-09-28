@@ -73,7 +73,6 @@ module.exports = {
       // 🔥 Passo 1: Baixa o vídeo da API
       const result = await tokitoApi.buffer("/api/stickers/brat-vid", { text }, {
         timeout: 30000,
-        headers: { accept: "video/*,*/*" },
       });
 
       const videoBuffer = result.buffer;
