@@ -47,13 +47,17 @@ async function probeAxios(target = buildProbeUrl()) {
   return tokitoApi.axios.get(target, {
     responseType: "arraybuffer",
     timeout: 30000,
+    headers: tokitoApi.TOKITO_HEADERS,
     validateStatus: () => true,
   });
 }
 
 function probeNative(target) {
   return new Promise((resolve, reject) => {
-    const req = https.get(target, { timeout: 30000 }, response => {
+    const req = https.get(target, {
+      timeout: 30000,
+      headers: tokitoApi.TOKITO_HEADERS,
+    }, response => {
       const chunks = [];
       response.on("data", chunk => chunks.push(Buffer.from(chunk)));
       response.on("end", () => {
@@ -143,6 +147,8 @@ module.exports = {
         `Tamanho da chave: *${cfg.keyLength} caracteres*`,
         `Fingerprint SHA-256: *${cfg.keyFingerprint || "vazio"}*`,
         `Base: *${cfg.baseUrl}*`,
+        `User-Agent: *${tokitoApi.TOKITO_HEADERS["User-Agent"]}*`,
+        `Accept: *${tokitoApi.TOKITO_HEADERS.accept}*`,
         `Parâmetro apikey na URL: *${urlCheck.count}x*`,
         `Chave enviada = chave carregada: *${urlCheck.exactMatch ? "SIM" : "NÃO"}*`,
         `Tamanho enviado: *${urlCheck.sentLength} caracteres*`,
