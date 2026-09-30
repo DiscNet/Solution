@@ -57,6 +57,34 @@ npm start
 
 `npm run connect` faz o pareamento e cria a sessão usada pelo bot. Nas próximas inicializações, use `npm start`. O script de início prepara a sessão e carrega `DADOS/index.js`.
 
+## Atualizações no Termux e na hospedagem
+
+No WhatsApp, o dono pode usar `.up` ou `.up start` para instalar, `.up check` para consultar e `.up rollback` para restaurar o último backup. `.update` sem argumento apenas consulta. No terminal:
+
+```bash
+npm run up
+npm run update:check
+npm run update:rollback
+```
+
+O updater preserva a sessão, os dados dos grupos, a configuração local, `.env`, `.npmrc` e `bridge.toml`. Baixa o código para uma pasta temporária, verifica integridade e sintaxe e cria backup antes de aplicar. Alterações apenas nos scripts de `package.json` não reinstalam dependências. Quando elas mudam, a instalação ocorre separadamente; falhas mantêm o código e os módulos anteriores. Uma interrupção durante a aplicação é recuperada na próxima inicialização com `npm start`.
+
+O Termux usa automaticamente o `tnode` instalado para Git, npm e reinício. O npm também pode ser executado pelo Node quando seu script não tem permissão de execução. O download Git usa armazenamento interno mesmo se o bot estiver em `/sdcard` ou `~/storage/shared`. O tnode não instala compiladores ou bibliotecas de sistema necessários a módulos nativos.
+
+Se a versão antiga do updater estiver quebrada, pare o bot e execute **na pasta do projeto**:
+
+```bash
+curl -fL https://raw.githubusercontent.com/DiscNet/Solution/main/DADOS/update-bootstrap.js -o "$TMPDIR/solution-update.js"
+tnode node "$TMPDIR/solution-update.js" "$PWD"
+tnode npm start
+```
+
+Em um ambiente sem tnode, use `node` e `npm` diretamente. Depois de instalado o código novo, `npm run update:repair` também executa essa recuperação. `npm start` mantém o supervisor ativo para reiniciar depois de `.up`; uma execução direta de `DADOS/index.js` informa a necessidade de reinício manual.
+
+Os logs têm horário, etapa e nível. A arte ASCII usa `lolcat` quando disponível; sem ele, mantém cores ANSI. Para habilitar o efeito no Termux, use `pkg install ruby` e `gem install lolcat`. `NO_COLOR=1` desliga cores e `BOT_LOG_TIMEZONE` altera o fuso (padrão: `America/Fortaleza`).
+
+Validação do updater: `npm run test:update`. Os testes usam repositórios Git locais e simulam o ambiente Termux/tnode, incluindo falha de instalação, concorrência, rollback e interrupção do processo.
+
 Para os comandos integrados à API, configure `TOKITO_API` no ambiente. Outras integrações podem pedir variáveis próprias; consulte `DADOS/config/config.js` antes de ativá-las.
 
 > **Sessão:** `DADOS/conexão/bot_auth/` contém credenciais de conexão. Trate essa pasta como privada. Em uma implantação nova, prefira armazenar a sessão em um volume ou usar `AUTH_INFO_B64`, que o inicializador reconhece.

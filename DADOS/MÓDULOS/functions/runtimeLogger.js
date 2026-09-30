@@ -1,3 +1,5 @@
+const terminal = require('./terminalLogger').createLogger('BOT');
+
 function digits(value) {
   return String(value || "").replace(/\D/g, "");
 }
@@ -25,7 +27,7 @@ function errorCode(error, fallback = "ERR_RUNTIME") {
 
 function command({ name, sender, durationMs, status = "ok", code = null }) {
   const suffix = code ? ` | ${code}` : "";
-  console.log(`[CMD] ${name || "unknown"} | ${senderLabel(sender)} | ${durationLabel(durationMs)} | ${status}${suffix}`);
+  terminal.log(`CMD ${name || "unknown"} | ${senderLabel(sender)} | ${durationLabel(durationMs)} | ${status}${suffix}`, status === 'error' ? 'error' : status === 'denied' ? 'warn' : 'success');
 }
 
 function error({ scope = "runtime", name = null, sender = null, error: err = null, code = null }) {
@@ -33,16 +35,16 @@ function error({ scope = "runtime", name = null, sender = null, error: err = nul
   const commandPart = name ? ` ${name}` : "";
   const senderPart = sender ? ` | ${senderLabel(sender)}` : "";
   const detail = String(err?.message || "").replace(/[\r\n]+/g, " ").slice(0, 180);
-  console.error(`[ERROR]${commandPart} | ${resolvedCode}${senderPart}${detail ? ` | ${detail}` : ""} | ${scope}`);
+  terminal.error(`${scope}${commandPart} | ${resolvedCode}${senderPart}${detail ? ` | ${detail}` : ""}`);
   return resolvedCode;
 }
 
 function connection(message) {
-  console.log(`[CONN] ${String(message || "")}`);
+  terminal.info(`CONEXÃO | ${String(message || "")}`);
 }
 
 function warn(message) {
-  console.warn(`[WARN] ${String(message || "")}`);
+  terminal.warn(String(message || ""));
 }
 
 module.exports = {

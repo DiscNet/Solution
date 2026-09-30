@@ -1,77 +1,47 @@
-process.chdir(require('path').resolve(__dirname, '..'));
+const path = require('path');
+process.chdir(path.resolve(__dirname, '..'));
 require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
-
 const manager = require('./MÓDULOS/functions/updateManager');
-
-function log(text) {
-  console.log(`[UPDATE] ${text}`);
-}
+const logger = require('./MÓDULOS/functions/terminalLogger').createLogger('UPDATE');
 
 function printCheck(check) {
-  console.log('');
-  console.log('=== ATUALIZAÇÃO DO BOT ===');
-  console.log(`Fonte: ${check.source}`);
-  console.log(`Local:  ${manager.shortSha(check.localCommit)}`);
-  console.log(`Remoto: ${manager.shortSha(check.remoteCommit)}`);
-  console.log(`Alterações: ${check.changes.length}`);
-
-  if (!check.changes.length) {
-    console.log('Status: já está atualizado.');
-    return;
+  logger.info('Local: ' + manager.shortSha(check.localCommit) + ' | GitHub: ' + manager.shortSha(check.remoteCommit));
+  logger.info('Arquivos pendentes: ' + check.changes.length + ' | Dependências: ' + (check.dependenciesNeeded ? 'sincronizar' : 'atuais'));
+  for (const item of check.changes.slice(0, 20)) {
+    logger.info((item.type === 'delete' ? '-' : item.type === 'create' ? '+' : '~') + ' ' + item.path);
   }
-
-  for (const item of check.changes.slice(0, 30)) {
-    const symbol = item.type === 'delete' ? '-' : item.type === 'create' ? '+' : '~';
-    console.log(`${symbol} ${item.path}`);
-  }
-  if (check.changes.length > 30) {
-    console.log(`... e mais ${check.changes.length - 30} arquivo(s).`);
-  }
+  if (check.changes.length > 20) logger.info('Mais ' + (check.changes.length - 20) + ' arquivo(s).');
+  (check.available ? logger.info : logger.success)(check.available ? 'Atualização disponível.' : 'Bot atualizado.');
 }
 
 async function main(actionOverride) {
   const action = String(actionOverride || process.argv[2] || 'start').toLowerCase();
-
+  logger.banner('ATUALIZAÇÃO DO BOT');
   try {
-    if (action === 'check' || action === 'info') {
-      const check = await manager.checkUpdate();
-      printCheck(check);
-      return check.available ? 10 : 0;
+    if (['check', 'info'].includes(action)) {
+      const check = await manager.checkUpdate(logger.log); printCheck(check); return 0;
     }
-
     if (action === 'rollback') {
-      log('Restaurando o último backup...');
-      const result = manager.rollback();
-      log(`Rollback concluído. Arquivos restaurados: ${result.files}.`);
-      return 0;
+      const result = await manager.rollback(logger.log);
+      logger.success('Backup restaurado: ' + result.files + ' arquivo(s).'); return 0;
     }
-
-    if (!['start', 'up', 'update'].includes(action)) {
-      console.log('Uso: node DADOS/update.js [check|start|rollback]');
-      return 2;
+    if (!['start', 'install', 'up', 'update'].includes(action)) {
+      logger.info('Uso: node DADOS/update.js [check|start|rollback]'); return 2;
     }
-
-    log('Verificando alterações no GitHub...');
-    const result = await manager.installUpdate(log);
-    if (!result.updated) {
-      log(`Nenhuma atualização pendente (${manager.shortSha(result.version)}).`);
-      return 0;
-    }
-
-    log(`Atualização concluída: ${manager.shortSha(result.from)} -> ${manager.shortSha(result.version)}.`);
-    log(`${result.filesUpdated} arquivo(s) atualizado(s), ${result.filesDeleted} removido(s).`);
-    log('Dados protegidos foram preservados.');
+    const result = await manager.installUpdate(logger.log);
+    logger.success(result.updated ?
+      'Concluído: ' + result.filesUpdated + ' arquivo(s) atualizado(s), ' + result.filesDeleted + ' removido(s).' :
+      'Bot atualizado (' + manager.shortSha(result.version) + ').');
     return 0;
   } catch (error) {
-    console.error(`[UPDATE] ERRO: ${error?.message || error}`);
+    const info = manager.describeError(error);
+    logger.error(info.code + ': ' + info.message);
+    if (info.detail) logger.error(info.detail);
+    if (info.hint) logger.warn(info.hint);
     return 1;
   }
 }
-
-if (require.main === module) {
-  main().then(code => {
-    process.exitCode = code;
-  });
-}
-
+if (require.main === module) main().then(code => { process.exitCode = code; }).catch(error => {
+  logger.error(error.message); process.exitCode = 1;
+});
 module.exports = { main };

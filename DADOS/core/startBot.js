@@ -16,6 +16,7 @@ const axios = require("axios");
 const { installMessageDefaults } = require("../MÓDULOS/functions/messageDefaults");
 const { executeCommand } = require("../MÓDULOS/functions/commandExecutor");
 const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
+const terminal = require("../MÓDULOS/functions/terminalLogger").createLogger("BOT");
 const { extractMessageText, unwrapMessage, isInteractiveReply, interactiveReplyId } = require("../MÓDULOS/functions/messageText");
 const { registerConnectionEvents } = require("../eventos/connection");
 const { createReconnectController } = require("../eventos/reconnect");
@@ -419,25 +420,23 @@ function handleConnectionOpen() {
 }
 
 function exibirLogsPosInicio() {
-  console.log(banner);
-  console.log(`    ${cores.magenta}🧊 Número: ${cores.amarelo}${conn.user.id.split(":")[0]}${cores.reset}  ${cores.magenta}🧊 Prefixo: ${cores.amarelo}${config.prefix}${cores.reset}  ${cores.magenta}🧊 Comandos: ${cores.amarelo}${Object.keys(commands).length}${cores.reset}`);
+  terminal.banner(config.botName || "Bot");
+  terminal.success(`Conectado | Prefixo: ${config.prefix} | Comandos: ${Object.keys(commands).length}`);
 
   if (comandosFalhos.length > 0) {
-    console.log(`${cores.vermelho}❌ Comandos com erro:${cores.reset}`);
+    terminal.warn("Comandos com erro ao carregar:");
     for (const erro of comandosFalhos) {
-      console.log(`${cores.vermelho}  ⚠️ ${erro}${cores.reset}`);
+      terminal.warn(erro);
     }
+  }
 
   if (conflitosComandos.length > 0) {
-    console.log(`${cores.amarelo}⚠️ Conflitos de comandos/aliases:${cores.reset}`);
+    terminal.warn("Conflitos de comandos/aliases:");
     for (const conflito of conflitosComandos) {
-      console.log(`${cores.amarelo}  ⚠️ ${conflito}${cores.reset}`);
+      terminal.warn(conflito);
     }
   }
-  }
-  console.log(`\n${cores.verde}╔════════════════════════════════════════════════════════════╗${cores.reset}`);
-  console.log(`${cores.verde}║${cores.reset}           ${cores.amarelo}${cores.brilho}LOGS DE MENSAGENS E COMANDOS${cores.reset}           ${cores.verde}║${cores.reset}`);
-  console.log(`${cores.verde}╚════════════════════════════════════════════════════════════╝${cores.reset}`);
+  terminal.info("Aguardando mensagens e comandos...");
 }
 
 // ==============================================

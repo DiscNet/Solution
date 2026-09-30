@@ -9,23 +9,32 @@ const execFileAsync = promisify(execFile);
 function isTermux() {
   const prefix = String(process.env.PREFIX || "");
   return Boolean(
+    process.platform === "android" ||
     process.env.TERMUX_VERSION ||
     /com\.termux/i.test(prefix) ||
     /com\.termux/i.test(String(process.execPath || ""))
   );
 }
 
+function isAndroidExternalStorage(value) {
+  let resolved = path.resolve(String(value || "."));
+  try { resolved = fs.realpathSync(resolved); } catch (_) {}
+  return /^\/(?:sdcard(?:\/|$)|storage(?:\/|$)|mnt\/media_rw(?:\/|$))/.test(resolved);
+}
+
 function writableTempDir(namespace = "solution") {
   const candidates = [
-    process.env.TMPDIR,
     isTermux() && process.env.PREFIX
       ? path.join(process.env.PREFIX, "tmp")
       : "",
+    process.env.TMPDIR,
     os.tmpdir(),
+    isTermux() && process.env.HOME ? path.join(process.env.HOME, ".cache") : "",
     path.join(process.cwd(), "temp"),
   ].filter(Boolean);
 
   for (const base of candidates) {
+    if (isTermux() && isAndroidExternalStorage(base)) continue;
     try {
       const dir = path.join(base, namespace);
       fs.mkdirSync(dir, { recursive: true });
@@ -36,9 +45,9 @@ function writableTempDir(namespace = "solution") {
     } catch (_) {}
   }
 
-  const fallback = path.join(process.cwd(), "temp", namespace);
-  fs.mkdirSync(fallback, { recursive: true });
-  return fallback;
+  const error = new Error("Não há uma pasta temporária gravável no armazenamento interno do Termux.");
+  error.code = "ERR_TEMP_UNAVAILABLE";
+  throw error;
 }
 
 function executableCandidates(name) {
@@ -72,11 +81,51 @@ function resolveExecutable(name) {
   return name;
 }
 
+function npmCliPath() {
+  const prefix = String(process.env.PREFIX || "");
+  const candidates = [
+    process.env.npm_execpath,
+    prefix ? path.join(prefix, "lib/node_modules/npm/bin/npm-cli.js") : "",
+    path.resolve(path.dirname(process.execPath), "../lib/node_modules/npm/bin/npm-cli.js"),
+    path.resolve(path.dirname(process.execPath), "node_modules/npm/bin/npm-cli.js"),
+    ...executableCandidates("npm"),
+  ].filter(Boolean);
+  for (const candidate of candidates) {
+    try {
+      const real = fs.realpathSync(candidate);
+      if (!fs.statSync(real).isFile()) continue;
+      if (path.basename(real) === "npm-cli.js") return real;
+      if (path.basename(candidate) === "npm" && /^#!.*\bnode\b/.test(fs.readFileSync(real, "utf8").split("\n")[0])) return real;
+    } catch (_) {}
+  }
+  return null;
+}
+
+function commandSpec(name, args = [], { useTnode = false } = {}) {
+  let file = name === "node" ? process.execPath : resolveExecutable(name);
+  let argv = [...args];
+  if (name === "npm") {
+    const cli = npmCliPath();
+    if (cli) { file = process.execPath; argv.unshift(cli); }
+  }
+  let tnode = false;
+  if (useTnode && isTermux() && process.env.BOT_UPDATE_TNODE !== "0") {
+    const wrapper = resolveExecutable("tnode");
+    try {
+      fs.accessSync(wrapper, fs.constants.X_OK);
+      argv.unshift(file);
+      file = wrapper;
+      tnode = true;
+    } catch (_) {}
+  }
+  return { file, args: argv, tnode };
+}
+
 function codedExecError(error, name) {
   if (!error) return error;
 
   if (error.code === "EACCES") {
-    const wrapped = new Error("ERR_EXEC_PERMISSION");
+    const wrapped = new Error(`Sem permissão para executar ${name}: ${error.message}`);
     wrapped.code = "ERR_EXEC_PERMISSION";
     wrapped.binary = name;
     wrapped.cause = error;
@@ -84,7 +133,7 @@ function codedExecError(error, name) {
   }
 
   if (error.code === "ENOENT") {
-    const wrapped = new Error("ERR_EXEC_MISSING");
+    const wrapped = new Error(`Ferramenta não encontrada: ${name}. ${error.message}`);
     wrapped.code = "ERR_EXEC_MISSING";
     wrapped.binary = name;
     wrapped.cause = error;
@@ -95,10 +144,11 @@ function codedExecError(error, name) {
 }
 
 async function execFileCompat(name, args = [], options = {}) {
-  const binary = resolveExecutable(name);
+  const { useTnode, ...execOptions } = options;
+  const command = commandSpec(name, args, { useTnode });
 
   try {
-    return await execFileAsync(binary, args, options);
+    return await execFileAsync(command.file, command.args, execOptions);
   } catch (error) {
     throw codedExecError(error, name);
   }
@@ -106,10 +156,11 @@ async function execFileCompat(name, args = [], options = {}) {
 
 function execFileCompatSync(name, args = [], options = {}) {
   const { execFileSync } = require("child_process");
-  const binary = resolveExecutable(name);
+  const { useTnode, ...execOptions } = options;
+  const command = commandSpec(name, args, { useTnode });
 
   try {
-    return execFileSync(binary, args, options);
+    return execFileSync(command.file, command.args, execOptions);
   } catch (error) {
     throw codedExecError(error, name);
   }
@@ -122,7 +173,7 @@ function applyRuntimeEnvironment() {
   if (prefix) {
     const bin = path.join(prefix, "bin");
     const currentPath = String(process.env.PATH || "");
-      const parts = currentPath.split(path.delimiter).filter(Boolean);
+    const parts = currentPath.split(path.delimiter).filter(Boolean);
     process.env.PATH = [bin, ...parts.filter(item => item !== bin)].join(path.delimiter);
 
     const tmp = path.join(prefix, "tmp");
@@ -133,6 +184,9 @@ function applyRuntimeEnvironment() {
       process.env.TEMP = tmp;
     } catch (_) {}
   }
+
+  const shell = resolveExecutable("sh");
+  try { fs.accessSync(shell, fs.constants.X_OK); process.env.npm_config_script_shell ||= shell; } catch (_) {}
 
   return runtimeInfo();
 }
@@ -150,9 +204,12 @@ function runtimeInfo() {
 
 module.exports = {
   isTermux,
+  isAndroidExternalStorage,
   writableTempDir,
   executableCandidates,
   resolveExecutable,
+  commandSpec,
+  npmCliPath,
   execFileCompat,
   execFileCompatSync,
   applyRuntimeEnvironment,

@@ -1,125 +1,69 @@
 const config = require('../../../config/config');
 const manager = require('../../functions/updateManager');
-
+const logger = require('../../functions/terminalLogger').createLogger('UPDATE');
 const prefix = String(config.prefix || '.');
-
-function botName() {
-  return String(config.botName || 'Bot').trim() || 'Bot';
-}
+const botName = () => String(config.botName || 'Bot').trim() || 'Bot';
 
 function shortList(changes) {
-  if (!changes.length) return 'Nenhum arquivo pendente.';
-  const lines = changes.slice(0, 12).map(item => {
-    const symbol = item.type === 'delete' ? '−' : item.type === 'create' ? '+' : '↻';
-    return `${symbol} ${item.path}`;
-  });
-  if (changes.length > 12) lines.push(`… +${changes.length - 12} arquivo(s)`);
+  if (!changes.length) return 'Arquivos de código atuais.';
+  const lines = changes.slice(0, 10).map(item =>
+    (item.type === 'delete' ? '−' : item.type === 'create' ? '+' : '↻') + ' ' + item.path);
+  if (changes.length > 10) lines.push('… +' + (changes.length - 10) + ' arquivo(s)');
   return lines.join('\n');
 }
 
-async function sendUpdaterError(conn, msg, from, error) {
-  const info = manager.describeError(error);
-  const storageWarning =
-    manager.isAndroidExternalStorage(manager.ROOT)
-      ? '\n\n⚠️ O bot está em armazenamento compartilhado do Android. O updater agora usa o armazenamento interno do Termux para o clone temporário.'
-      : '';
-
-  const detail = info.detail
-    ? '\n• Detalhe: ' + info.detail.replace(/\s+/g, ' ').slice(0, 500)
-    : '';
-
-  await conn.sendMessage(from, {
-    text:
-      '*❌ Falha no updater*\n\n' +
-      '• Código: ' + info.code + '\n' +
-      '• Motivo: ' + info.message +
-      detail +
-      storageWarning
-  }, { quoted: msg });
-}
-
 module.exports = {
-  permissions: { owner: true },
-  name: 'update',
-  aliases: ['up', 'atualizarbot', 'botupdate'],
-  description: 'Verifica, instala ou desfaz atualizações do bot preservando dados locais.',
+  permissions: { owner: true }, name: 'update', aliases: ['up', 'atualizarbot', 'botupdate'],
+  menuCategory: 'Dono', menuSection: 'Sistema',
+  description: 'Atualiza o bot pelo GitHub preservando sessão, configurações e dados.',
 
-  async execute(conn, msg, args, from) {
-    const action = String(args?.[0] || 'check').trim().toLowerCase();
+  async execute(conn, msg, args, from, axios, requestedName) {
+    const action = String(args?.[0] || (requestedName === 'up' ? 'start' : 'check')).trim().toLowerCase();
+    const reply = text => conn.sendMessage(from, { text }, { quoted: msg });
+    const restart = () => {
+      if (process.env.BOT_SUPERVISED === '1') setTimeout(() => process.exit(20), 1200);
+    };
+    const restartText = () => process.env.BOT_SUPERVISED === '1' ?
+      'O bot será reiniciado agora.' : 'Reinicie com npm start para carregar os arquivos atualizados.';
 
     try {
-    if (action === 'check' || action === 'info') {
-      await conn.sendMessage(from, { react: { text: '🔎', key: msg.key } }).catch(() => {});
-      const check = await manager.checkUpdate();
-
-      const text = check.available
-        ? `*${botName()} — atualização disponível*\n\n` +
-          `Local: ${manager.shortSha(check.localCommit)}\n` +
-          `Remoto: ${manager.shortSha(check.remoteCommit)}\n` +
-          `Fonte: ${check.source}\n` +
-          `Alterações: ${check.changes.length}\n\n` +
-          `${shortList(check.changes)}\n\n` +
-          `Use *${prefix}update start* para instalar.`
-        : `*${botName()} — atualizado*\n\n` +
-          `Commit: ${manager.shortSha(check.remoteCommit)}\n` +
-          `Fonte: ${check.source}\n\n` +
-          `Não há alterações pendentes.`;
-
-      await conn.sendMessage(from, { text }, { quoted: msg });
-      return;
-    }
-
-    if (action === 'start' || action === 'install') {
-      await conn.sendMessage(from, {
-        text: `*${botName()} — atualização*\n\nVerificando arquivos, criando backup e preservando os dados locais...`
-      }, { quoted: msg });
-
-      const result = await manager.installUpdate(text => console.log(`[UPDATE] ${text}`));
-      if (!result.updated) {
-        await conn.sendMessage(from, {
-          text: `*${botName()} — atualizado*\n\nNenhuma alteração pendente.\nCommit: ${manager.shortSha(result.version)}`
-        }, { quoted: msg });
+      if (['check', 'info'].includes(action)) {
+        await conn.sendMessage(from, { react: { text: '🔎', key: msg.key } }).catch(() => {});
+        const check = await manager.checkUpdate(logger.log);
+        await reply('*' + botName() + (check.available ? ' — atualização disponível*\n\n' : ' — atualizado*\n\n') +
+          'Commit: ' + manager.shortSha(check.remoteCommit) + '\n' +
+          'Arquivos pendentes: ' + check.changes.length +
+          (check.dependenciesNeeded ? '\nDependências precisam ser sincronizadas.' : '') +
+          (check.available ? '\n\n' + shortList(check.changes) + '\n\nUse *' + prefix + 'up start* para instalar.' : ''));
         return;
       }
-
-      await conn.sendMessage(from, {
-        text: `*${botName()} — atualização concluída*\n\n` +
-          `${manager.shortSha(result.from)} → ${manager.shortSha(result.version)}\n` +
-          `Arquivos atualizados: ${result.filesUpdated}\n` +
-          `Arquivos removidos: ${result.filesDeleted}\n\n` +
-          `Database, grupos, sessão, configuração local e .env foram preservados.\n` +
-          `O bot será reiniciado agora.`
-      }, { quoted: msg });
-
-      setTimeout(() => process.exit(20), 1200);
-      return;
-    }
-
-    if (action === 'rollback') {
-      const result = manager.rollback();
-      await conn.sendMessage(from, {
-        text: `*${botName()} — rollback concluído*\n\n` +
-          `Arquivos restaurados: ${result.files}\n` +
-          `Commit restaurado: ${manager.shortSha(result.version)}\n\n` +
-          `O bot será reiniciado agora.`
-      }, { quoted: msg });
-      setTimeout(() => process.exit(20), 1200);
-      return;
-    }
-
-    await conn.sendMessage(from, {
-      text: `Use:\n${prefix}update check\n${prefix}update start\n${prefix}update rollback`
-    }, { quoted: msg });
+      if (['start', 'install', 'up', 'update'].includes(action)) {
+        await reply('*' + botName() + ' — atualização*\n\nBaixando e validando arquivos. O progresso aparece no terminal.');
+        logger.banner(botName() + ' | UPDATE');
+        const result = await manager.installUpdate(logger.log);
+        if (!result.updated) {
+          await reply('*' + botName() + ' — atualizado*\n\nCommit: ' + manager.shortSha(result.version)); return;
+        }
+        await reply('*' + botName() + ' — atualização concluída*\n\n' +
+          'Commit: ' + manager.shortSha(result.version) + '\n' +
+          'Arquivos atualizados: ' + result.filesUpdated + '\nRemovidos: ' + result.filesDeleted +
+          '\n\nSessão, dados dos grupos e configuração preservados.\n' + restartText());
+        restart(); return;
+      }
+      if (action === 'rollback') {
+        const result = await manager.rollback(logger.log);
+        await reply('*' + botName() + ' — backup restaurado*\n\nArquivos: ' + result.files + '\n\n' + restartText());
+        restart(); return;
+      }
+      await reply('Use:\n' + prefix + 'up\n' + prefix + 'up check\n' + prefix + 'up rollback');
     } catch (error) {
-      console.error('[UPDATE COMMAND]', error?.code || '-', error?.message || error);
-      await sendUpdaterError(conn, msg, from, error).catch(() => {});
-      return;
+      const info = manager.describeError(error);
+      logger.error(info.code + ': ' + info.message);
+      if (info.detail) logger.error(info.detail);
+      await reply('*❌ Falha na atualização*\n\n• Código: ' + info.code + '\n• Motivo: ' + info.message +
+        (info.detail ? '\n• Detalhe: ' + info.detail.replace(/\s+/g, ' ').slice(-500) : '') +
+        (info.hint ? '\n\n' + info.hint : '')).catch(() => {});
+      return false;
     }
   }
 };
-
-Object.assign(module.exports, {
-  menuCategory: 'Dono',
-  menuSection: 'Sistema',
-  description: 'Atualiza o bot pelo GitHub sem substituir dados persistentes'
-});

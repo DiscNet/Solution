@@ -1,56 +1,54 @@
 const path = require('path');
-require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
 const { spawn } = require('child_process');
-
+const runtime = require('./MÓDULOS/functions/runtimeCompat');
+runtime.applyRuntimeEnvironment();
+const logger = require('./MÓDULOS/functions/terminalLogger').createLogger('SUPERVISOR');
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2).map(value => String(value).toLowerCase());
-const updateMode = args.some(value => ['up', 'update'].includes(value));
 
-if (updateMode) {
-  const { main } = require('./update');
-  main('start').then(code => process.exit(code)).catch(error => {
-    console.error('[SUPERVISOR] Falha ao executar atualização:', error?.message || error);
-    process.exit(1);
-  });
-} else {
-  let child = null;
-  let stopping = false;
-
+async function main() {
+  const manager = require('./MÓDULOS/functions/updateManager');
+  await manager.recover(logger.log);
+  if (args.some(value => ['up', 'update'].includes(value))) {
+    const code = await require('./update').main('start');
+    process.exitCode = code; return;
+  }
+  let child = null, stopping = false, restartTimer = null;
   function start() {
-    child = spawn(process.execPath, [path.join(__dirname, 'railway-start.js')], {
-      cwd: ROOT,
-      env: process.env,
-      stdio: 'inherit'
+    if (stopping) return;
+    const command = runtime.commandSpec('node', [path.join(__dirname, 'railway-start.js')], { useTnode: true });
+    child = spawn(command.file, command.args, {
+      cwd: ROOT, env: { ...process.env, BOT_SUPERVISED: '1' }, stdio: 'inherit', shell: false,
+      detached: process.platform !== 'win32'
     });
-
+    child.on('error', error => {
+      logger.error('Falha ao iniciar: ' + error.message); process.exitCode = 1;
+    });
     child.on('exit', (code, signal) => {
       child = null;
-      if (stopping) process.exit(code || 0);
-
+      if (stopping) { process.exitCode = 0; return; }
       if (code === 20) {
-        console.log('[SUPERVISOR] Reinício solicitado após atualização.');
-        setTimeout(start, 1000);
+        logger.info('Atualização concluída; reiniciando o bot.');
+        restartTimer = setTimeout(start, 1000);
         return;
       }
-
-      if (signal) {
-        console.error(`[SUPERVISOR] Runtime encerrado por sinal ${signal}.`);
-        process.exit(1);
-      }
-
-      process.exit(code ?? 1);
+      if (signal) logger.error('Runtime encerrado por ' + signal + '.');
+      process.exitCode = code ?? 1;
     });
   }
-
   function shutdown(signal) {
     if (stopping) return;
     stopping = true;
-    if (child && !child.killed) child.kill(signal);
-    else process.exit(0);
+    if (restartTimer) clearTimeout(restartTimer);
+    if (child && !child.killed) {
+      try {
+        if (process.platform !== 'win32') process.kill(-child.pid, signal);
+        else child.kill(signal);
+      } catch (_) { child.kill(signal); }
+    }
   }
-
   process.on('SIGINT', () => shutdown('SIGINT'));
   process.on('SIGTERM', () => shutdown('SIGTERM'));
-
   start();
 }
+main().catch(error => { logger.error(error.message); process.exitCode = 1; });

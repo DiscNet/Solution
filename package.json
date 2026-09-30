@@ -7,9 +7,12 @@
     "start": "node DADOS/supervisor.js",
     "bot": "node DADOS/railway-start.js",
     "connect": "node DADOS/connect.js",
+    "up": "node DADOS/update.js start",
     "update": "node DADOS/update.js start",
     "update:check": "node DADOS/update.js check",
-    "update:rollback": "node DADOS/update.js rollback"
+    "update:rollback": "node DADOS/update.js rollback",
+    "update:repair": "node DADOS/update-bootstrap.js",
+    "test:update": "node --test DADOS/tests/update.test.js DADOS/tests/runtimeCompat.test.js"
   },
   "engines": {
     "node": ">=22.22.2"
