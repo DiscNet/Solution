@@ -37,6 +37,22 @@ Administradores podem cadastrar palavras ou frases com `.addpalavra texto`, cons
 
 Para impedir o retorno de um membro, use `.addlistanegra @membro` (ou informe número/ID). `.listanegra` mostra os bloqueios e `.dellistanegra número-da-lista` retira um deles. O bot recusa pedidos de entrada bloqueados e remove o membro se ele entrar por outro caminho, desde que tenha permissão de administrador no grupo.
 
+## Arte ASCII de imagens
+
+Envie uma foto com `.ascii` na legenda ou responda a uma foto, figurinha ou imagem enviada como arquivo. O resultado aparece em texto monoespaçado com proporções ajustadas e contraste automático. A largura padrão de 32 caracteres facilita a leitura no celular.
+
+| Comando | Resultado |
+| --- | --- |
+| `.ascii` | Arte em tamanho adequado ao chat. |
+| `.ascii 80` | Mais resolução; envia um arquivo `.txt` para preservar o alinhamento. |
+| `.ascii detalhado` | Mais níveis de caracteres para representar detalhes. |
+| `.ascii negativo` | Inverte claro e escuro. |
+| `.ascii arquivo` | Envia a arte completa como `.txt`. |
+| `.ascii 100 detalhado negativo arquivo` | Combina as opções. |
+| `.ascii ajuda` | Mostra as opções e os limites. |
+
+Aceita larguras inteiras de 16 a 120, imagens de até 12 MB e 24 megapixels. Artes longas ou com mais de 36 colunas são enviadas em arquivo completo, evitando cortes no desenho e várias mensagens. O comando usa o `sharp` já incluído no bot; se o motor estiver indisponível, tenta FFmpeg com suporte ao tnode no Termux. A conversão não depende de `jp2a` ou de uma API externa. Testes: `npm run test:ascii`.
+
 ## 🎨 Visual dos menus
 
 <div align="center">

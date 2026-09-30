@@ -1,118 +1,68 @@
-// Menu: Utilidades - Ajuda | Comando: ascii
-const { createStatusQuoted } = require("../../functions/statusCard");
-// commands/ascii.js
-const config = require("../../../config/config");
-const { downloadMediaMessage } = require("@whiskeysockets/baileys");
-const fs = require("fs");
-const path = require("path");
-const { exec } = require("child_process");
-const util = require("util");
-const execPromise = util.promisify(exec);
+const art = require('../../functions/asciiArt');
 
-module.exports = {
-  name: "ascii",
-  description: "𝑻𝒓𝒂𝒏𝒔𝒇𝒐𝒓𝒎𝒂 𝒊𝒎𝒂𝒈𝒆𝒎 𝒆𝒎 𝑨𝑺𝑪𝑰𝑰 𝒂𝒓𝒕",
-  async execute(conn, msg, args, from, axiosInstance) {
-    try {
-      const owner = config.ownerName || "LukaModzz";
-      let pushName = "Usuário";
-      const bot = config.botName
-      try { pushName = msg.pushName || "LukaModzz"; } catch (e) { pushName = "LukaModzz"; }
+function createAsciiCommand(dependencies = {}) {
+  const quote = dependencies.quote || (msg => require('../../functions/statusCard').createStatusQuoted(msg));
+  const getPrefix = dependencies.getPrefix || (() => require('../../../config/config').prefix || '.');
+  const convert = dependencies.convert || art.imageToAscii;
+  const download = dependencies.download || ((payload, type) =>
+    require('@whiskeysockets/baileys').downloadContentFromMessage(payload, type));
+  const fence = String.fromCharCode(96).repeat(3);
 
-      let imageBuffer = null;
-
-      if (msg.message?.imageMessage) {
-        imageBuffer = await downloadMediaMessage(msg, "buffer", {}, {});
-      }
-      else if (msg.message?.extendedTextMessage?.contextInfo?.quotedMessage?.imageMessage) {
-        const quoted = msg.message.extendedTextMessage.contextInfo.quotedMessage;
-        const quotedMsg = { message: { imageMessage: quoted.imageMessage }, key: msg.key };
-        imageBuffer = await downloadMediaMessage(quotedMsg, "buffer", {}, {});
-      }
-
-      if (!imageBuffer) {
-        return conn.sendMessage(from, {
-          text: "❌ ᴇɴᴠɪᴇ ᴏᴜ ʀᴇsᴘᴏɴᴅᴀ ᴀ ᴜᴍᴀ ɪᴍᴀɢᴇᴍ ᴄᴏᴍ .ascii",
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      }
-
-      await conn.sendMessage(from, { react: { text: "🎨", key: msg.key } });
-
-      const tempDir = path.join(__dirname, "..", "..", "..", "temp");
-      if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
-
-      const tempInput = path.join(tempDir, `ascii_in_${Date.now()}.jpg`);
-      const tempOutput = path.join(tempDir, `ascii_out_${Date.now()}.txt`);
-      fs.writeFileSync(tempInput, imageBuffer);
-
-      const width = args[0] ? parseInt(args[0]) : 80;
-
-      // 🔥 CORREÇÃO: Remove --html para gerar texto puro
-      await execPromise(`jp2a --width=${width} "${tempInput}" > "${tempOutput}"`);
-
-      let asciiArt = fs.readFileSync(tempOutput, "utf8");
-
-      // Limpa arquivos
-      try { fs.unlinkSync(tempInput); } catch (e) {}
-      try { fs.unlinkSync(tempOutput); } catch (e) {}
-
-      if (!asciiArt || asciiArt.trim().length === 0) {
-        throw new Error("ASCII art vazio");
-      }
-
-      // Remove linhas vazias extras no final
-      asciiArt = asciiArt.replace(/\n+$/, "");
-
-      // Envia o ASCII art
-      const maxLength = 4000;
-      if (asciiArt.length > maxLength) {
-        const parts = [];
-        for (let i = 0; i < asciiArt.length; i += maxLength) {
-          parts.push(asciiArt.substring(i, i + maxLength));
-        }
-
-        for (let i = 0; i < parts.length; i++) {
-          await conn.sendMessage(from, {
-            text: i === 0 ? `🎨 *ASCII Art*\n\`\`\`\n${parts[i]}\n\`\`\`` : `\`\`\`\n${parts[i]}\n\`\`\``,
-            contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-          }, {
-            quoted: createStatusQuoted(msg)
-          });
-
-          if (i < parts.length - 1) await delay(500);
-        }
-      } else {
-        await conn.sendMessage(from, {
-          text: `\n${asciiArt}\n`,
-          contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-        }, {
-          quoted: createStatusQuoted(msg)
-        });
-      }
-
-      await conn.sendMessage(from, { react: { text: "✅", key: msg.key } });
-
-    } catch (error) {
-      console.error("Erro ascii:", error);
-      await conn.sendMessage(from, {
-        text: "❌ ᴇʀʀᴏ ᴀᴏ ᴄʀɪᴀʀ ᴀsᴄɪɪ ᴀʀᴛ!\n\n⚠️ ɪɴsᴛᴀʟᴇ ᴏ ᴊᴘ2ᴀ:\n`ᴘᴋɢ ɪɴsᴛᴀʟʟ ᴊᴘ2ᴀ`",
-        contextInfo: { forwardingScore: 1, isForwarded: true, forwardedNewsletterMessageInfo: { newsletterJid: "120363426698503859@newsletter", newsletterName: `${bot}`, serverMessageId: 116 } }
-      }, { quoted: msg });
-    }
+  function help(prefix) {
+    return '*ASCII — imagem em caracteres*\n\n' +
+      'Envie uma imagem com o comando na legenda ou responda a uma foto, figurinha ou imagem enviada como arquivo.\n\n' +
+      prefix + 'ascii — tamanho padrão de 32 caracteres, adequado ao celular\n' +
+      prefix + 'ascii 80 — mais resolução\n' +
+      prefix + 'ascii 60 detalhado — mais níveis de detalhe\n' +
+      prefix + 'ascii negativo — inverte claro e escuro\n' +
+      prefix + 'ascii arquivo — recebe a arte completa em .txt\n\n' +
+      'Largura: 16 a 120. As opções podem ser combinadas. Artes grandes ou largas são enviadas em .txt para manter o alinhamento.';
   }
-};
 
-function delay(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return {
+    name: 'ascii', aliases: ['asciiart'], menuCategory: 'Utilidades', menuSection: 'Imagens',
+    description: 'Transforma fotos e figurinhas em arte ASCII.',
+    usage: 'ascii [16-120] [detalhado] [negativo] [arquivo] (responda à imagem)',
+
+    async execute(conn, msg, args = [], from) {
+      const prefix = String(getPrefix());
+      const reply = content => conn.sendMessage(from, content, { quoted: quote(msg) });
+      const react = text => conn.sendMessage(from, { react: { text, key: msg.key } }).catch(() => {});
+      try {
+        const options = art.parseOptions(args);
+        if (options.help) return reply({ text: help(prefix) });
+        const source = art.imageSource(msg);
+        if (!source) return reply({ text: help(prefix) });
+        await react('🎨');
+        const buffer = await art.downloadImage(source, download);
+        const result = await convert(buffer, options);
+        const title = '*ASCII Art* — ' + result.width + ' × ' + result.height + ' caracteres';
+        const text = title + '\n\n' + fence + '\n' + result.text + '\n' + fence;
+        if (options.file || result.width > art.CHAT_WIDTH_LIMIT || text.length > art.TEXT_LIMIT) {
+          await reply({
+            document: Buffer.from(result.text + '\n', 'utf8'),
+            mimetype: 'text/plain', fileName: 'ascii_' + result.width + 'x' + result.height + '.txt',
+            caption: title + '\nAbra em um editor com fonte monoespaçada para preservar o desenho.'
+          });
+        } else await reply({ text });
+        await react('✅');
+      } catch (error) {
+        const code = error.code || 'ERR_ASCII_CONVERT';
+        const messages = {
+          ERR_ASCII_WIDTH: 'Informe uma largura inteira entre 16 e 120. Exemplo: ' + prefix + 'ascii 60',
+          ERR_ASCII_OPTIONS: 'Opção inválida. Use largura, detalhado, negativo ou arquivo. Veja ' + prefix + 'ascii ajuda',
+          ERR_ASCII_TOO_LARGE: 'A imagem excede o limite de 12 MB ou 24 megapixels. Envie uma versão menor.',
+          ERR_ASCII_DOWNLOAD: 'Não consegui baixar a imagem. Reenvie a mídia e responda a ela com ' + prefix + 'ascii',
+          ERR_ASCII_IMAGE: 'Não consegui ler essa imagem. Tente reenviar em JPG, PNG ou WebP.',
+          ERR_ASCII_ENGINE: 'O processamento de imagens está indisponível. Verifique o sharp do bot ou o FFmpeg; no Termux, use pkg install ffmpeg.'
+        };
+        await react('❌');
+        await reply({ text: '❌ ' + (messages[code] || 'Não consegui criar a arte ASCII. Tente reenviar a imagem.') });
+        error.code = code; error.userMessageSent = true;
+        throw error;
+      }
+    }
+  };
 }
-
-
-Object.assign(module.exports, {
-  "menuCategory": "Utilidades",
-  "menuSection": "Ajuda",
-  "usage": "ascii (responda à imagem)",
-  "description": "Uso: .ascii (responda à imagem)"
-});
+module.exports = createAsciiCommand();
+module.exports.createAsciiCommand = createAsciiCommand;
