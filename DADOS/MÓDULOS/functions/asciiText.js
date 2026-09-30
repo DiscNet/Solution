@@ -1,10 +1,13 @@
 const { extractMessageText, unwrapMessage } = require('./messageText');
+const BANNER_FONT = require('./asciiBannerFont');
 
 const MAX_TEXT_LENGTH = 80;
 const MAX_COLUMNS = 36;
+const MAX_BANNER_COLUMNS = 80;
+const CHAT_WIDTH_LIMIT = 36;
 const TEXT_LIMIT = 3500;
 const CHAT_ROW_LIMIT = 55;
-const STYLES = Object.freeze({ quadrados: '■', blocos: '█', vazado: '□', simples: '#' });
+const STYLES = Object.freeze({ banner: '█', quadrados: '■', blocos: '█', vazado: '□', simples: '#' });
 
 // Each pixel is one monospaced character, keeping the art readable on phones.
 const patterns = {
@@ -84,7 +87,7 @@ function textError(code) {
 
 function parseOptions(args = []) {
   let text = args.map(String).join(' ').trim();
-  const options = { text: '', style: 'quadrados', file: false, help: false };
+  const options = { text: '', style: 'banner', file: false, help: false };
   if (/^(ajuda|help)$/i.test(text)) return { ...options, help: true };
   while (text) {
     const match = /^(\S+)(?:\s+|$)/.exec(text);
@@ -127,23 +130,23 @@ function normalizeText(input) {
   return text;
 }
 
-function measure(text) {
-  return [...text].reduce((width, character) => width + FONT[character][0].length + 1, -1);
+function measure(text, font, gap) {
+  return [...text].reduce((width, character) => width + font[character][0].length + gap.length, -gap.length);
 }
 
-function wrapText(text) {
+function wrapText(text, font, gap, maxColumns) {
   const lines = [];
   for (const paragraph of text.split('\n')) {
     let current = '';
     for (const word of paragraph.split(' ')) {
-      if (current && measure(current + ' ' + word) <= MAX_COLUMNS) {
+      if (current && measure(current + ' ' + word, font, gap) <= maxColumns) {
         current += ' ' + word;
         continue;
       }
       if (current) lines.push(current);
       current = '';
       for (const character of word) {
-        if (current && measure(current + character) > MAX_COLUMNS) {
+        if (current && measure(current + character, font, gap) > maxColumns) {
           lines.push(current);
           current = '';
         }
@@ -156,15 +159,20 @@ function wrapText(text) {
 }
 
 function renderText(input, options = {}) {
-  const style = options.style || 'quadrados';
+  const style = options.style || 'banner';
   if (!Object.hasOwn(STYLES, style)) throw textError('ERR_ASCII_TEXT_OPTIONS');
   const normalized = normalizeText(input);
-  const lines = wrapText(normalized);
-  const blocks = lines.map(line => Array.from({ length: 7 }, (_, row) =>
-    [...line].map(character => FONT[character][row].replace(/1/g, STYLES[style]).replace(/0/g, ' ')).join(' ')
+  const banner = style === 'banner';
+  const font = banner ? BANNER_FONT : FONT;
+  const gap = banner ? '' : ' ';
+  const lines = wrapText(normalized, font, gap, banner ? MAX_BANNER_COLUMNS : MAX_COLUMNS);
+  const blocks = lines.map(line => Array.from({ length: banner ? 6 : 7 }, (_, row) =>
+    [...line].map(character => banner ? font[character][row] :
+      font[character][row].replace(/1/g, STYLES[style]).replace(/0/g, ' ')).join(gap)
   ).join('\n'));
   const text = blocks.join('\n\n');
-  return { text, normalized, lines, style, width: Math.max(...lines.map(measure)), height: text.split('\n').length };
+  return { text, normalized, lines, style, width: Math.max(...lines.map(line => measure(line, font, gap))), height: text.split('\n').length };
 }
 
-module.exports = { FONT, STYLES, MAX_TEXT_LENGTH, MAX_COLUMNS, TEXT_LIMIT, CHAT_ROW_LIMIT, parseOptions, quotedText, renderText };
+module.exports = { FONT, BANNER_FONT, STYLES, MAX_TEXT_LENGTH, MAX_COLUMNS, MAX_BANNER_COLUMNS, CHAT_WIDTH_LIMIT,
+  TEXT_LIMIT, CHAT_ROW_LIMIT, parseOptions, quotedText, renderText };

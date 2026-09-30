@@ -17,8 +17,62 @@ function commandFixture(dependencies = {}) {
   return { command, conn, messages, replies: () => messages.filter(message => !message.content.react) };
 }
 
+test('the default ANSI Shadow banner reproduces the supplied ASCII BANNER example', () => {
+  const result = art.renderText('ASCII BANNER');
+  assert.equal(result.style, 'banner');
+  assert.deepEqual(result.lines, ['ASCII', 'BANNER']);
+  assert.equal(result.width, 52);
+  assert.equal(result.height, 13);
+  assert.equal(result.text.split('\n').map(row => row.trimEnd()).join('\n'), [
+    ' █████╗ ███████╗ ██████╗██╗██╗',
+    '██╔══██╗██╔════╝██╔════╝██║██║',
+    '███████║███████╗██║     ██║██║',
+    '██╔══██║╚════██║██║     ██║██║',
+    '██║  ██║███████║╚██████╗██║██║',
+    '╚═╝  ╚═╝╚══════╝ ╚═════╝╚═╝╚═╝',
+    '',
+    '██████╗  █████╗ ███╗   ██╗███╗   ██╗███████╗██████╗',
+    '██╔══██╗██╔══██╗████╗  ██║████╗  ██║██╔════╝██╔══██╗',
+    '██████╔╝███████║██╔██╗ ██║██╔██╗ ██║█████╗  ██████╔╝',
+    '██╔══██╗██╔══██║██║╚██╗██║██║╚██╗██║██╔══╝  ██╔══██╗',
+    '██████╔╝██║  ██║██║ ╚████║██║ ╚████║███████╗██║  ██║',
+    '╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═══╝╚═╝  ╚═══╝╚══════╝╚═╝  ╚═╝'
+  ].join('\n'));
+});
+
+test('banner glyphs have six aligned rows and supported symbols are never silently blank', () => {
+  for (const character of Object.keys(art.FONT)) {
+    const rows = art.BANNER_FONT[character];
+    assert.equal(rows.length, 6, character);
+    assert(rows.every(row => row.length === rows[0].length), character);
+    if (character !== ' ') assert.match(art.renderText(character).text, /█/, character);
+  }
+  assert.equal(art.renderText('ação 123 + = \\ |').normalized, 'ACAO 123 + = \\ |');
+});
+
+test('banner uses variable glyph widths, preserves words and bounds very long words', () => {
+  assert.deepEqual(art.renderText('SOLUTION').lines, ['SOLUTION']);
+  assert.deepEqual(art.renderText('II III').lines, ['II III']);
+  assert.equal(art.renderText('II III').width, 19);
+  const result = art.renderText('N'.repeat(80));
+  assert.equal(result.lines.join(''), 'N'.repeat(80));
+  assert(result.text.split('\n').every(row => row.length <= art.MAX_BANNER_COLUMNS));
+  assert.equal(art.parseOptions([]).style, 'banner');
+  assert.equal(art.parseOptions(['--banner', 'BOT']).style, 'banner');
+});
+
+test('wide banners preserve whole words and are sent once as a complete text document', async () => {
+  const f = commandFixture();
+  await f.command.execute(f.conn, incoming(), ['ASCII', 'BANNER'], 'fixture@g.us');
+  assert.equal(f.replies().length, 1);
+  const content = f.replies()[0].content;
+  assert.equal(content.document.toString('utf8'), art.renderText('ASCII BANNER').text + '\n');
+  assert.equal(content.fileName, 'ascii_text.txt');
+  assert.equal(content.mimetype, 'text/plain');
+});
+
 test('OI is rendered as recognizable square letters with preserved alignment', () => {
-  const result = art.renderText('oi');
+  const result = art.renderText('oi', { style: 'quadrados' });
   assert.equal(result.text, [
     ' ■■■  ■■■■■',
     '■   ■   ■  ',
@@ -33,7 +87,7 @@ test('OI is rendered as recognizable square letters with preserved alignment', (
 });
 
 test('Portuguese accents, decomposed accents, whitespace, numbers and punctuation work', () => {
-  const result = art.renderText('  Olá,\t Joa\u0303o!  2026\r\nAÇÃO  ');
+  const result = art.renderText('  Olá,\t Joa\u0303o!  2026\r\nAÇÃO  ', { style: 'quadrados' });
   assert.equal(result.normalized, 'OLA, JOAO! 2026\nACAO');
   assert.deepEqual(result.lines, ['OLA,', 'JOAO!', '2026', 'ACAO']);
   assert.equal(result.height, 31);
@@ -41,9 +95,9 @@ test('Portuguese accents, decomposed accents, whitespace, numbers and punctuatio
 });
 
 test('line wrapping keeps whole words and splits long words without losing letters', () => {
-  assert.deepEqual(art.renderText('OI BOT').lines, ['OI BOT']);
-  assert.deepEqual(art.renderText('OLA MUNDO').lines, ['OLA', 'MUNDO']);
-  const result = art.renderText('ABCDEFGHIJKLM');
+  assert.deepEqual(art.renderText('OI BOT', { style: 'quadrados' }).lines, ['OI BOT']);
+  assert.deepEqual(art.renderText('OLA MUNDO', { style: 'quadrados' }).lines, ['OLA', 'MUNDO']);
+  const result = art.renderText('ABCDEFGHIJKLM', { style: 'quadrados' });
   assert.deepEqual(result.lines, ['ABCDEF', 'GHIJKL', 'M']);
   assert.equal(result.lines.join(''), 'ABCDEFGHIJKLM');
   assert.equal(result.width, 35);
@@ -53,13 +107,14 @@ test('line wrapping keeps whole words and splits long words without losing lette
 test('explicit newlines start new letter panels even when both words would fit', () => {
   const result = art.renderText('OI\nBOT');
   assert.deepEqual(result.lines, ['OI', 'BOT']);
-  assert.equal(result.height, 15);
-  assert.equal(result.text.split('\n')[7], '');
+  assert.equal(result.height, 13);
+  assert.equal(result.text.split('\n')[6], '');
 });
 
 test('block, hollow square and plain ASCII styles retain the same letter shapes', () => {
-  const reference = art.renderText('BOT').text.replaceAll('■', '1');
+  const reference = art.renderText('BOT', { style: 'quadrados' }).text.replaceAll('■', '1');
   for (const [style, pixel] of Object.entries(art.STYLES)) {
+    if (style === 'banner') continue;
     const result = art.renderText('BOT', { style });
     assert.equal(result.text.replaceAll(pixel, '1'), reference);
     assert(result.text.includes(pixel));
@@ -72,7 +127,7 @@ test('every supported letter, number and punctuation symbol has a renderable bit
     assert.equal(rows.length, 7, character);
     assert(rows.every(row => /^[01]+$/.test(row) && row.length === rows[0].length), character);
     if (character !== ' ') {
-      const result = art.renderText(character);
+      const result = art.renderText(character, { style: 'quadrados' });
       assert.match(result.text, /■/, character);
     }
   }
@@ -133,7 +188,7 @@ test('quoted text is used when arguments are empty; explicit text takes priority
 test('small explicit files and tall drawings are sent once as full UTF-8 text documents', async () => {
   const f = commandFixture();
   await f.command.execute(f.conn, incoming(), ['--arquivo', 'OI'], 'fixture@g.us');
-  const tall = Array(8).fill('A').join('\n');
+  const tall = Array(9).fill('A').join('\n');
   await f.command.execute(f.conn, incoming({ conversation: tall }), [], 'fixture@g.us');
   assert.equal(f.replies().length, 2);
   for (const [index, source] of ['OI', tall].entries()) {
@@ -160,7 +215,7 @@ test('reaction failures do not prevent successful delivery of the drawing', asyn
   };
   await f.command.execute(f.conn, incoming(), ['BOT'], 'fixture@g.us');
   assert.equal(f.replies().length, 1);
-  assert(f.replies()[0].content.text.includes('■'));
+  assert(f.replies()[0].content.text.includes('█'));
 });
 
 test('invalid text and flags generate one specific error without duplicate executor replies', async () => {

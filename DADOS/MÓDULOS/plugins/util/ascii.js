@@ -17,7 +17,7 @@ function createAsciiCommand(dependencies = {}) {
       prefix + 'ascii 60 detalhado — mais níveis de detalhe\n' +
       prefix + 'ascii negativo — inverte claro e escuro\n' +
       prefix + 'ascii arquivo — recebe a arte completa em .txt\n\n' +
-      prefix + 'ascii text Olá — desenha letras grandes com quadrados\n\n' +
+      prefix + 'ascii text Olá — desenha um banner com blocos e bordas\n\n' +
       'Largura: 16 a 120. As opções podem ser combinadas. Artes grandes ou largas são enviadas em .txt para manter o alinhamento.';
   }
 

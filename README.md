@@ -53,20 +53,21 @@ Envie uma foto com `.ascii` na legenda ou responda a uma foto, figurinha ou imag
 
 Aceita larguras inteiras de 16 a 120, imagens de até 12 MB e 24 megapixels. Artes longas ou com mais de 36 colunas são enviadas em arquivo completo, evitando cortes no desenho e várias mensagens. O comando usa o `sharp` já incluído no bot; se o motor estiver indisponível, tenta FFmpeg com suporte ao tnode no Termux. A conversão não depende de `jp2a` ou de uma API externa. Testes: `npm run test:ascii`.
 
-## Texto com quadrados e blocos
+## Texto em banner ASCII
 
-Use `.asciitext Olá mundo` ou `.ascii text Olá mundo` para desenhar palavras em letras grandes, feitas de quadrados `■`. Também pode responder a uma mensagem de texto ou legenda com `.asciitext`.
+Use `.asciitext ASCII BANNER` ou `.ascii text ASCII BANNER` para desenhar palavras com a fonte **ANSI Shadow**, feita de blocos `█` e bordas `╔═╗╚╝`. Também pode responder a uma mensagem de texto ou legenda com `.asciitext`.
 
 | Comando | Resultado |
 | --- | --- |
-| `.asciitext Solution` | Letras desenhadas com quadrados preenchidos `■`. |
+| `.asciitext ASCII BANNER` | Banner ANSI Shadow, o estilo padrão. |
+| `.asciitext --quadrados BOT` | Letras feitas de quadrados preenchidos `■`. |
 | `.asciitext --blocos BOT` | Letras feitas de blocos `█`. |
 | `.asciitext --vazado BOT` | Letras feitas de quadrados vazados `□`. |
 | `.asciitext --simples BOT` | Usa o caractere ASCII `#`. |
 | `.asciitext --arquivo Meu texto` | Envia o desenho completo como `.txt`. |
 | `.asciitext --ajuda` | Mostra os estilos e os limites. |
 
-Aceita até 80 caracteres, letras, números e pontuação comum. A fonte usa maiúsculas e converte acentos para a letra base (`João` vira `JOAO`). Preserva quebras de linha, ajusta palavras a até 36 colunas e divide palavras longas sem perder letras. Artes altas ou longas são enviadas em arquivo para manter o alinhamento. Opções ficam antes do texto; `.asciitext -- ajuda` desenha a palavra AJUDA. A geração funciona localmente, inclusive no Termux, sem instalar ferramentas adicionais. Testes: `npm run test:ascii`.
+Aceita até 80 caracteres, letras, números e pontuação comum. A fonte usa maiúsculas e converte acentos para a letra base (`João` vira `JOAO`). Aceita quebras de linha e preserva palavras inteiras em até 80 colunas no banner; palavras maiores são divididas sem perder letras. Os estilos de quadrados usam até 36 colunas. Artes com mais de 36 colunas, altas ou longas são enviadas em arquivo para manter o alinhamento. Opções ficam antes do texto; `.asciitext -- ajuda` desenha a palavra AJUDA. A fonte ANSI Shadow e sua licença acompanham o código; a geração funciona localmente, inclusive no Termux, sem instalar ferramentas adicionais. Testes: `npm run test:ascii`.
 
 ## 🎨 Visual dos menus
 
