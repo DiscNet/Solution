@@ -1,4 +1,5 @@
 const terminal = require('./terminalLogger').createLogger('BOT');
+const layout = require('./terminalLayout');
 
 function digits(value) {
   return String(value || "").replace(/\D/g, "");
@@ -25,9 +26,12 @@ function errorCode(error, fallback = "ERR_RUNTIME") {
     .slice(0, 64);
 }
 
-function command({ name, sender, durationMs, status = "ok", code = null }) {
-  const suffix = code ? ` | ${code}` : "";
-  terminal.log(`CMD ${name || "unknown"} | ${senderLabel(sender)} | ${durationLabel(durationMs)} | ${status}${suffix}`, status === 'error' ? 'error' : status === 'denied' ? 'warn' : 'success');
+function command({ name, sender, user, group, prefix = '.', msg, from }) {
+  terminal.raw(layout.command({
+    name: String(prefix) + (name || 'desconhecido'),
+    user: user || msg?.pushName || msg?.pushname || senderLabel(sender),
+    group: group || (String(from || '').endsWith('@g.us') ? 'Grupo' : 'Privado')
+  }), { animate: true });
 }
 
 function error({ scope = "runtime", name = null, sender = null, error: err = null, code = null }) {

@@ -1,5 +1,6 @@
 process.chdir(__dirname);
 require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
+require('./MÓDULOS/functions/terminalLogger').installOutputEffects();
 // conect.js
 const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason, makeCacheableSignalKeyStore } = require("@whiskeysockets/baileys");
 const pino = require("pino");
@@ -17,14 +18,7 @@ const cores = {
   ciano: "\x1b[36m", vermelho: "\x1b[31m", branco: "\x1b[37m", magenta: "\x1b[35m"
 };
 
-const banner = `
-        ██╗     ██╗   ██╗██╗  ██╗ █████╗ 
-        ██║     ██║   ██║██║ ██╔╝██╔══██╗
-        ██║     ██║   ██║█████╔╝ ███████║
-        ██║     ██║   ██║██╔═██╗ ██╔══██║
-        ███████╗╚██████╔╝██║  ██╗██║  ██║
-        ╚══════╝ ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝
-`;
+const banner = require('./MÓDULOS/functions/terminalLayout').LOGO;
 
 let reconnectTimer = null;
 let connecting = false;

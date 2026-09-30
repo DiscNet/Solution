@@ -6,7 +6,7 @@ const path = require('path');
 const runtime = require('../MÓDULOS/functions/runtimeCompat');
 const { createLogger } = require('../MÓDULOS/functions/terminalLogger');
 
-test('installed lolcat is used to color the ASCII banner', t => {
+test('installed lolcat is used to color the ASCII banner', async t => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'lolcat-test-'));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const file = path.join(dir, 'lolcat');
@@ -19,7 +19,8 @@ test('installed lolcat is used to color the ASCII banner', t => {
   });
   let output = '';
   const stream = { isTTY: true, write: value => { output += value; } };
-  createLogger('BOT', { stdout: stream, stderr: stream }).banner('Meu Bot');
+  const logger = createLogger('BOT', { stdout: stream, stderr: stream });
+  logger.banner('Meu Bot'); await logger.flush();
   assert.match(output, /^LOL_EFFECT:/); assert.match(output, /Meu Bot/);
 });
 
@@ -44,22 +45,25 @@ test('Android external storage is recognized', () => {
   assert.equal(runtime.isAndroidExternalStorage('/data/data/com.termux/files/home/bot'), false);
 });
 
-test('plain logs have timestamps and levels without terminal color codes', t => {
+test('plain logs preserve the requested layout without terminal color codes', async t => {
   let output = '';
   const stream = { isTTY: false, write: value => { output += value; } };
   const old = process.env.NO_COLOR; process.env.NO_COLOR = '1';
   t.after(() => { if (old == null) delete process.env.NO_COLOR; else process.env.NO_COLOR = old; });
   const logger = createLogger('UPDATE', { stdout: stream, stderr: stream });
   logger.banner('Meu Bot'); logger.success('concluído'); logger.error('falhou');
-  assert.match(output, /Meu Bot/); assert.match(output, /\[\d{2}:\d{2}:\d{2}\] \[UPDATE\] \[SUCCESS\]/);
-  assert.match(output, /\[ERROR\] falhou/); assert(!output.includes('\x1b'));
+  await logger.flush();
+  assert.match(output, / ! Bot: Meu Bot/); assert.match(output, / ! UPDATE: concluído/);
+  assert.match(output, / ! Erro: falhou/); assert(!output.includes('\x1b'));
 });
 
-test('missing lolcat falls back to ANSI without breaking startup', t => {
+test('missing lolcat falls back to ANSI without breaking startup', async t => {
   let output = '';
   const stream = { isTTY: true, write: value => { output += value; } };
   const old = process.env.NO_COLOR; delete process.env.NO_COLOR;
   t.after(() => { if (old != null) process.env.NO_COLOR = old; });
-  createLogger('BOT', { stdout: stream, stderr: stream }).banner('Meu Bot');
-  assert.match(output, /Meu Bot/);
+  const logger = createLogger('BOT', { stdout: stream, stderr: stream, native: false });
+  logger.banner('Meu Bot'); await logger.flush();
+  assert.match(output.replace(/\x1b\[[0-9;]*m/g, ''), /Meu Bot/);
+  assert.match(output, /\x1b\[38;2;/);
 });

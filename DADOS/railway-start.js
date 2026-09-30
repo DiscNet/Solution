@@ -1,5 +1,6 @@
 process.chdir(__dirname);
 require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
+require('./MÓDULOS/functions/terminalLogger').installOutputEffects();
 const fs = require('fs');
 const path = require('path');
 const { authDir: repoAuthDir } = require('./conexão/sessao');
@@ -124,7 +125,7 @@ async function refreshWhatsAppWebVersion() {
 
     if (result && Array.isArray(result.version) && result.version.length === 3 && DEFAULT_CONNECTION_CONFIG) {
       DEFAULT_CONNECTION_CONFIG.version = result.version;
-      console.log(`✅ WhatsApp Web version: ${result.version.join('.')}${result.isLatest === false ? ' (fallback)' : ''}`);
+      if (process.env.LOG_VERBOSE === '1') console.log(`✅ WhatsApp Web version: ${result.version.join('.')}${result.isLatest === false ? ' (fallback)' : ''}`);
       return true;
     }
 

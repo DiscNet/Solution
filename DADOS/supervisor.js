@@ -2,6 +2,7 @@ const path = require('path');
 const { spawn } = require('child_process');
 const runtime = require('./MÓDULOS/functions/runtimeCompat');
 runtime.applyRuntimeEnvironment();
+require('./MÓDULOS/functions/terminalLogger').installOutputEffects();
 const logger = require('./MÓDULOS/functions/terminalLogger').createLogger('SUPERVISOR');
 const ROOT = path.resolve(__dirname, '..');
 const args = process.argv.slice(2).map(value => String(value).toLowerCase());

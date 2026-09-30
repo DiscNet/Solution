@@ -10,24 +10,18 @@ function senderFromMessage(msg) {
   return msg?.key?.participantAlt || msg?.key?.participant || msg?.key?.remoteJidAlt || msg?.key?.remoteJid || "";
 }
 
-async function executeCommand({ conn, msg, args = [], from, axiosInstance, requestedName, command }) {
+async function executeCommand({ conn, msg, args = [], from, axiosInstance, requestedName, command, logContext = {} }) {
   if (!command || typeof command.execute !== "function") return false;
 
   const name = String(command.name || requestedName || "unknown").toLowerCase();
   const sender = senderFromMessage(msg);
   const started = performance.now();
+  runtimeLogger.command({ name: requestedName || name, sender, msg, from, ...logContext });
 
   try {
     const permission = await checkCommandPermissions({ conn, msg, command, from });
     if (!permission.ok) {
       policy.record(name, "denied", performance.now() - started);
-      runtimeLogger.command({
-        name,
-        sender,
-        durationMs: performance.now() - started,
-        status: "denied",
-        code: permission.code
-      });
       await ui.reply(conn, msg, ui.permissionMessage(permission.code), { from });
       return true;
     }
@@ -56,12 +50,6 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
       });
     }
 
-    runtimeLogger.command({
-      name,
-      sender,
-      durationMs: performance.now() - started,
-      status: "ok"
-    });
     return true;
   } catch (error) {
     policy.record(name, "error", performance.now() - started);
@@ -71,13 +59,6 @@ async function executeCommand({ conn, msg, args = [], from, axiosInstance, reque
       sender,
       error,
       code: error?.code || "ERR_COMMAND_EXECUTION"
-    });
-    runtimeLogger.command({
-      name,
-      sender,
-      durationMs: performance.now() - started,
-      status: "error",
-      code
     });
 
     if (!error?.userMessageSent) {

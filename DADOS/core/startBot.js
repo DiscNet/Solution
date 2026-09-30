@@ -53,25 +53,6 @@ function recarregarConfigHandler() {
 const { sendButtons, sendInteractiveMessage } = require("../MÓDULOS/functions/uiMode");
 
 // ==============================================
-// CORES ANSI PARA TERMINAL
-// ==============================================
-
-const cores = {
-  reset: "\x1b[0m",
-  brilho: "\x1b[1m",
-  preto: "\x1b[30m",
-  vermelho: "\x1b[31m",
-  verde: "\x1b[32m",
-  amarelo: "\x1b[33m",
-  azul: "\x1b[34m",
-  magenta: "\x1b[35m",
-  ciano: "\x1b[36m",
-  branco: "\x1b[37m"
-};
-
-const banner = ` `
-
-// ==============================================
 // CACHE DE NOMES DE GRUPOS
 // ==============================================
 
@@ -112,7 +93,7 @@ function formatSender(senderId, isGroup = false) {
 // LOGGER
 // ==============================================
 
-const baileysLogger = pino({ level: process.env.BAILEYS_LOG_LEVEL || "silent" });
+const baileysLogger = pino({ level: process.env.BAILEYS_LOG_LEVEL || "silent" }, process.stdout);
 const msgRetryCounterCache = new NodeCache({
   stdTTL: 600,
   checkperiod: 120,
@@ -126,7 +107,6 @@ const msgRetryCounterCache = new NodeCache({
 const LOG_MESSAGES = process.env.LOG_MESSAGES === "1";
 
 function logMensagem(tipo, dados) {
-  if (tipo === "comando") return; // comandos são logados pelo commandExecutor
   if (tipo === "mensagem" && !LOG_MESSAGES) return;
   const horario = new Date().toLocaleString("pt-BR");
   const alvo = dados.isGroup
@@ -134,11 +114,7 @@ function logMensagem(tipo, dados) {
     : (dados.remoteJid || dados.remetente || "privado");
   const remetente = dados.participant || dados.remetente || "desconhecido";
 
-  if (tipo === "comando") {
-    console.log(`[CMD] ${dados.comando} | ${alvo} | ${remetente} | ${horario}`);
-  } else {
-    console.log(`[MSG] ${dados.texto || "(mídia)"} | ${alvo} | ${remetente} | ${horario}`);
-  }
+  console.log(`[MSG] ${dados.texto || "(mídia)"} | ${alvo} | ${remetente} | ${horario}`);
 }
 
 // ==============================================
@@ -420,8 +396,10 @@ function handleConnectionOpen() {
 }
 
 function exibirLogsPosInicio() {
-  terminal.banner(config.botName || "Bot");
-  terminal.success(`Conectado | Prefixo: ${config.prefix} | Comandos: ${Object.keys(commands).length}`);
+  terminal.banner({
+    bot: config.botName || 'Bot', owner: config.ownerName || 'Não configurado',
+    number: config.ownerNumber || '', commands: getCanonicalCommandNames().length
+  });
 
   if (comandosFalhos.length > 0) {
     terminal.warn("Comandos com erro ao carregar:");
@@ -436,7 +414,15 @@ function exibirLogsPosInicio() {
       terminal.warn(conflito);
     }
   }
-  terminal.info("Aguardando mensagens e comandos...");
+}
+
+async function executeDetectedCommand(cmdName, args, msg, from) {
+  const sender = msg.key?.participantAlt || msg.key?.participant || msg.key?.remoteJidAlt || from;
+  const user = contactNameCache.cleanName(msg.pushName || msg.pushname) ||
+    contactNameCache.get([sender, msg.key?.participant, msg.key?.remoteJid]) || runtimeLogger.senderLabel(sender);
+  const group = isGroup(from) ? await getGroupName(conn, from) : 'Privado';
+  return executeCommand({ conn, msg, args, from, axiosInstance, requestedName: cmdName, command: commands[cmdName],
+    logContext: { user, group, prefix: config.prefix || '.' } });
 }
 
 // ==============================================
@@ -458,11 +444,9 @@ async function startBot() {
   const { state, saveCreds } = await useMultiFileAuthState(authDir);
 
   if (!state.creds.registered) {
-    console.clear();
-    console.log(banner);
-    console.log(`${cores.vermelho}❌ Não autenticado!${cores.reset}`);
-    console.log(`${cores.amarelo}Execute primeiro: node conect.js 5563992003562${cores.reset}`);
-    console.log(`${cores.branco}Depois volte: node index.js${cores.reset}`);
+    terminal.banner({ bot: config.botName || 'Bot', owner: config.ownerName || '',
+      number: config.ownerNumber || '', commands: getCanonicalCommandNames().length });
+    terminal.error('Não autenticado. Execute npm run connect e depois npm start.');
     process.exit(1);
   }
 
@@ -638,30 +622,10 @@ async function startBot() {
         if (cmdDetection) {
           const { cmdName, args, hasPrefix } = cmdDetection;
 
-          // LOG DE COMANDO
-          if (grupo) {
-            const groupName = await getGroupName(conn, from);
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')} (resposta mídia)`,
-              isGroup: true,
-              grupo: groupName,
-              participant: participantAlt,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          } else {
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')} (resposta mídia)`,
-              isGroup: false,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          }
-
           const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) {
-            await executeCommand({ conn, msg, args, from, axiosInstance, requestedName: cmdName, command: commands[cmdName] });
+            await executeDetectedCommand(cmdName, args, msg, from);
             return;
           }
         }
@@ -674,30 +638,10 @@ async function startBot() {
         if (cmdDetection) {
           const { cmdName, args, hasPrefix } = cmdDetection;
 
-          // LOG DE COMANDO
-          if (grupo) {
-            const groupName = await getGroupName(conn, from);
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')} (mídia)`,
-              isGroup: true,
-              grupo: groupName,
-              participant: participantAlt,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          } else {
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')} (mídia)`,
-              isGroup: false,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          }
-
           const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) {
-            await executeCommand({ conn, msg, args, from, axiosInstance, requestedName: cmdName, command: commands[cmdName] });
+            await executeDetectedCommand(cmdName, args, msg, from);
             return;
           }
         }
@@ -710,31 +654,10 @@ async function startBot() {
         if (cmdDetection) {
           const { cmdName, args, hasPrefix } = cmdDetection;
 
-          // LOG DE COMANDO
-          if (grupo) {
-            const groupName = await getGroupName(conn, from);
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')}`,
-              isGroup: true,
-              grupo: groupName,
-              participant: participantAlt,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          } else {
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')}`,
-              isGroup: false,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          }
-
-          // Executa o comando
           const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
           if (commands[cmdName]) {
-            await executeCommand({ conn, msg, args, from, axiosInstance, requestedName: cmdName, command: commands[cmdName] });
+            await executeDetectedCommand(cmdName, args, msg, from);
             return;
           }
         }
@@ -793,29 +716,9 @@ async function startBot() {
           const cmdName = parts[0].toLowerCase();
           const args = parts.slice(1);
 
-          // LOG DE COMANDO (INTERAÇÃO)
-          if (grupo) {
-            const groupName = await getGroupName(conn, from);
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')} (botão)`,
-              isGroup: true,
-              grupo: groupName,
-              participant: participantAlt,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          } else {
-            logMensagem('comando', {
-              comando: `${cmdName} ${args.join(' ')} (botão)`,
-              isGroup: false,
-              remoteJid: remoteJidAlt,
-              remetente: remetenteNumero
-            });
-          }
-
           const emManutencao = await verificarManutencao(conn, from, getCanonicalCommandName(cmdName), sender, msg);
           if (emManutencao) return;
-          if (commands[cmdName]) { await executeCommand({ conn, msg, args, from, axiosInstance, requestedName: cmdName, command: commands[cmdName] }); }
+          if (commands[cmdName]) { await executeDetectedCommand(cmdName, args, msg, from); }
           else { const listaComandos = getCanonicalCommandNames(); const comandoSugerido = encontrarComandoSemelhante(cmdName, listaComandos); const senderNumber = sender.split('@')[0]; await sendCommandNotFoundMessage(conn, from, cmdName, senderNumber, comandoSugerido, msg); }
         } else if (buttonText) { await conn.sendMessage(from, { text: `✅ ᴠᴏᴄê ᴄʟɪᴄᴏᴜ ᴇᴍ: ${buttonText}` }); }
         return;

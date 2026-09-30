@@ -1,6 +1,7 @@
 const path = require('path');
 process.chdir(path.resolve(__dirname, '..'));
 require('./MÓDULOS/functions/runtimeCompat').applyRuntimeEnvironment();
+require('./MÓDULOS/functions/terminalLogger').installOutputEffects();
 const manager = require('./MÓDULOS/functions/updateManager');
 const logger = require('./MÓDULOS/functions/terminalLogger').createLogger('UPDATE');
 

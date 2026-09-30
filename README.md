@@ -113,7 +113,9 @@ tnode npm start
 
 Em um ambiente sem tnode, use `node` e `npm` diretamente. Depois de instalado o código novo, `npm run update:repair` também executa essa recuperação. `npm start` mantém o supervisor ativo para reiniciar depois de `.up`; uma execução direta de `DADOS/index.js` informa a necessidade de reinício manual.
 
-Os logs têm horário, etapa e nível. A arte ASCII usa `lolcat` quando disponível; sem ele, mantém cores ANSI. Para habilitar o efeito no Termux, use `pkg install ruby` e `gem install lolcat`. `NO_COLOR=1` desliga cores e `BOT_LOG_TIMEZONE` altera o fuso (padrão: `America/Fortaleza`).
+Os logs seguem o modelo GRIMM: o início mostra `! Bot:`, `! Dono:`, `! número:` (contato do dono) e `! CMD'S:` (comandos únicos, sem contar aliases). Cada comando aparece uma única vez, abaixo da barra de blocos, com `+ Comando usado!`, nome do comando, usuário e grupo; no privado, o grupo aparece como `Privado`. Nomes e contatos vêm do `config.js` e das mensagens recebidas.
+
+Toda a saída do bot, incluindo avisos, erros, `console.log`, stdout e stderr, recebe o efeito de arco-íris. Usa `lolcat` quando instalado, com chamadas assíncronas; sem ele, usa um efeito equivalente em JavaScript, inclusive no Termux. Para instalar o programa no Termux: `pkg install ruby` e `gem install lolcat`. O banner e os blocos de comandos têm uma animação curta nos terminais que comportam o desenho, sem impedir a execução dos comandos. `BOT_LOG_ANIMATE=0` desliga a animação e `NO_COLOR=1` desliga as cores. Em hospedagens e arquivos de log, não movimenta o cursor. Testes: `npm run test:logs`.
 
 Validação do updater: `npm run test:update`. Os testes usam repositórios Git locais e simulam o ambiente Termux/tnode, incluindo falha de instalação, concorrência, rollback e interrupção do processo.
 

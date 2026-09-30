@@ -13,7 +13,8 @@
     "update:rollback": "node DADOS/update.js rollback",
     "update:repair": "node DADOS/update-bootstrap.js",
     "test:update": "node --test DADOS/tests/update.test.js DADOS/tests/runtimeCompat.test.js",
-    "test:ascii": "node --test DADOS/tests/ascii.test.js DADOS/tests/asciiText.test.js"
+    "test:ascii": "node --test DADOS/tests/ascii.test.js DADOS/tests/asciiText.test.js",
+    "test:logs": "node --test DADOS/tests/terminalLogger.test.js DADOS/tests/runtimeCompat.test.js"
   },
   "engines": {
     "node": ">=22.22.2"

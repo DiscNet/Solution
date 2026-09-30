@@ -10,8 +10,8 @@ function registerConnectionEvents(conn, { saveCreds, DisconnectReason, reconnect
   conn.ev.on("connection.update", ({ connection, lastDisconnect }) => {
     if (connection === "open") {
       reconnect.reset();
-      runtimeLogger.connection("conectado");
       if (typeof onOpen === "function") onOpen();
+      else runtimeLogger.connection("conectado");
       return;
     }
 

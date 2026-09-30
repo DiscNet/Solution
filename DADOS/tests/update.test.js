@@ -30,7 +30,7 @@ test('rollback interrupted by process termination is completed on startup', asyn
 
 test('supervisor restarts a runtime after update exit code 20', t => {
   const f = fixture(t);
-  for (const name of ['runtimeCompat.js', 'terminalLogger.js', 'updateManager.js']) {
+  for (const name of ['runtimeCompat.js', 'terminalLogger.js', 'terminalLayout.js', 'terminalEffects.js', 'updateManager.js']) {
     put(f.root, 'DADOS/MÓDULOS/functions/' + name, fs.readFileSync(path.resolve(__dirname, '../MÓDULOS/functions/', name)));
   }
   put(f.root, 'DADOS/supervisor.js', fs.readFileSync(path.resolve(__dirname, '../supervisor.js')));
