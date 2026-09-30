@@ -29,6 +29,8 @@ Com botões, `.menu` conserva a lista interativa e a imagem de apresentação. S
 
 Grupos novos recebem respostas **sem botões** por padrão. Um administrador pode consultar ou alterar esse modo com `.sembotoes`, `.sembotoes 1` (texto) e `.sembotoes 0` (permitir botões). A escolha é salva por grupo. No modo de texto, opções interativas aparecem como comandos para digitar; por exemplo, `.autofigu` mostra o estado e indica `.autofigu 0` quando estiver ativo.
 
+Os dados administrativos e o histórico de moderação usam uma pasta validada para criação e renomeação de arquivos. No Termux, usam `DADOS/database`, sem tentar gravar na pasta de sistema `/data`. Em hospedagens, um `/data` gravável continua sendo reconhecido; se estiver somente para leitura, os arquivos existentes e legíveis são copiados para a pasta local apenas quando ela ainda não tem esses arquivos. `BOT_ADMIN_DATA_DIR` ou `RAILWAY_VOLUME_MOUNT_PATH` definem uma pasta explícita e `BOT_MODLOG_PATH` define o arquivo do histórico. Caminhos explícitos precisam permitir gravação; o bot informa a configuração a corrigir. Testes: `npm run test:data`.
+
 Quando o bot inicia, os grupos dos quais ainda participa e que têm aluguel ativo recebem um aviso de reinício no formato padrão. O dono pode cancelar um plano com `.cancelar-aluguel` dentro do grupo ou `.cancelar-aluguel ID@g.us` no privado. Figurinhas criadas pelo `.autofigu` ocupam um quadro de **512 × 512 pixels** tanto para imagens quanto para vídeos.
 
 ## 🛡️ Proteção dos grupos
@@ -114,6 +116,8 @@ tnode npm start
 Em um ambiente sem tnode, use `node` e `npm` diretamente. Depois de instalado o código novo, `npm run update:repair` também executa essa recuperação. `npm start` mantém o supervisor ativo para reiniciar depois de `.up`; uma execução direta de `DADOS/index.js` informa a necessidade de reinício manual.
 
 Os logs seguem o modelo GRIMM: o início mostra `! Bot:`, `! Dono:`, `! número:` (contato do dono) e `! CMD'S:` (comandos únicos, sem contar aliases). A barra de blocos aparece uma vez, logo abaixo dessas informações, separando o cabeçalho dos comandos. Cada comando aparece uma única vez com `+ Comando usado!`, nome do comando, usuário e grupo; no privado, o grupo aparece como `Privado`. Nomes e contatos vêm do `config.js` e das mensagens recebidas. Os dumps de depuração `Closing session: SessionEntry` e `Interactive send:` são filtrados antes da impressão dos objetos; avisos e erros continuam visíveis.
+
+Atualizações mostram um título curto e o progresso, sem repetir o cabeçalho de inicialização, os dados do dono ou a barra. `BOT_UPDATE_VERBOSE=1` mostra também a lista de arquivos na verificação pelo terminal. O resumo dos avisos de reinício segue o estilo `! REINÍCIO:` e tem uma linha vazia separando-o dos comandos; o envio dos avisos aos grupos continua funcionando.
 
 Toda a saída do bot, incluindo avisos, erros, `console.log`, stdout e stderr, recebe o efeito de arco-íris. Usa `lolcat` quando instalado, com chamadas assíncronas; sem ele, usa um efeito equivalente em JavaScript, inclusive no Termux. Para instalar o programa no Termux: `pkg install ruby` e `gem install lolcat`. O banner e os blocos de comandos têm uma animação curta nos terminais que comportam o desenho, sem impedir a execução dos comandos. `BOT_LOG_ANIMATE=0` desliga a animação e `NO_COLOR=1` desliga as cores. Em hospedagens e arquivos de log, não movimenta o cursor. Testes: `npm run test:logs`.
 

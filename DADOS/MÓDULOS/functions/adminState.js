@@ -1,11 +1,6 @@
-const fs = require("fs");
-const path = require("path");
 const { createJsonStore } = require("./jsonStore");
-const base =
-  process.env.BOT_ADMIN_DATA_DIR ||
-  process.env.RAILWAY_VOLUME_MOUNT_PATH ||
-  (fs.existsSync("/data") ? "/data" : path.join(__dirname, "..", "..", "database"));
-const store = createJsonStore(path.join(base, "administration.json"), {
+const { resolveDataFile } = require("./dataPaths");
+const store = createJsonStore(resolveDataFile("administration.json"), {
   version: 1,
   global: {},
   groups: {},

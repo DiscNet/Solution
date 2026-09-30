@@ -8,16 +8,19 @@ const logger = require('./MÓDULOS/functions/terminalLogger').createLogger('UPDA
 function printCheck(check) {
   logger.info('Local: ' + manager.shortSha(check.localCommit) + ' | GitHub: ' + manager.shortSha(check.remoteCommit));
   logger.info('Arquivos pendentes: ' + check.changes.length + ' | Dependências: ' + (check.dependenciesNeeded ? 'sincronizar' : 'atuais'));
-  for (const item of check.changes.slice(0, 20)) {
-    logger.info((item.type === 'delete' ? '-' : item.type === 'create' ? '+' : '~') + ' ' + item.path);
+  if (process.env.BOT_UPDATE_VERBOSE === '1') {
+    for (const item of check.changes.slice(0, 20)) {
+      logger.info((item.type === 'delete' ? '-' : item.type === 'create' ? '+' : '~') + ' ' + item.path);
+    }
+    if (check.changes.length > 20) logger.info('Mais ' + (check.changes.length - 20) + ' arquivo(s).');
   }
-  if (check.changes.length > 20) logger.info('Mais ' + (check.changes.length - 20) + ' arquivo(s).');
   (check.available ? logger.info : logger.success)(check.available ? 'Atualização disponível.' : 'Bot atualizado.');
 }
 
 async function main(actionOverride) {
   const action = String(actionOverride || process.argv[2] || 'start').toLowerCase();
-  logger.banner('ATUALIZAÇÃO DO BOT');
+  logger.section(action === 'rollback' ? 'Restaurando backup' :
+    ['check', 'info'].includes(action) ? 'Verificando atualização' : 'Atualizando o bot');
   try {
     if (['check', 'info'].includes(action)) {
       const check = await manager.checkUpdate(logger.log); printCheck(check); return 0;

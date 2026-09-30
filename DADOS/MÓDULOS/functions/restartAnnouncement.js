@@ -1,6 +1,7 @@
 const aluguel = require("./aluguel");
 const ui = require("./ui");
 const runtimeLogger = require("./runtimeLogger");
+const terminal = require("./terminalLogger").createLogger("REINÍCIO");
 
 function noticeText() {
   const when = new Intl.DateTimeFormat("pt-BR", {
@@ -42,7 +43,9 @@ function createRestartAnnouncer(getConnection) {
           }
         }));
       }
-      console.log(`[RESTART NOTICE] ${activeIds.filter(id => notified.has(id)).length}/${activeIds.length} grupos ativos avisados.`);
+      if (activeIds.length) {
+        terminal.section(`${activeIds.filter(id => notified.has(id)).length}/${activeIds.length} grupos ativos avisados.`);
+      }
       finished = activeIds.every(id => notified.has(id) || !aluguel.isGrupoAtivo(id));
     } catch (error) {
       runtimeLogger.error({ scope: "restart-group-list", error, code: "ERR_RESTART_GROUP_LIST" });

@@ -39,7 +39,7 @@ module.exports = {
       }
       if (['start', 'install', 'up', 'update'].includes(action)) {
         await reply('*' + botName() + ' — atualização*\n\nBaixando e validando arquivos. O progresso aparece no terminal.');
-        logger.banner(botName() + ' | UPDATE');
+        logger.section('Atualizando ' + botName());
         const result = await manager.installUpdate(logger.log);
         if (!result.updated) {
           await reply('*' + botName() + ' — atualizado*\n\nCommit: ' + manager.shortSha(result.version)); return;

@@ -16,9 +16,12 @@ function createLogger(scope = 'BOT', streams = {}) {
   function banner(details = {}) {
     return raw(layout.startup(typeof details === 'string' ? { bot: details } : details), { animate: true });
   }
+  function section(title) {
+    return raw('\n ! ' + layout.clean(scope) + ': ' + layout.clean(title) + '\n\n', { animate: true });
+  }
   return {
     log: write, info: text => write(text), success: text => write(text, 'success'),
-    warn: text => write(text, 'warn'), error: text => write(text, 'error'), banner, raw,
+    warn: text => write(text, 'warn'), error: text => write(text, 'error'), banner, section, raw,
     flush: () => effects.flush()
   };
 }

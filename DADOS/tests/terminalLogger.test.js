@@ -60,6 +60,17 @@ test('the separator appears at startup, once before all command records', async 
   assert.match(out.text, /\x1b\[38;2;/);
 });
 
+test('update sections have a compact colored heading without startup fields or another separator', async () => {
+  const out = capture();
+  const logger = createLogger('UPDATE', { stdout: out.stream, stderr: out.stream, native: false, env: {} });
+  logger.section('Atualizando Meu Bot'); logger.info('Validando 3 arquivos...');
+  await logger.flush();
+  assert.equal(strip(out.text), '\n ! UPDATE: Atualizando Meu Bot\n\n ! UPDATE: Validando 3 arquivos...\n');
+  assert(!strip(out.text).includes(layout.SEPARATOR));
+  assert(!/ ! (Bot|Dono|número|CMD'S):/.test(strip(out.text)));
+  assert.match(out.text, /\x1b\[38;2;/);
+});
+
 test('fallback rainbow colors information, warnings and stderr while preserving text', async () => {
   const out = capture(), err = capture();
   const logger = createLogger('UPDATE', { stdout: out.stream, stderr: err.stream, native: false, env: {} });
@@ -280,6 +291,83 @@ function loadExecutor(stubs) {
   vm.runInNewContext(source, context);
   return context.module.exports;
 }
+
+function loadScript(relative, stubs, globals = {}) {
+  const file = path.resolve(__dirname, '..', relative);
+  const context = { module: { exports: {} }, __dirname: path.dirname(file), ...globals,
+    require: name => {
+      if (name === 'path') return require(name);
+      if (!Object.hasOwn(stubs, name)) throw new Error('Unexpected import: ' + name);
+      return stubs[name];
+    } };
+  vm.runInNewContext(fs.readFileSync(file, 'utf8'), context, { filename: file });
+  return context.module.exports;
+}
+
+test('CLI update checks summarize changes and list files only in verbose mode', async () => {
+  for (const verbose of [false, true]) {
+    const out = capture();
+    const logger = createLogger('UPDATE', { stdout: out.stream, stderr: out.stream, native: false, env: {} });
+    const check = { localCommit: 'aaaaaaa', remoteCommit: 'bbbbbbb', available: true, dependenciesNeeded: false,
+      changes: [{ type: 'create', path: 'DADOS/example-one.js' }, { type: 'update', path: 'DADOS/example-two.js' }] };
+    const { main } = loadScript('update.js', {
+      './MÓDULOS/functions/runtimeCompat': { applyRuntimeEnvironment() {} },
+      './MÓDULOS/functions/terminalLogger': { installOutputEffects() {}, createLogger: () => logger },
+      './MÓDULOS/functions/updateManager': { checkUpdate: async () => check, shortSha: value => value }
+    }, { process: { chdir() {}, argv: [], env: verbose ? { BOT_UPDATE_VERBOSE: '1' } : {} } });
+    assert.equal(await main('check'), 0); await logger.flush();
+    const text = strip(out.text);
+    assert.match(text, / ! UPDATE: Verificando atualização\n\n/);
+    assert.match(text, /Arquivos pendentes: 2/);
+    assert.equal(text.includes('DADOS/example-one.js'), verbose);
+    assert(!text.includes(layout.SEPARATOR));
+    assert(!/ ! (Bot|Dono|número|CMD'S):/.test(text));
+  }
+});
+
+test('the bot update command keeps progress and replies with a compact terminal heading', async () => {
+  const out = capture(), replies = [];
+  const logger = createLogger('UPDATE', { stdout: out.stream, stderr: out.stream, native: false, env: {} });
+  const command = loadScript('MÓDULOS/plugins/dono/update.js', {
+    '../../../config/config': { prefix: '.', botName: 'Meu Bot' },
+    '../../functions/terminalLogger': { createLogger: () => logger },
+    '../../functions/updateManager': {
+      installUpdate: async log => {
+        log('Baixando arquivos...');
+        return { updated: true, version: 'bbbbbbb', filesUpdated: 3, filesDeleted: 1 };
+      }, shortSha: value => value
+    }
+  }, { process: { env: {} } });
+  await command.execute({ sendMessage: async (jid, payload) => replies.push(payload.text) }, { key: {} }, [], 'owner', null, 'up');
+  await logger.flush();
+  assert.match(strip(out.text), /^\n ! UPDATE: Atualizando Meu Bot\n\n ! UPDATE: Baixando arquivos\.\.\.\n$/);
+  assert.equal(replies.length, 2);
+  assert.match(replies[1], /atualização concluída/);
+  assert(!strip(out.text).includes(layout.SEPARATOR));
+});
+
+test('restart summaries keep group notifications and leave a blank line before command logs', async () => {
+  const out = capture(), sent = [], errors = [];
+  const logger = createLogger('REINÍCIO', { stdout: out.stream, stderr: out.stream, native: false, env: {} });
+  const { createRestartAnnouncer } = loadScript('MÓDULOS/functions/restartAnnouncement.js', {
+    './aluguel': { isGrupoAtivo: id => id === 'active@g.us' },
+    './ui': { adminCard: () => 'Aviso de reinício', adminRow() {}, smallcaps: value => value },
+    './runtimeLogger': { error: error => errors.push(error) },
+    './terminalLogger': { createLogger: () => logger }
+  });
+  const announce = createRestartAnnouncer(() => ({ user: { id: 'bot' },
+    groupFetchAllParticipating: async () => ({ active: { id: 'active@g.us' }, inactive: { id: 'inactive@g.us' } }),
+    sendMessage: async (id, payload) => sent.push({ id, payload })
+  }));
+  await announce(); await announce();
+  logger.raw(layout.command({ name: '.menu', user: 'Kxlynn', group: 'Privado' }));
+  await logger.flush();
+  assert.equal(sent.length, 1); assert.equal(sent[0].id, 'active@g.us');
+  assert.equal(sent[0].payload.text, 'Aviso de reinício'); assert.equal(errors.length, 0);
+  assert.match(strip(out.text), /^\n ! REINÍCIO: 1\/1 grupos ativos avisados\.\n\n     \+ Comando usado!/);
+  assert(!out.text.includes('[RESTART NOTICE]'));
+  assert.match(out.text, /\x1b\[38;2;/);
+});
 
 test('each command attempt logs one block for success, permission denial, policy denial and failure', async () => {
   for (const mode of ['success', 'permission', 'policy', 'false', 'error']) {

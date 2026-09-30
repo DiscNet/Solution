@@ -1,5 +1,4 @@
 const os = require("os");
-const fs = require("fs");
 const path = require("path");
 const state = require("./adminState");
 const h = require("./adminHelpers");
@@ -140,7 +139,7 @@ async function run({ conn, msg, args, from, def }) {
       .map(([k, v]) => `${k}: ${(v / 1048576).toFixed(1)} MiB`)
       .join("\n");
   if (name === "botambiente")
-    return `Node: ${process.version}\nSistema: ${process.platform}/${process.arch}\nCPUs: ${os.availableParallelism?.() || os.cpus().length}\nTempo do processo: ${Math.floor(process.uptime())}s\nPersistência: ${process.env.RAILWAY_VOLUME_MOUNT_PATH || fs.existsSync("/data") ? "volume" : "pasta local"}`;
+    return `Node: ${process.version}\nSistema: ${process.platform}/${process.arch}\nCPUs: ${os.availableParallelism?.() || os.cpus().length}\nTempo do processo: ${Math.floor(process.uptime())}s\nDados: ${path.dirname(state.filePath)}`;
   if (name === "botdependencias")
     return list(require("../../../package.json").dependencies);
   if (name === "cmdauditoria") {

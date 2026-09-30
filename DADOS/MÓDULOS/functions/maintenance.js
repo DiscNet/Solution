@@ -1,10 +1,6 @@
-const path = require("path");
 const { createJsonStore } = require("./jsonStore");
-const base =
-  process.env.BOT_ADMIN_DATA_DIR ||
-  process.env.RAILWAY_VOLUME_MOUNT_PATH ||
-  path.join(__dirname, "..", "..", "database");
-const store = createJsonStore(path.join(base, "manutencao.json"), {
+const { resolveDataFile } = require("./dataPaths");
+const store = createJsonStore(resolveDataFile("manutencao.json", { useLegacyVolume: false }), {
   comandos: [],
 });
 const legacy = [
