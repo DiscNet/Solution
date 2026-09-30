@@ -421,7 +421,7 @@ const textPages = Object.freeze({
     sections: [
       ["Perfil", [["perfil", "seu perfil"], ["ping", "latência do bot"], ["afk", "marque ausência"], ["atividade", "sua atividade"], ["rankativo", "ranking de atividade"]]],
       ["Informação", [["info comando", "como usar um comando"], ["cep número", "consulta de CEP"], ["clima cidade", "previsão do tempo"], ["wikipedia termo", "resumo de tema"]]],
-      ["Ferramentas", [["gemini pergunta", "assistente de IA"], ["ocr", "texto de imagem"], ["qrcode texto", "gere um QR Code"], ["traduzir texto", "tradução"], ["totalcmd", "quantidade de comandos"]]],
+      ["Ferramentas", [["gemini pergunta", "assistente de IA"], ["ocr", "texto de imagem"], ["qrcode texto", "gere um QR Code"], ["asciitext texto", "letras feitas de quadrados"], ["traduzir texto", "tradução"], ["totalcmd", "quantidade de comandos"]]],
     ],
   },
 });

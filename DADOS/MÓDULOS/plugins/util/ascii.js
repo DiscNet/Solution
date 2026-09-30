@@ -6,6 +6,7 @@ function createAsciiCommand(dependencies = {}) {
   const convert = dependencies.convert || art.imageToAscii;
   const download = dependencies.download || ((payload, type) =>
     require('@whiskeysockets/baileys').downloadContentFromMessage(payload, type));
+  const textCommand = require('./asciitext').createAsciiTextCommand({ quote, getPrefix });
   const fence = String.fromCharCode(96).repeat(3);
 
   function help(prefix) {
@@ -16,6 +17,7 @@ function createAsciiCommand(dependencies = {}) {
       prefix + 'ascii 60 detalhado — mais níveis de detalhe\n' +
       prefix + 'ascii negativo — inverte claro e escuro\n' +
       prefix + 'ascii arquivo — recebe a arte completa em .txt\n\n' +
+      prefix + 'ascii text Olá — desenha letras grandes com quadrados\n\n' +
       'Largura: 16 a 120. As opções podem ser combinadas. Artes grandes ou largas são enviadas em .txt para manter o alinhamento.';
   }
 
@@ -25,6 +27,9 @@ function createAsciiCommand(dependencies = {}) {
     usage: 'ascii [16-120] [detalhado] [negativo] [arquivo] (responda à imagem)',
 
     async execute(conn, msg, args = [], from) {
+      if (['text', 'texto'].includes(String(args[0] || '').toLowerCase())) {
+        return textCommand.execute(conn, msg, args.slice(1), from);
+      }
       const prefix = String(getPrefix());
       const reply = content => conn.sendMessage(from, content, { quoted: quote(msg) });
       const react = text => conn.sendMessage(from, { react: { text, key: msg.key } }).catch(() => {});

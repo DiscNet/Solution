@@ -53,6 +53,21 @@ Envie uma foto com `.ascii` na legenda ou responda a uma foto, figurinha ou imag
 
 Aceita larguras inteiras de 16 a 120, imagens de até 12 MB e 24 megapixels. Artes longas ou com mais de 36 colunas são enviadas em arquivo completo, evitando cortes no desenho e várias mensagens. O comando usa o `sharp` já incluído no bot; se o motor estiver indisponível, tenta FFmpeg com suporte ao tnode no Termux. A conversão não depende de `jp2a` ou de uma API externa. Testes: `npm run test:ascii`.
 
+## Texto com quadrados e blocos
+
+Use `.asciitext Olá mundo` ou `.ascii text Olá mundo` para desenhar palavras em letras grandes, feitas de quadrados `■`. Também pode responder a uma mensagem de texto ou legenda com `.asciitext`.
+
+| Comando | Resultado |
+| --- | --- |
+| `.asciitext Solution` | Letras desenhadas com quadrados preenchidos `■`. |
+| `.asciitext --blocos BOT` | Letras feitas de blocos `█`. |
+| `.asciitext --vazado BOT` | Letras feitas de quadrados vazados `□`. |
+| `.asciitext --simples BOT` | Usa o caractere ASCII `#`. |
+| `.asciitext --arquivo Meu texto` | Envia o desenho completo como `.txt`. |
+| `.asciitext --ajuda` | Mostra os estilos e os limites. |
+
+Aceita até 80 caracteres, letras, números e pontuação comum. A fonte usa maiúsculas e converte acentos para a letra base (`João` vira `JOAO`). Preserva quebras de linha, ajusta palavras a até 36 colunas e divide palavras longas sem perder letras. Artes altas ou longas são enviadas em arquivo para manter o alinhamento. Opções ficam antes do texto; `.asciitext -- ajuda` desenha a palavra AJUDA. A geração funciona localmente, inclusive no Termux, sem instalar ferramentas adicionais. Testes: `npm run test:ascii`.
+
 ## 🎨 Visual dos menus
 
 <div align="center">
