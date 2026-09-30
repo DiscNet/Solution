@@ -21,10 +21,10 @@ function field(label, value) {
 }
 function startup({ bot = '', owner = '', number = '', commands = '' } = {}) {
   return [LOGO, field(' ! Bot:', bot), field(' ! Dono:', owner),
-    field(' ! número:', number), field(" ! CMD'S:", commands), '', ''].join('\n') + '\n';
+    field(' ! número:', number), field(" ! CMD'S:", commands), '', '', SEPARATOR, '', ''].join('\n') + '\n';
 }
 function command({ name = '', user = '', group = '' } = {}) {
-  return [SEPARATOR, '', '', '     + Comando usado!',
+  return ['     + Comando usado!',
     field('    ~ Comando:', name), field('    ~ Usuário:', user), field('      ~ Grupo:', group), '', ''].join('\n') + '\n';
 }
 

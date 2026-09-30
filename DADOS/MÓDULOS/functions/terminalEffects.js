@@ -1,11 +1,18 @@
 const fs = require('fs');
 const { spawn } = require('child_process');
 const { StringDecoder } = require('string_decoder');
+const { isNativeError } = require('util').types;
 const runtime = require('./runtimeCompat');
 
 const MAX_PENDING_BYTES = 128 * 1024;
 const MAX_NATIVE_BYTES = 16 * 1024;
 const ESCAPES = /\x1b(?:\[[0-?]*[ -/]*[@-~]|\][^\x07]*(?:\x07|\x1b\\)|[78])|[\s\S]/gu;
+const DEPENDENCY_DEBUG = /^(?:Closing session:\s*(?:SessionEntry\s*\{|$)|Interactive send:\s*(?:\{|$))/;
+
+function isDependencyDebug(args) {
+  return typeof args[0] === 'string' && DEPENDENCY_DEBUG.test(args[0].trimStart()) &&
+    !args.some(isNativeError);
+}
 
 function rainbow(text, phase = 0) {
   let column = 0, row = 0, output = '';
@@ -28,6 +35,8 @@ function rainbow(text, phase = 0) {
 function createOutputEffects(options = {}) {
   const stdout = options.stdout || process.stdout, stderr = options.stderr || process.stderr;
   const env = options.env || process.env;
+  const targetConsole = options.console || (stdout === process.stdout && stderr === process.stderr ? console : null);
+  const consoleMethods = new Map();
   const streams = new Map([stdout, stderr].map(stream => [stream, {
     write: stream.write.bind(stream), original: stream.write, decoder: new StringDecoder('utf8'), escape: ''
   }]));
@@ -164,6 +173,20 @@ function createOutputEffects(options = {}) {
     pendingBytes = 0; settle();
   }
   function install() {
+    if (targetConsole) {
+      // Filter known library debug calls before Console inspects session keys or payloads.
+      // Warnings, errors and messages containing these phrases remain visible.
+      for (const method of ['log', 'info', 'debug']) {
+        if (consoleMethods.has(method)) continue;
+        const original = targetConsole[method];
+        const wrapper = function(...args) {
+          if (isDependencyDebug(args)) return;
+          return original.apply(this, args);
+        };
+        consoleMethods.set(method, { original, wrapper });
+        targetConsole[method] = wrapper;
+      }
+    }
     for (const [stream, state] of streams) {
       if (state.wrapper) continue;
       state.wrapper = function(chunk, encoding, callback) {
@@ -181,6 +204,10 @@ function createOutputEffects(options = {}) {
   }
   function restore() {
     flushSync();
+    for (const [method, state] of consoleMethods) {
+      if (targetConsole[method] === state.wrapper) targetConsole[method] = state.original;
+    }
+    consoleMethods.clear();
     for (const [stream, state] of streams) {
       const tail = state.decoder.end();
       if (tail) state.write(paint(tail, phase++));

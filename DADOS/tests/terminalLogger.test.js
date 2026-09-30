@@ -5,7 +5,9 @@ const os = require('os');
 const path = require('path');
 const vm = require('vm');
 const { Console } = require('console');
+const { spawnSync } = require('child_process');
 const { Writable } = require('stream');
+const { inspect } = require('util');
 const layout = require('../MÓDULOS/functions/terminalLayout');
 const { createLogger } = require('../MÓDULOS/functions/terminalLogger');
 const { createOutputEffects } = require('../MÓDULOS/functions/terminalEffects');
@@ -43,6 +45,21 @@ test('configured fields, command aliases and public names preserve the model lab
   assert.equal(layout.clean('nome\x1b[2J\nINVASÃO\x07'), 'nome INVASÃO');
 });
 
+test('the separator appears at startup, once before all command records', async () => {
+  const out = capture();
+  const logger = createLogger('BOT', { stdout: out.stream, stderr: out.stream, native: false, env: {} });
+  logger.banner({ bot: 'Meu Bot', owner: 'João', number: '5511999990000', commands: 2 });
+  assert.equal(strip(out.text).split(layout.SEPARATOR).length - 1, 1);
+  assert.match(strip(out.text), / ! CMD'S: 2\n\n\n   █{64}\n/);
+  for (const name of ['.menu', '.ascii TESTE', '.up']) logger.raw(layout.command({ name, user: 'João', group: 'Privado' }));
+  await logger.flush();
+  const text = strip(out.text);
+  assert.equal(text.split(layout.SEPARATOR).length - 1, 1);
+  assert.equal(text.split('     + Comando usado!').length - 1, 3);
+  assert(text.indexOf(layout.SEPARATOR) < text.indexOf('     + Comando usado!'));
+  assert.match(out.text, /\x1b\[38;2;/);
+});
+
 test('fallback rainbow colors information, warnings and stderr while preserving text', async () => {
   const out = capture(), err = capture();
   const logger = createLogger('UPDATE', { stdout: out.stream, stderr: err.stream, native: false, env: {} });
@@ -64,6 +81,68 @@ test('output installation colors Console messages and direct writes, and restore
   assert.equal(strip(err.text), 'erro\n');
   assert.match(out.text, /\x1b\[38;2;/); assert.match(err.text, /\x1b\[38;2;/);
   assert.equal(out.stream.write, original);
+});
+
+test('library session and interactive debug calls are discarded before inspecting their objects', async t => {
+  const out = capture(), err = capture();
+  const target = new Console({ stdout: out.stream, stderr: err.stream });
+  const originals = new Map(['log', 'info', 'debug'].map(method => [method, target[method]]));
+  let inspected = 0;
+  const session = { [inspect.custom]() { inspected++; return 'SessionEntry { syntheticKey }'; } };
+  const interactive = { [inspect.custom]() { inspected++; return '{ type: native_flow }'; } };
+  const effects = createOutputEffects({ stdout: out.stream, stderr: err.stream, console: target, native: false, env: {} }).install();
+  t.after(() => effects.restore());
+  const wrapper = target.info;
+  effects.install();
+  assert.equal(target.info, wrapper);
+  for (const method of ['log', 'info', 'debug']) {
+    target[method]('Closing session:', session);
+    target[method]('Interactive send:', interactive);
+  }
+  target.log('Closing session: SessionEntry {\n  syntheticKey: <Buffer 00>\n}');
+  target.log("Interactive send: {\n  type: 'native_flow'\n}");
+  await effects.flush();
+  assert.equal(out.text, ''); assert.equal(err.text, ''); assert.equal(inspected, 0);
+  effects.restore();
+  for (const [method, original] of originals) assert.equal(target[method], original);
+  target.info('Closing session:', session);
+  assert.equal(inspected, 1);
+  assert.match(out.text, /Closing session: SessionEntry/);
+});
+
+test('the debug filter keeps real failures, warnings, formatting and unrelated messages colored', async t => {
+  const out = capture(), err = capture();
+  const target = new Console({ stdout: out.stream, stderr: err.stream });
+  const effects = createOutputEffects({ stdout: out.stream, stderr: err.stream, console: target, native: false, env: {} }).install();
+  t.after(() => effects.restore());
+  target.log('normal %s %d', 'João', 2);
+  target.log('Mensagem contém Interactive send: e Closing session:');
+  target.info('Closing session: operação falhou');
+  target.log('Interactive send: envio falhou');
+  target.info('Closing session:', new Error('falha de sessão'));
+  target.warn('Closing session:', { status: 'aviso importante' });
+  target.error('Interactive send:', new Error('falha de envio'));
+  await effects.flush();
+  assert.match(strip(out.text), /normal João 2\n/);
+  assert.match(strip(out.text), /Mensagem contém Interactive send: e Closing session:/);
+  assert.match(strip(out.text), /Closing session: operação falhou\nInteractive send: envio falhou\n/);
+  assert.match(strip(out.text), /Closing session: Error: falha de sessão/);
+  assert.match(strip(err.text), /aviso importante/);
+  assert.match(strip(err.text), /Interactive send: Error: falha de envio/);
+  assert.match(out.text, /\x1b\[38;2;/); assert.match(err.text, /\x1b\[38;2;/);
+});
+
+test('the production installer filters global Console calls even when colors are disabled', () => {
+  const file = require.resolve('../MÓDULOS/functions/terminalEffects');
+  const child = spawnSync(process.execPath, ['-e',
+    'require(process.argv[1]).installOutputEffects();' +
+    'console.info("Closing session:",{currentRatchet:{rootKey:Buffer.from("synthetic")}});' +
+    'console.log("Interactive send:",{type:"native_flow",private:true,aimode:true});' +
+    'console.log("comando visível");console.error("falha real visível");', file
+  ], { encoding: 'utf8', env: { ...process.env, NO_COLOR: '1' }, timeout: 10000 });
+  assert.equal(child.status, 0, child.stderr);
+  assert.equal(child.stdout, 'comando visível\n');
+  assert.equal(child.stderr, 'falha real visível\n');
 });
 
 test('split UTF-8 buffers preserve ASCII blocks, accents and write callbacks', async () => {
@@ -126,7 +205,7 @@ test('animation repaints only compatible terminal blocks without blocking the ev
   setTimeout(() => { eventRan = true; }, 10);
   await logger.flush();
   assert.equal(eventRan, true);
-  assert.match(out.text, /\x1b\[18F/);
+  assert.match(out.text, /\x1b\[21F/);
 });
 
 test('new messages cancel a repaint so logs never overwrite each other', async () => {
@@ -135,7 +214,7 @@ test('new messages cancel a repaint so logs never overwrite each other', async (
   logger.banner({ bot: 'Meu Bot' });
   setTimeout(() => logger.error('mensagem recebida'), 10);
   await logger.flush();
-  assert(!out.text.includes('\x1b[18F'));
+  assert(!out.text.includes('\x1b[21F'));
   assert.equal(strip(out.text), layout.startup({ bot: 'Meu Bot' }) + ' ! Erro: mensagem recebida\n');
 });
 
