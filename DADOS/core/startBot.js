@@ -464,6 +464,7 @@ async function startBot() {
     keepAliveIntervalMs: 30000,
     msgRetryCounterCache,
     syncFullHistory: false,
+    shouldSyncHistoryMessage: () => false,
     markOnlineOnConnect: false,
     generateHighQualityLinkPreview: false,
     logger: baileysLogger

@@ -33,6 +33,8 @@ Os dados administrativos e o histórico de moderação usam uma pasta validada p
 
 Quando o bot inicia, os grupos dos quais ainda participa e que têm aluguel ativo recebem um aviso de reinício no formato padrão. O dono pode cancelar um plano com `.cancelar-aluguel` dentro do grupo ou `.cancelar-aluguel ID@g.us` no privado. Figurinhas criadas pelo `.autofigu` ocupam um quadro de **512 × 512 pixels** tanto para imagens quanto para vídeos.
 
+O bot processa apenas novas mensagens recebidas em tempo real, com horário posterior ao início do processo. A sincronização do histórico está desativada; lotes antigos, mensagens anteriores ao início e mensagens sem horário válido são ignorados antes de comandos, automações, moderação, encaminhamento privado e do indicador de digitação. O filtro continua ativo nas reconexões. Como o WhatsApp informa horários em segundos, o primeiro segundo inteiro após o início é o limite usado. Um comando novo ainda pode responder a uma mídia antiga citada na conversa. Testes: `npm run test:messages`.
+
 ## 🛡️ Proteção dos grupos
 
 Administradores podem cadastrar palavras ou frases com `.addpalavra texto`, consultar `.listapalavra`, remover com `.delpalavra texto` e ativar o filtro usando `.antipalavra 1`. O filtro apaga a mensagem detectada; com `.autoban 1`, também remove o autor. As remoções automáticas ficam registradas em `.modlog` com o motivo.

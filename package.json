@@ -15,7 +15,8 @@
     "test:update": "node --test DADOS/tests/update.test.js DADOS/tests/runtimeCompat.test.js",
     "test:ascii": "node --test DADOS/tests/ascii.test.js DADOS/tests/asciiText.test.js",
     "test:logs": "node --test DADOS/tests/terminalLogger.test.js DADOS/tests/runtimeCompat.test.js",
-    "test:data": "node --test DADOS/tests/dataPaths.test.js"
+    "test:data": "node --test DADOS/tests/dataPaths.test.js",
+    "test:messages": "node --test DADOS/tests/messages.test.js"
   },
   "engines": {
     "node": ">=22.22.2"

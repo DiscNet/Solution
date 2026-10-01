@@ -2,6 +2,7 @@ const runtimeLogger = require("../MÓDULOS/functions/runtimeLogger");
 const contactNameCache = require("../MÓDULOS/functions/contactNameCache");
 const { runWithMessage, startCommandTyping } = require("../MÓDULOS/functions/messageDefaults");
 const { extractMessageText } = require("../MÓDULOS/functions/messageText");
+const { shouldProcessMessage } = require("../MÓDULOS/functions/messageGate");
 
 function isCommandMessage(msg) {
   if (!msg?.message || msg.key?.fromMe) return false;
@@ -11,9 +12,11 @@ function isCommandMessage(msg) {
 }
 
 function registerMessagesEvent(conn, processIncomingMessage) {
-  conn.ev.on("messages.upsert", async ({ messages }) => {
+  conn.ev.on("messages.upsert", async ({ messages, type }) => {
+    if (type !== "notify") return;
     for (const msg of messages || []) {
       try {
+        if (!shouldProcessMessage(msg, type)) continue;
         await runWithMessage(msg, async () => {
           const stopTyping = isCommandMessage(msg)
             ? await startCommandTyping(conn, msg.key.remoteJid)
@@ -44,14 +47,6 @@ function registerMessagesEvent(conn, processIncomingMessage) {
       contactNameCache.rememberContacts(contacts);
     } catch (error) {
       runtimeLogger.error({ scope: "contacts.update", error, code: "ERR_CONTACT_CACHE" });
-    }
-  });
-
-  conn.ev.on("messaging-history.set", ({ contacts }) => {
-    try {
-      contactNameCache.rememberContacts(contacts);
-    } catch (error) {
-      runtimeLogger.error({ scope: "messaging-history.set", error, code: "ERR_CONTACT_CACHE" });
     }
   });
 }
