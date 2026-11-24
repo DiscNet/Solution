@@ -148,6 +148,10 @@ function getTarget(msg, from) {
     throw new Error('Responda à mensagem que receberá a figurinha.');
   }
 
+  if (context.fromMe === true) {
+    throw new Error('Responda à mensagem de outra pessoa, não a uma mensagem enviada pelo bot.');
+  }
+
   const isGroup = String(from || '').endsWith('@g.us');
   const participant = normalizeJid(context.participant || context.participantAlt);
   if (isGroup && !participant) {
