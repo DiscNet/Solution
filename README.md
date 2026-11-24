@@ -73,6 +73,20 @@ Use `.asciitext ASCII BANNER` ou `.ascii text ASCII BANNER` para desenhar palavr
 
 Aceita até 80 caracteres, letras, números e pontuação comum. A fonte usa maiúsculas e converte acentos para a letra base (`João` vira `JOAO`). Aceita quebras de linha e preserva palavras inteiras em até 80 colunas no banner; palavras maiores são divididas sem perder letras. Os estilos de quadrados usam até 36 colunas. Artes com mais de 36 colunas, altas ou longas são enviadas em arquivo para manter o alinhamento. Opções ficam antes do texto; `.asciitext -- ajuda` desenha a palavra AJUDA. A fonte ANSI Shadow e sua licença acompanham o código; a geração funciona localmente, inclusive no Termux, sem instalar ferramentas adicionais. Testes: `npm run test:ascii`.
 
+## Figurinhas com áudio
+
+O recurso de figurinha sonora permite registrar uma figurinha e reutilizá-la junto de áudios recebidos.
+
+| Comando | Função |
+| --- | --- |
+| `.rgfigaudio` | Responda a uma figurinha para registrá-la (somente dono). |
+| `.figaudio` | Responda a um áudio para enviá-lo junto da figurinha registrada. |
+| `.verfigaudio` | Visualiza a figurinha registrada. |
+| `.delfigaudio` | Remove o registro (somente dono). |
+| `.autostickeraudio 1/0` | Ativa ou desativa a conversão automática de áudios no grupo (administradores). |
+
+O áudio é limitado a 8 MB e 10 segundos. O formato de envio é OGG/Opus; áudios em outros formatos são convertidos com FFmpeg. A automação é configurada individualmente por grupo. O envio usa um campo experimental do protocolo de figurinha sonora: o bot confirma o envio pelo socket, mas a reprodução depende da compatibilidade do WhatsApp de quem recebe.
+
 ## 🎨 Visual dos menus
 
 <div align="center">
