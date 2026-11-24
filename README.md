@@ -87,6 +87,20 @@ O recurso de figurinha sonora permite registrar uma figurinha e reutilizá-la ju
 
 O áudio é limitado a 8 MB e 10 segundos. O formato de envio é OGG/Opus; áudios em outros formatos são convertidos com FFmpeg. A automação é configurada individualmente por grupo. O envio usa um campo experimental do protocolo de figurinha sonora: o bot confirma o envio pelo socket, mas a reprodução depende da compatibilidade do WhatsApp de quem recebe.
 
+## Reações com figurinha (experimental)
+
+O Solution também pode tentar associar uma figurinha a uma mensagem como reação, usando o protocolo experimental `STICKER_ANNOTATION`.
+
+| Comando | Função |
+| --- | --- |
+| `.rgreact` | Responda a uma figurinha WebP para registrá-la (somente dono). |
+| `.react 1` | Responda à mensagem que receberá a reação. |
+| `.react 10` | Faz até 10 tentativas, com intervalo de 650 ms. |
+| `.verreact` | Mostra a figurinha registrada. |
+| `.delreact` | Remove a figurinha registrada. |
+
+A figurinha precisa ser WebP comum e ter até 1 MB. O registro fica em `DADOS/database/sticker-react.webp`. O envio usa `associatedChildMessage` e `MessageAssociation`, recursos que podem não estar disponíveis em todas as versões do Baileys/WhatsApp. O comando verifica o suporte da biblioteca e informa quando o protocolo não está disponível; mesmo quando o socket aceita o envio, a exibição depende do aplicativo WhatsApp do destinatário. Recurso experimental, sem garantia de compatibilidade.
+
 ## 🎨 Visual dos menus
 
 <div align="center">
