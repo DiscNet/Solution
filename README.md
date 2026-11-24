@@ -80,12 +80,12 @@ O recurso de figurinha sonora permite registrar uma figurinha e reutilizá-la ju
 | Comando | Função |
 | --- | --- |
 | `.rgfigaudio` | Responda a uma figurinha para registrá-la (somente dono). |
-| `.figaudio` | Responda a um áudio para enviá-lo junto da figurinha registrada. |
+| `.figaudio` | Responda a um áudio ou vídeo para enviá-lo junto da figurinha registrada. |
 | `.verfigaudio` | Visualiza a figurinha registrada. |
 | `.delfigaudio` | Remove o registro (somente dono). |
 | `.autostickeraudio 1/0` | Ativa ou desativa a conversão automática de áudios no grupo (administradores). |
 
-O áudio é limitado a 8 MB e 10 segundos. O formato de envio é OGG/Opus; áudios em outros formatos são convertidos com FFmpeg. A automação é configurada individualmente por grupo. O envio usa um campo experimental do protocolo de figurinha sonora: o bot confirma o envio pelo socket, mas a reprodução depende da compatibilidade do WhatsApp de quem recebe.
+O áudio é limitado a 20 MB e 60 segundos. O formato de envio é OGG/Opus, com conversão via FFmpeg (48 kHz, mono e 48 kbps) quando necessário. Ao responder a um vídeo, o Solution extrai separadamente sua faixa sonora, limitada a 60 segundos; o vídeo pode ter até 85 MB. A figurinha visual usada no envio continua sendo a registrada com `.rgfigaudio`. A automação é configurada individualmente por grupo. O envio usa um campo experimental do protocolo de figurinha sonora: o bot confirma o envio pelo socket, mas a reprodução depende da compatibilidade do WhatsApp de quem recebe.
 
 ## Reações com figurinha (experimental)
 
