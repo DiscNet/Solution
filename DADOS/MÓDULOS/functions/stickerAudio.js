@@ -13,8 +13,9 @@ const STICKER_FILE = path.join(ROOT, 'database', 'sticker-audio.webp');
 const META_FILE = path.join(ROOT, 'database', 'sticker-audio.json');
 const AUTO_FILE = path.join(ROOT, 'database', 'autostickeraudio.json');
 const MAX_STICKER = 1024 * 1024;
-const MAX_AUDIO = 8 * 1024 * 1024;
-const MAX_SECONDS = 10;
+const MAX_AUDIO = 20 * 1024 * 1024;
+const MAX_VIDEO = 85 * 1024 * 1024;
+const MAX_SECONDS = 60;
 const PATCH = Symbol.for('solution.stickerAudio.field26.v1');
 
 function unwrap(message) {
@@ -58,11 +59,14 @@ function mediaSource(msg, type) {
 function currentMedia(msg) {
   const stickerSource = mediaSource(msg, 'sticker');
   const audioSource = mediaSource(msg, 'audio');
+  const videoSource = mediaSource(msg, 'video');
   return {
     sticker: stickerSource?.message?.stickerMessage || null,
     audio: audioSource?.message?.audioMessage || null,
+    video: videoSource?.message?.videoMessage || null,
     stickerSource,
-    audioSource
+    audioSource,
+    videoSource
   };
 }
 function readJson(file, fallback = {}) {
@@ -122,29 +126,62 @@ function validOpus(buffer, mime) {
     buffer.subarray(0, 4).toString('ascii') === 'OggS' &&
     buffer.includes(Buffer.from('OpusHead'));
 }
-async function normalizeAudio(conn, msg, media) {
-  const source = currentMedia(msg).audioSource;
-  if (!source || source.message.audioMessage !== media) throw new Error('Não foi possível localizar a mensagem original do áudio.');
-  const buffer = await getBuffer(conn, source);
-  if (buffer.length > MAX_AUDIO) throw new Error('O áudio excede o limite de 8 MB.');
-  if (validOpus(buffer, media.mimetype) && Number(media.seconds || 0) > 0 &&
-      Number(media.seconds) <= MAX_SECONDS) return buffer;
+function opusDuration(buffer) {
+  let position = 0;
+  let lastGranule = 0;
+  while (position + 27 <= buffer.length) {
+    const offset = buffer.indexOf('OggS', position, 'ascii');
+    if (offset < 0 || offset + 27 > buffer.length) break;
+    const segments = buffer[offset + 26];
+    const table = offset + 27;
+    if (table + segments > buffer.length) break;
+    let packetBytes = 0;
+    for (let i = 0; i < segments; i++) packetBytes += buffer[table + i];
+    const granule = Number(buffer.readBigUInt64LE(offset + 6));
+    if (Number.isSafeInteger(granule) && granule > lastGranule) lastGranule = granule;
+    position = table + segments + packetBytes;
+  }
+  return Math.max(1, Math.min(MAX_SECONDS, Math.round(lastGranule / 48000) || 1));
+}
+async function transcodeAudio(buffer, label) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'solution-sticker-audio-'));
   const input = path.join(dir, 'input.bin');
   const output = path.join(dir, 'output.ogg');
   try {
     fs.writeFileSync(input, buffer);
     await runFile(process.env.FFMPEG_PATH || 'ffmpeg', [
-      '-hide_banner', '-loglevel', 'error', '-y', '-i', input, '-t', String(MAX_SECONDS),
-      '-vn', '-ac', '1', '-ar', '48000', '-c:a', 'libopus', '-b:a', '32k', '-f', 'ogg', output
-    ], { timeout: 30000, maxBuffer: 1024 * 1024 });
+      '-hide_banner', '-loglevel', 'error', '-y', '-i', input,
+      '-map', '0:a:0', '-t', String(MAX_SECONDS), '-vn',
+      '-ac', '1', '-ar', '48000', '-c:a', 'libopus',
+      '-application', 'audio', '-b:a', '48k', '-vbr', 'on', '-f', 'ogg', output
+    ], { timeout: 60000, maxBuffer: 2 * 1024 * 1024 });
     const converted = fs.readFileSync(output);
-    if (!validOpus(converted, 'audio/ogg; codecs=opus')) throw new Error('O FFmpeg não gerou OGG/Opus válido.');
+    if (!validOpus(converted, 'audio/ogg; codecs=opus')) {
+      throw new Error('O FFmpeg não gerou OGG/Opus válido.');
+    }
     return converted;
   } catch (error) {
-    if (error.code === 'ENOENT') throw new Error('FFmpeg não encontrado. Instale o FFmpeg ou use áudio OGG/Opus de até 10 segundos.');
-    throw new Error('Falha ao converter o áudio: ' + error.message);
+    if (error.code === 'ENOENT') throw new Error('FFmpeg não encontrado. Instale com pkg install ffmpeg no Termux.');
+    if (/matches no streams|does not contain any stream/i.test(error.message || '')) {
+      throw new Error(label + ' não contém uma faixa de áudio.');
+    }
+    throw new Error('Falha ao converter ' + label.toLowerCase() + ': ' + error.message);
   } finally { fs.rmSync(dir, { recursive: true, force: true }); }
+}
+async function normalizeAudio(conn, msg, media) {
+  const sources = currentMedia(msg);
+  const isAudio = sources.audio === media && sources.audioSource;
+  const isVideo = sources.video === media && sources.videoSource;
+  if (!isAudio && !isVideo) throw new Error('Não foi possível localizar a mensagem original do áudio ou vídeo.');
+  const source = isAudio ? sources.audioSource : sources.videoSource;
+  const buffer = await getBuffer(conn, source);
+  const limit = isVideo ? MAX_VIDEO : MAX_AUDIO;
+  if (buffer.length > limit) {
+    throw new Error((isVideo ? 'O vídeo' : 'O áudio') + ' excede o limite de ' + (isVideo ? '85 MB' : '20 MB') + '.');
+  }
+  if (isAudio && validOpus(buffer, media.mimetype) && Number(media.seconds || 0) > 0 &&
+      Number(media.seconds) <= MAX_SECONDS) return buffer;
+  return transcodeAudio(buffer, isVideo ? 'vídeo' : 'áudio');
 }
 function patchStickerEncoder() {
   const sticker = proto?.Message?.StickerMessage;
@@ -164,7 +201,7 @@ function patchStickerEncoder() {
 }
 async function sendStickerAudio(conn, from, msg, audioMedia) {
   if (!isRegistered()) throw new Error('Nenhuma figurinha registrada. Use .rgfigaudio.');
-  if (!audioMedia) throw new Error('Responda a um áudio ou envie .figaudio na legenda dele.');
+  if (!audioMedia) throw new Error('Responda a um áudio ou vídeo com faixa sonora, ou envie .figaudio na legenda da mídia.');
   const audio = await normalizeAudio(conn, msg, audioMedia);
   const meta = metadata();
   if (typeof conn.waUploadToServer !== 'function' || typeof conn.relayMessage !== 'function') {
@@ -178,6 +215,9 @@ async function sendStickerAudio(conn, from, msg, audioMedia) {
     prepareWAMessageMedia({ audio, mimetype: 'audio/ogg; codecs=opus', ptt: false }, { upload: conn.waUploadToServer })
   ]);
   if (!stickerUpload?.stickerMessage || !audioUpload?.audioMessage) throw new Error('Falha ao preparar upload da figurinha ou do áudio.');
+  audioUpload.audioMessage.mimetype = 'audio/ogg; codecs=opus';
+  audioUpload.audioMessage.ptt = false;
+  audioUpload.audioMessage.seconds = opusDuration(audio);
   patchStickerEncoder();
   const message = proto.Message.fromObject({
     stickerMessage: stickerUpload.stickerMessage,
