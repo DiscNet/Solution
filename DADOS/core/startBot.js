@@ -342,6 +342,7 @@ if (process.env.HOT_RELOAD === "1") {
 
 const autofiguPath = path.join(ROOT_DIR, "MÓDULOS", "plugins", "admin", "autofigu.js");
 const autofiguModule = fs.existsSync(autofiguPath) ? require(autofiguPath) : null;
+const autoStickerAudioModule = require("../MÓDULOS/plugins/admin/autostickeraudio");
 const autoresponse = require("../MÓDULOS/functions/autoresponse");
 const axiosInstance = axios.create({ timeout: 10000 });
 global.reactMessages = {};
@@ -679,6 +680,7 @@ async function startBot() {
       if (await moderateSpam(conn, msg, from, { text, prefix: config.prefix })) return;
 
       if (autofiguModule) { await autofiguModule.autoHandler(conn, msg, from, sender); }
+      await autoStickerAudioModule.autoHandler(conn, msg, from);
 
       // HANDLER DE INTERAÇÕES
       let buttonId = interactiveId || null;
