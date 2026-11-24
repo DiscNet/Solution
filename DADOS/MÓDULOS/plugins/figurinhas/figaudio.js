@@ -20,10 +20,11 @@ const commands = [
   },
   {
     name: 'figaudio',
-    description: 'Envia a figurinha registrada acompanhada de um áudio.',
+    description: 'Envia a figurinha registrada acompanhada de áudio de até 1 minuto, inclusive extraído de vídeo.',
     async execute(conn, msg, args, from) {
       try {
-        const media = system.currentMedia(msg).audio;
+        const sources = system.currentMedia(msg);
+        const media = sources.audio || sources.video;
         await system.sendStickerAudio(conn, from, msg, media);
         return conn.sendMessage(from, { text: 'Envio concluído pelo socket. A reprodução depende da versão do WhatsApp do destinatário.' }, { quoted: msg });
       } catch (error) {
