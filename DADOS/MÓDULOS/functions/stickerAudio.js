@@ -35,12 +35,34 @@ function quoted(msg) {
     current.stickerMessage?.contextInfo || current.videoMessage?.contextInfo || {};
   return unwrap(context.quotedMessage);
 }
-function currentMedia(msg) {
+function mediaSource(msg, type) {
   const current = unwrap(msg?.message);
-  const reply = quoted(msg);
+  const currentMedia = current[type + 'Message'];
+  if (currentMedia) return { key: msg.key, message: { [type + 'Message']: currentMedia } };
+  const context = current.extendedTextMessage?.contextInfo ||
+    current.imageMessage?.contextInfo || current.audioMessage?.contextInfo ||
+    current.stickerMessage?.contextInfo || current.videoMessage?.contextInfo || {};
+  const reply = unwrap(context.quotedMessage);
+  const media = reply[type + 'Message'];
+  if (!media) return null;
   return {
-    sticker: current.stickerMessage || reply.stickerMessage || null,
-    audio: current.audioMessage || reply.audioMessage || null
+    key: {
+      remoteJid: msg.key?.remoteJid,
+      id: context.stanzaId,
+      participant: context.participant,
+      fromMe: false
+    },
+    message: { [type + 'Message']: media }
+  };
+}
+function currentMedia(msg) {
+  const stickerSource = mediaSource(msg, 'sticker');
+  const audioSource = mediaSource(msg, 'audio');
+  return {
+    sticker: stickerSource?.message?.stickerMessage || null,
+    audio: audioSource?.message?.audioMessage || null,
+    stickerSource,
+    audioSource
   };
 }
 function readJson(file, fallback = {}) {
@@ -63,10 +85,10 @@ async function getBuffer(conn, msg) {
   return buffer;
 }
 async function registerSticker(conn, msg) {
-  const media = currentMedia(msg).sticker;
+  const source = currentMedia(msg).stickerSource;
+  const media = source?.message?.stickerMessage;
   if (!media) throw new Error('Responda a uma figurinha com .rgfigaudio.');
   if (media.isLottie) throw new Error('Figurinhas Lottie não são suportadas.');
-  const source = { key: msg.key, message: { stickerMessage: media } };
   const buffer = await getBuffer(conn, source);
   if (buffer.length > MAX_STICKER || buffer.toString('ascii', 0, 4) !== 'RIFF' ||
       buffer.toString('ascii', 8, 12) !== 'WEBP') {
@@ -101,7 +123,9 @@ function validOpus(buffer, mime) {
     buffer.includes(Buffer.from('OpusHead'));
 }
 async function normalizeAudio(conn, msg, media) {
-  const buffer = await getBuffer(conn, { key: msg.key, message: { audioMessage: media } });
+  const source = currentMedia(msg).audioSource;
+  if (!source || source.message.audioMessage !== media) throw new Error('Não foi possível localizar a mensagem original do áudio.');
+  const buffer = await getBuffer(conn, source);
   if (buffer.length > MAX_AUDIO) throw new Error('O áudio excede o limite de 8 MB.');
   if (validOpus(buffer, media.mimetype) && Number(media.seconds || 0) > 0 &&
       Number(media.seconds) <= MAX_SECONDS) return buffer;
